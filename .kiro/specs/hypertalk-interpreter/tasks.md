@@ -83,13 +83,13 @@
   - [x] 10.3 **Property P6** (global sharing).
   - _Requirements: R8.2, R12.1, R15.2, P3, P5, P6_
 
-- [ ] 11. No network or LLM
-  - [ ] 11.1 Test that runs a sample script with `fetch`, `XMLHttpRequest`, `WebSocket` replaced by failing stubs.
-  - [ ] 11.2 Static test scanning `src/hypertalk/**/*.ts` for banned names (`fetch`, `XMLHttpRequest`, `WebSocket`, `window`, `document`, `setTimeout`, `Date`, `Math.random`) and for imports from outside `src/hypertalk`.
+- [x] 11. No network or LLM
+  - [x] 11.1 Test that runs a sample script with `fetch`, `XMLHttpRequest`, `WebSocket` replaced by failing stubs.
+  - [x] 11.2 Static test scanning `src/hypertalk/**/*.ts` for banned names (`fetch`, `XMLHttpRequest`, `WebSocket`, `window`, `document`, `setTimeout`, `Date`, `Math.random`) and for imports from outside `src/hypertalk`.
   - _Requirements: R10.2, R13_
 
-- [ ] 12. Public API
-  - [ ] 12.1 `index.ts` exporting `parse`, `print`, `runHandler`, the AST types, the error types, and `Host`.
-  - [ ] 12.1a Export `HauntKind` from `index.ts`. Static test for R15.4: no file in `src/hypertalk` other than the `HAUNTS` table holds a haunt word or kind as a string literal.
-  - [ ] 12.2 Run the whole suite once (`vitest --run`) and fix failures.
+- [x] 12. Public API
+  - [x] 12.1 `index.ts` exporting `parse`, `print`, `runHandler`, the AST types, the error types, and `Host`.
+  - [x] 12.1a Export `HauntKind` from `index.ts`. Static test for R15.4: no file in `src/hypertalk` other than the `HAUNTS` table holds a haunt word or kind as a string literal.
+  - [x] 12.2 Run the whole suite once (`vitest --run`) and fix failures.
   - _Requirements: all_
