@@ -35,9 +35,9 @@
   - [x] 4.3 **Property P1** (round trip), and a test that single-line and block `if` give equal trees. The script arbitrary includes `bool` expressions and `else if` chains of length 1 to 4, and the property covers both.
   - _Requirements: R9.3, R9.6, R11.10, R15.1, P1_
 
-- [ ] 5. Syntax error line property
-  - [ ] 5.1 Mutation arbitrary: delete, duplicate, swap, replace tokens, truncate, insert junk lines.
-  - [ ] 5.2 **Property P4** against `parseUnguarded` (so `clampLine` cannot hide a wrong line), plus a check that `parse` and `parseUnguarded` agree, plus the test that at least 30% of generated mutants fail to parse.
+- [x] 5. Syntax error line property
+  - [x] 5.1 Mutation arbitrary: delete, duplicate, swap, replace tokens, truncate, insert junk lines.
+  - [x] 5.2 **Property P4** against `parseUnguarded` (so `clampLine` cannot hide a wrong line), plus a check that `parse` and `parseUnguarded` agree, plus the test that at least 30% of generated mutants fail to parse.
   - _Requirements: R12.1, R12.4, P4_
 
 - [ ] 6. Values and host

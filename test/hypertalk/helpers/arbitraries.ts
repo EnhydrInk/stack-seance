@@ -349,3 +349,121 @@ function numberText(n: number): string {
   return s.includes('e') ? n.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 100 }) : s;
 }
 
+// ---- mutations (P4) -----------------------------------------------------------
+// A mutant is a rendered valid script with one to three edits applied. Most edits
+// break the syntax; the P4 test keeps the mutants that fail to parse.
+
+export type Mutation =
+  | { op: 'delete'; at: number }
+  | { op: 'duplicate'; at: number }
+  | { op: 'swap'; at: number; with: number }
+  | { op: 'replace'; at: number; text: string }
+  | { op: 'truncate'; at: number }
+  | { op: 'insertLine'; at: number; text: string; crlf: boolean };
+
+export const MUTATION_OPS: readonly Mutation['op'][] = ['delete', 'duplicate', 'swap', 'replace', 'truncate', 'insertLine'];
+
+export interface Mutant {
+  original: string;
+  mutations: Mutation[];
+  source: string;
+}
+
+// Splits text into pieces whose concatenation is the text again. Written apart from the
+// lexer so that mutations do not depend on the code under test, and so that it accepts
+// any text, including text an earlier mutation already broke.
+const PIECE = /\r\n|\n|[ \t]+|--[^\r\n]*|"[^"\r\n]*"?|[\p{L}_][\p{L}\p{M}0-9_]*|[0-9]+(?:\.[0-9]+)?|&&|<=|>=|[\s\S]/gu;
+const GAP = /^[ \t]+$/;
+
+const multiWordHaunts = HAUNTS.filter((h) => h.words.length > 1);
+
+/** Tokens that replace a token: keywords, operators, and characters the lexer rejects. */
+const REPLACEMENTS: readonly string[] = [
+  'on', 'end', 'if', 'then', 'else', 'go', 'to', 'card', 'next', 'put', 'into', 'after', 'field', 'button',
+  'with', 'or', 'and', 'not', 'is', 'contains', 'global', 'wait', 'seconds', 'true', 'it', 'x', 'mouseUp',
+  ...HAUNTS.flatMap((h): readonly string[] => h.words),
+  '(', ')', ',', '+', '-', '*', '<', '>=', '&', '&&', '"', '"text"', '7', '2.5', '.', '.5', '1.',
+  '=', "'", '\u201C', '\u00A0', '\r', '\n', '9'.repeat(400),
+];
+
+/** Whole lines to insert. Most are wrong; a few are valid so not every insert breaks the script. */
+const JUNK_LINES: readonly string[] = [
+  'end if', 'else', 'else if x then', 'end mouseUp', 'end openCard', 'on mouseUp', 'on openCard', 'on mouseDown', 'end',
+  'if x then', 'if x then if y then go to next card', 'if x then go to next card else if y then go to prev card',
+  'put 1 into', 'put 1 into true', 'put 1 after x', 'global false', 'go to card', 'go to card n + 1', 'go nowhere',
+  'answer "a" with "b" or "c" or "d" or "e"', 'answer "a" with b', 'ask', 'wait 1', 'show "x"', 'visual effect wipe up',
+  '"unclosed', 'put "a -- b into x', 'x = 1', 'put 1 < 2 < 3 into x', 'put -5 into x', 'put .5 into x', 'put (1 into x',
+  "put 'a' into x", 'go\rto next card', '\u00A0',
+  ...multiWordHaunts.map((h) => h.words[0]),
+  ...multiWordHaunts.map((h) => `${h.words[0]} cat`),
+  ...HAUNTS.map((h) => `put 1 into ${h.words[h.words.length - 1]}`),
+  'go to next card', '-- only a comment', '', '   ',
+];
+
+const junkLineArb = fc.oneof(
+  { weight: 3, arbitrary: fc.constantFrom(...JUNK_LINES) },
+  { weight: 1, arbitrary: fc.string({ unit: fc.constantFrom(...'abc ()"=,-&<>+*/.019\t'), maxLength: 12 }) },
+);
+
+export const mutationArb: fc.Arbitrary<Mutation> = fc.oneof(
+  fc.nat().map((at): Mutation => ({ op: 'delete', at })),
+  fc.nat().map((at): Mutation => ({ op: 'duplicate', at })),
+  fc.tuple(fc.nat(), fc.nat()).map(([at, other]): Mutation => ({ op: 'swap', at, with: other })),
+  fc.tuple(fc.nat(), fc.constantFrom(...REPLACEMENTS)).map(([at, text]): Mutation => ({ op: 'replace', at, text })),
+  fc.nat().map((at): Mutation => ({ op: 'truncate', at })),
+  fc.tuple(fc.nat(), junkLineArb, fc.boolean()).map(([at, text, crlf]): Mutation => ({ op: 'insertLine', at, text, crlf })),
+);
+
+/**
+ * Applies one edit. `at` and `with` pick a token (or a character for truncate, a line
+ * boundary for insertLine) modulo the number available, so any number is valid.
+ * Tokens here are everything but runs of spaces and tabs: words, numbers, strings,
+ * operators, comments and line breaks. Moved or new tokens get a space on each side
+ * so they do not glue onto their neighbours.
+ */
+export function applyMutation(source: string, m: Mutation): string {
+  if (m.op === 'truncate') return source.length === 0 ? source : source.slice(0, m.at % source.length);
+  if (m.op === 'insertLine') {
+    const eol = m.crlf ? '\r\n' : '\n';
+    const starts = [0];
+    for (let k = 0; k < source.length; k++) if (source[k] === '\n') starts.push(k + 1);
+    const appendAtEnd = source.length > 0 && !source.endsWith('\n');
+    const slot = m.at % (starts.length + (appendAtEnd ? 1 : 0));
+    if (slot === starts.length) return source + eol + m.text;
+    const at = starts[slot]!;
+    return source.slice(0, at) + m.text + eol + source.slice(at);
+  }
+  const pieces = source.match(PIECE) ?? [];
+  const tokens = pieces.flatMap((p, i) => (GAP.test(p) ? [] : [i]));
+  if (tokens.length === 0) return source;
+  const i = tokens[m.at % tokens.length]!;
+  const piece = pieces[i]!;
+  switch (m.op) {
+    case 'delete':
+      pieces[i] = '';
+      break;
+    case 'duplicate':
+      pieces[i] = `${piece} ${piece}`;
+      break;
+    case 'replace':
+      pieces[i] = ` ${m.text} `;
+      break;
+    case 'swap': {
+      const j = tokens[m.with % tokens.length]!;
+      const other = pieces[j]!;
+      pieces[i] = ` ${other} `;
+      pieces[j] = ` ${piece} `;
+      break;
+    }
+  }
+  return pieces.join('');
+}
+
+/** A rendered valid script with one to three mutations applied in order. */
+export const mutantArb: fc.Arbitrary<Mutant> = fc
+  .tuple(scriptArb, fc.integer(), fc.array(mutationArb, { minLength: 1, maxLength: 3 }))
+  .map(([ast, seed, mutations]): Mutant => {
+    const original = renderScript(ast, seed);
+    return { original, mutations, source: mutations.reduce(applyMutation, original) };
+  });
+
