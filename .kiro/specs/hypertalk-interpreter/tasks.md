@@ -79,7 +79,7 @@
 - [ ] 10. Remaining properties
   - [ ] 10.1 **Property P3** (determinism) using `fakeHost.clone()` and the script and stack arbitraries.
   - [ ] 10.1a P3 scripts include haunt statements (4.2a), and the compared call logs include the haunt calls with their kinds.
-  - [ ] 10.2 **Property P5** (runtime error lines).
+  - [ ] 10.2 **Property P5** (runtime error lines). First apply `clampLine` to runtime errors at the public boundary in `runHandler` (design: last guard), then run P5 against an unguarded entry point, as P4 does with `parseUnguarded`, so the guard cannot hide a wrong line. Add a check that the guarded and unguarded results agree.
   - [ ] 10.3 **Property P6** (global sharing).
   - _Requirements: R8.2, R12.1, R15.2, P3, P5, P6_
 
