@@ -40,11 +40,11 @@
   - [x] 5.2 **Property P4** against `parseUnguarded` (so `clampLine` cannot hide a wrong line), plus a check that `parse` and `parseUnguarded` agree, plus the test that at least 30% of generated mutants fail to parse.
   - _Requirements: R12.1, R12.4, P4_
 
-- [ ] 6. Values and host
-  - [ ] 6.1 `values.ts`: `toStr`, `toNumber`, `looksNumeric`, `compare`, `asBool`, with example tests.
-  - [ ] 6.2 `host.ts` interface and `RunContext`.
-  - [ ] 6.3 `test/hypertalk/helpers/fakeHost.ts` with call log, scripted dialog replies, `clone()`.
-  - [ ] 6.4 `haunt(kind: HauntKind): Promise<void>` in the `Host` interface. The fake host adds `{ call: 'haunt', kind }` to its call log, changes no card, field or visibility state, and resolves at once.
+- [x] 6. Values and host
+  - [x] 6.1 `values.ts`: `toStr`, `toNumber`, `looksNumeric`, `compare`, `asBool`, with example tests.
+  - [x] 6.2 `host.ts` interface and `RunContext`.
+  - [x] 6.3 `test/hypertalk/helpers/fakeHost.ts` with call log, scripted dialog replies, `clone()`.
+  - [x] 6.4 `haunt(kind: HauntKind): Promise<void>` in the `Host` interface. The fake host adds `{ call: 'haunt', kind }` to its call log, changes no card, field or visibility state, and resolves at once.
   - _Requirements: R10, R11.4–R11.6, R11.8, R15.2, R15.3_
 
 - [ ] 7. Runtime: expressions and variables

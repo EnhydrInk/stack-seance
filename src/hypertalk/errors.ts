@@ -25,6 +25,18 @@ export function syntaxError(line: number, column: number, message: string): Synt
   return { kind: 'syntax', line, column, message };
 }
 
+export function runtimeError(line: number, message: string): RuntimeError {
+  return { kind: 'runtime', line, message };
+}
+
+/**
+ * Thrown inside the runtime to stop a handler run with an error (R12.3).
+ * `runHandler` catches it and returns the error, so it never leaves the public API.
+ */
+export class RuntimeAbort {
+  constructor(readonly error: RuntimeError) {}
+}
+
 /** Line breaks are `\n` or `\r\n` (glossary). Everything downstream sees `\n` only. */
 export function normaliseLineBreaks(source: string): string {
   return source.replace(/\r\n/g, '\n');
