@@ -56,14 +56,14 @@
   - [x] 7.5 Runtime check of an `else if` chain: only the first true branch runs, the final `else` runs when none is true, and a non-boolean condition in an `else if` reports the line of that `else if`.
   - _Requirements: R8, R9.4, R9.6, R11_
 
-- [ ] 8. Runtime: statements
-  - [ ] 8.1 `put` into field, after, before, and into variable. Missing field error. Script test for a negative value stored in a field (R11.4): `put 0 - 5 into field "score"`, then `put field "score" + 1 into field "score"`, and the field reads `"-4"`.
-  - [ ] 8.2 `show` and `hide`, missing item error.
-  - [ ] 8.3 `answer` and `ask` (default label, cancel gives empty `it`).
-  - [ ] 8.4 `wait` with validation.
-  - [ ] 8.5 `if`/`else` with boolean check.
-  - [ ] 8.6 Top-level catch that turns unexpected exceptions into a runtime error with a line.
-  - [ ] 8.7 `haunt`: `await ctx.host.haunt(stmt.kind)` and nothing else. Example tests: running each of the four haunts adds exactly one haunt call with its kind to the call log. After a haunt, the current card, fields, visibility, a local, a global and `it` are unchanged. With a host whose `haunt` promise is resolved by the test, the next statement does not run until it resolves.
+- [x] 8. Runtime: statements
+  - [x] 8.1 `put` into field, after, before, and into variable. Missing field error. Script test for a negative value stored in a field (R11.4): `put 0 - 5 into field "score"`, then `put field "score" + 1 into field "score"`, and the field reads `"-4"`.
+  - [x] 8.2 `show` and `hide`, missing item error.
+  - [x] 8.3 `answer` and `ask` (default label, cancel gives empty `it`).
+  - [x] 8.4 `wait` with validation.
+  - [x] 8.5 `if`/`else` with boolean check.
+  - [x] 8.6 Top-level catch that turns unexpected exceptions into a runtime error with a line.
+  - [x] 8.7 `haunt`: `await ctx.host.haunt(stmt.kind)` and nothing else. Example tests: running each of the four haunts adds exactly one haunt call with its kind to the call log. After a haunt, the current card, fields, visibility, a local, a global and `it` are unchanged. With a host whose `haunt` promise is resolved by the test, the next statement does not run until it resolves.
   - _Requirements: R4, R5, R6, R7, R9, R12.3, R15.2, R15.3_
 
 - [ ] 9. Runtime: navigation, effects, openCard
