@@ -2,6 +2,8 @@
 // Names (variables, fields, buttons) are stored as written; compare them with toLowerCase().
 // Keyword case is not stored.
 
+import type { HauntKind } from './tokens';
+
 /** 1-based position of the token a node starts at. */
 export interface Pos {
   line: number;
@@ -42,6 +44,8 @@ export type Stmt =
   | { t: 'show' | 'hide'; kind: 'button' | 'field'; name: string; pos: Pos }
   | { t: 'wait'; seconds: Expr; pos: Pos }
   | { t: 'global'; names: string[]; pos: Pos }
+  /** One node for every creature; the words come from the HAUNTS table (R15). */
+  | { t: 'haunt'; kind: HauntKind; pos: Pos }
   | IfStmt;
 
 export type NavTarget = 'next' | 'prev' | 'first' | 'last';

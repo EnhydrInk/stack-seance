@@ -6,7 +6,7 @@ Pure TypeScript, no dependencies other than the test libraries. The pipeline is 
 
 ```
 src/hypertalk/
-  tokens.ts      Token types, keyword table
+  tokens.ts      Token types, keyword table, haunt table
   lexer.ts       tokenize(source): LexResult  ({ ok: true, tokens } | { ok: false, error })
   ast.ts         AST types, stripPositions()
   parser.ts      parse(source): ParseResult
@@ -52,6 +52,7 @@ export type Stmt =
   | { t: 'show' | 'hide'; kind: 'button' | 'field'; name: string; pos: Pos }
   | { t: 'wait'; seconds: Expr; pos: Pos }
   | { t: 'global'; names: string[]; pos: Pos }
+  | { t: 'haunt'; kind: HauntKind; pos: Pos }                       // HauntKind comes from the haunt table in tokens.ts
   | { t: 'if'; cond: Expr; then: Stmt[]; else: Stmt[]; pos: Pos };   // else is [] when absent
 
 export type GoTarget =
@@ -80,8 +81,32 @@ Decisions:
 - `true` and `false` are `bool` nodes, matched case-insensitively. The tree does not keep the case, and the printer writes them in lowercase. A string literal `"true"` stays a `str` node, so the two never compare equal in a round trip by accident.
 - `paren` stays in the tree. This keeps the printer simple and exact: it prints what was written. The printer also emits parentheses where precedence would otherwise change the meaning, for ASTs not produced by the parser (the generator builds ASTs directly for P1 as well).
 - Variable and field names are stored as written. Comparison is by `toLowerCase()`. The printer keeps the stored case. Keyword case is not stored, so printing normalises it (`on mouseUp`, `end mouseUp`, `go to next card`, lowercase otherwise).
+- A haunt is one node type for every creature, told apart by `kind`. The node keeps the kind, not the words, so `RELEASE Bat` and `release bat` give the same tree.
 - `pos` is dropped for equality with `stripPositions(ast)`.
-- Numbers are non-negative, so `print` uses `String(n)` and the lexer reads it back. Values such as `1e21` print in exponent form that the lexer does not accept, so the number generator is limited to values whose `String` form is plain decimal, and the printer renders others with `toFixed`-free fallback (`n.toLocaleString('en-US', {useGrouping:false, maximumFractionDigits:20})`). Parser-produced numbers always come from plain decimals, so this only matters for generated ASTs.
+- Numbers are non-negative, so `print` uses `String(n)` and the lexer reads it back. Values such as `1e21` and `1e-7` have an exponent form that the lexer does not accept, so the printer writes them out with `n.toLocaleString('en-US', {useGrouping:false, maximumFractionDigits:100})`. 100 digits (not 20) matter: the parser does produce such values, for example `0.000000000000000000001` is `1e-21`, and 20 digits would print it as `0`. The number generator includes `1e21` and `1e-7` on purpose to cover this path.
+
+## Haunt table
+
+One table in `tokens.ts` maps the words of each haunt statement to its kind. It is the only place in `src/hypertalk` that names a creature (R15.4).
+
+```ts
+export const HAUNTS = [
+  { words: ['release', 'bat'],  kind: 'bat' },
+  { words: ['howl'],            kind: 'howl' },
+  { words: ['summon', 'witch'], kind: 'witch' },
+  { words: ['drop', 'spider'],  kind: 'spider' },
+] as const;
+
+export type HauntKind = (typeof HAUNTS)[number]['kind'];   // 'bat' | 'howl' | 'witch' | 'spider'
+```
+
+Everything else derives from it:
+
+- `KEYWORDS` includes every word of every entry, so `RESERVED` covers them and `put 1 into bat` or `global spider` is a syntax error (R15.1, R8.4).
+- The parser, printer, runtime, host type, arbitraries and fake host read the table or use `HauntKind`. None of them lists the kinds again.
+- `index.ts` exports `HauntKind`. The UI host can keep its animations in a `Record<HauntKind, …>`, so a new table entry is a type error in the UI until its animation exists.
+
+Rules for an entry, checked by a test so that adding one cannot break another statement: the first word is unique in the table and is not the first word of any other statement (`go`, `put`, `on`, …), and no word is `it`, `true` or `false`.
 
 ## Lexer
 
@@ -103,7 +128,7 @@ Grammar (keywords case-insensitive):
 ```
 script     := { NL | handler }
 handler    := 'on' NAME NL { stmt } 'end' NAME NL
-stmt       := go | effect | answer | ask | put | show | hide | wait | global | if
+stmt       := go | effect | answer | ask | put | show | hide | wait | global | haunt | if
 go         := 'go' ['to'] ( 'next' 'card' | 'prev' 'card' | 'first' 'card' | 'last' 'card'
                           | 'card' primaryExpr )
 effect     := 'visual' 'effect' ( 'dissolve' | 'wipe' 'left' | 'wipe' 'right' | 'iris' 'open' | 'iris' 'close' )
@@ -114,6 +139,7 @@ target     := 'field' STRING | NAME
 show/hide  := ('show'|'hide') ('button'|'field') STRING
 wait       := 'wait' expr ('second' | 'seconds')
 global     := 'global' NAME { ',' NAME }
+haunt      := 'release' 'bat' | 'howl' | 'summon' 'witch' | 'drop' 'spider'    -- one alternative per HAUNTS entry
 if         := 'if' expr 'then' ( NL block { 'else' 'if' expr 'then' NL block }
                                         [ 'else' NL block ] 'end' 'if'
                                | stmt [ 'else' stmt ] )
@@ -135,10 +161,13 @@ Notes:
 - An `on` inside a handler body is reported on the line of that `on` ("add end mouseUp before it"), because that is where the `end` is missing. R1.5's "line of its `on`" applies when the script ends with the handler still open.
 - When several constructs are open at the end of the script, the innermost one is reported: an unclosed `if` inside an unclosed handler gives the `if` line (R9.5).
 - `go to card n + 1` gets a hint to use parentheses. `-5` gets a hint to write `0 - 5`, since unary minus is not in the subset.
+- Haunts (R15.1): `statement()` looks up the first word in a map built once from `HAUNTS`, then expects the entry's remaining words in order and returns `{ t: 'haunt', kind }`. A missing or wrong word is a syntax error on that line, for example `release` alone or `summon cat` gives `expected "witch" after "summon"`. Because haunts are ordinary statements, they work in both `if` forms (`if done then howl`).
 
 ## Printer
 
-`print(script): string` emits the canonical form: one statement per line, two-space indentation per level, block `if`, `\n` line endings, final newline. An `if` whose `else` list is exactly one `if` is printed as `else if …` and shares the outer `end if`, so chains print as chains. Comments are not in the tree and are lost on printing, which is why the printer is never used to show a card's script. `answer … with "A" or "B"`, `visual effect wipe left`, `go to next card`, `go to card <expr>`. Strings are printed in double quotes (they contain no quote). Handlers are separated by one blank line.
+`print(script): string` emits the canonical form: one statement per line, two-space indentation per level, block `if`, `\n` line endings, final newline. An `if` whose `else` list is exactly one `if` is printed as `else if …` and shares the outer `end if`, so chains print as chains. Comments are not in the tree and are lost on printing, which is why the printer is never used to show a card's script. `answer … with "A" or "B"`, `visual effect wipe left`, `go to next card`, `go to card <expr>`. A haunt prints as the words of its `HAUNTS` entry in lowercase, joined by one space (`summon witch`). Strings are printed in double quotes (they contain no quote). Handlers are separated by one blank line. An empty script prints as `''`. `wait` prints `second` when the duration is the literal `1` and `seconds` otherwise.
+
+`print` accepts trees with or without positions (`WithoutPos<Script>`), so the generators in the tests build trees without inventing positions. Parentheses: a bin's left operand gets them when its level is lower than the operator's (or equal, for comparisons, which do not chain), the right operand when its level is lower or equal (left associativity), and the operand of `not` when it is `and` or `or`.
 
 Round trip (P1): `parse(print(x))` is `ok` and `stripPositions` of it equals `stripPositions(x)`.
 
@@ -174,6 +203,7 @@ export interface Host {
   ask(message: string): Promise<string | null>;                 // null = cancelled
 
   wait(seconds: number): Promise<void>;
+  haunt(kind: HauntKind): Promise<void>;                         // resolves when the script may go on; the host picks when (R15.2)
   getCardScript(card: CardRef): string;                          // source text, may be ''
 }
 
@@ -187,7 +217,7 @@ export type RunResult = { ok: true } | { ok: false; error: RuntimeError | Syntax
 export function runHandler(source: string, handler: 'mouseUp' | 'openCard', ctx: RunContext): Promise<RunResult>;
 ```
 
-The host is asynchronous only where a person or a timer is involved (dialogs, wait). Everything else is synchronous so state changes are easy to reason about. The host changes visible state; the runtime holds no copy of card state, so there is one source of truth.
+The host is asynchronous only where a person or a timer is involved (dialogs, wait, haunts). Everything else is synchronous so state changes are easy to reason about. For `haunt`, the host can resolve at once and let the animation play while the script goes on, or resolve when the animation ends. The runtime only awaits the promise and uses no timer of its own (R7.2, R10.2). An animation must not change the current card, fields or visibility (R15.3). The host changes visible state; the runtime holds no copy of card state, so there is one source of truth.
 
 The runtime never caches the current card. Every `field`, `show`, `hide`, `put` and `go` asks the host at the moment it runs, and the host resolves names on its current card. So after a successful `go` the rest of the handler keeps running and names resolve on the new card (R2.6). If the nested `openCard` handler moves on again, the outer handler continues on wherever the host says the current card is.
 
@@ -205,6 +235,7 @@ The runtime never caches the current card. Every `field`, `show`, `hide`, `put` 
 - **wait**: evaluate, check finite and ≥ 0, `await host.wait(n)`.
 - **if**: `asBool(eval(cond))`, run the chosen list.
 - **global**: adds names to `globalNames`. A global that has never been set reads `''`.
+- **haunt**: `await ctx.host.haunt(stmt.kind)` and nothing else (R15.2). It calls no other host method and leaves the frame alone, so locals, globals, `it` and a pending visual effect are the same after it (R15.3). A `visual effect` before a haunt still plays on the next `go`. If the host rejects, the top-level catch reports it on the haunt's line, like any other host failure.
 - Evaluation errors name the line of the **expression's** `pos.line`, which is the same or a later line than the statement start only for multi-line constructs; since statements are single-line in this subset, it equals the statement line.
 - Every thrown `RuntimeAbort` is caught in `runHandler` and turned into a result. Unexpected exceptions (bugs, or the host throwing) are caught too and returned as a runtime error at the line of the statement being executed, with the message from the exception, so the "errors name a line" rule holds even then. The runtime tracks `currentLine` for this.
 
@@ -215,10 +246,12 @@ The runtime has no clock, no randomness, no `Date`, no `Math.random`, no iterati
 ## Testing strategy
 
 - Example tests per requirement (one `describe` per R-number), with the fake host.
-- `fakeHost.ts`: in-memory stack (cards with names, fields, buttons, visibility, scripts), a queue of scripted dialog replies, a call log, and a `clone()` for P3.
-- `arbitraries.ts`: fast-check arbitraries for expressions, statements (with a depth limit), handlers and scripts, plus a stack arbitrary and a mutation arbitrary for P4. The stack arbitrary gives each card a script that is empty, valid, has a runtime error in `openCard`, or has a syntax error, so P2's third outcome is exercised. The `go` target arbitrary includes numeric strings. The script generator can be told which names exist in the stack so most runs do not stop at the first error, and sometimes picks missing names to exercise errors.
+- `fakeHost.ts`: in-memory stack (cards with names, fields, buttons, visibility, scripts), a queue of scripted dialog replies, a call log, and a `clone()` for P3. `haunt(kind)` adds `{ call: 'haunt', kind }` to the call log, changes nothing else and resolves at once, so P3's compared call logs include haunts.
+- `arbitraries.ts` also has `renderScript(tree, seed, options)`, a seeded source renderer that writes a tree with random keyword case, spacing, indentation, comments, blank lines, CRLF, optional `to`, `second`/`seconds`, one-line or block `if`, `else if` chains or nested `else` blocks, and optional redundant parentheses. It has its own copy of the precedence table, so it does not share code with the printer.
+- `arbitraries.ts`: fast-check arbitraries for expressions, statements (with a depth limit, and haunts drawn with `fc.constantFrom(...HAUNTS.map(h => h.kind))`), handlers and scripts, plus a stack arbitrary and a mutation arbitrary for P4. The stack arbitrary gives each card a script that is empty, valid, has a runtime error in `openCard`, or has a syntax error, so P2's third outcome is exercised. The `go` target arbitrary includes numeric strings. The script generator can be told which names exist in the stack so most runs do not stop at the first error, and sometimes picks missing names to exercise errors.
 - Properties P1–P6 from the requirements, each in `*.property.test.ts`.
 - R13 test: stub the globals, run, and a static scan of `src/hypertalk/**/*.ts` for banned names.
+- R15 tests: example tests parse, print and run each of the four haunts with their expected kinds written out. A table test checks the entry rules from "Haunt table". For R15.4, a static scan checks that no file in `src/hypertalk` other than the `HAUNTS` table holds a haunt word or kind as a string literal.
 
 ## Open points (decide while building, no need to ask)
 

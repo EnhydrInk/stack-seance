@@ -97,7 +97,7 @@ The runtime reaches the stack and the user only through a host interface (R10), 
 
 ### R10. Host interface
 
-1. The runtime SHALL use only the `Host` interface (see design) for: current card, card count, card lookup by name, going to a card, field text, visibility, dialogs, visual effects, waiting, and card scripts.
+1. The runtime SHALL use only the `Host` interface (see design) for: current card, card count, card lookup by name, going to a card, field text, visibility, dialogs, visual effects, waiting, haunts, and card scripts.
 2. The runtime SHALL NOT import DOM, `window`, `document`, `fetch`, `XMLHttpRequest`, `WebSocket`, or timers.
 3. A fake host for tests SHALL exist in the test helpers and SHALL record every call.
 
@@ -134,6 +134,13 @@ The runtime reaches the stack and the user only through a host interface (R10), 
 3. A syntax error in a card's script found at that point SHALL be reported as an error with the line from that script (R12.5).
 4. The runtime SHALL stop with a runtime error naming the line of the `go` that went too deep when `openCard` handlers chain more than 16 levels.
 
+### R15. Haunts
+
+1. The parser SHALL accept four haunt statements: `release bat`, `howl`, `summon witch`, `drop spider`. These words are keywords, so R8.4 reserves them.
+2. WHEN a haunt statement runs, the runtime SHALL call `host.haunt(kind)` with kind `'bat' | 'howl' | 'witch' | 'spider'` and await it. The host decides how long the animation holds the script.
+3. A haunt SHALL NOT change the current card, fields, visibility or variables.
+4. Adding a creature later SHALL only need one new entry in a single table (statement words to kind), plus the host's animation.
+
 ## Correctness properties (fast-check)
 
 Each property is a vitest test using fast-check, at least 200 runs, tagged with its name.
@@ -147,7 +154,7 @@ Each property is a vitest test using fast-check, at least 200 runs, tagged with 
 
 Also, the named targets and valid numbers reach the expected cards, including both wraps. Numeric strings (for example `"3"` from `ask`) reach the same card as the number, and a non-numeric string reaches the card of that name.
 
-**P3. Determinism.** For any stack state, any valid script (any statement mix, including dialogs, fields, visibility, `go`, and globals), and a fixed list of dialog replies, running it twice from identical copies of the state gives equal resulting state, equal results, and equal host call logs.
+**P3. Determinism.** For any stack state, any valid script (any statement mix, including dialogs, fields, visibility, `go`, globals, and haunts), and a fixed list of dialog replies, running it twice from identical copies of the state gives equal resulting state, equal results, and equal host call logs.
 
 **P4. Error lines.** For any script with a syntax error, the reported line is an integer in 1..lineCount. Generator: take a valid script and delete, duplicate, swap, or replace random tokens, truncate it at a random point, or insert junk lines. The test keeps the cases where `parse` fails. A separate example test makes sure the generator produces failures often enough (at least 30% of runs).
 

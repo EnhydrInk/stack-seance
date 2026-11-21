@@ -4,7 +4,7 @@
 import type { BinOp, Effect, Expr, Handler, HandlerName, IfStmt, NavTarget, Pos, Script, Stmt } from './ast';
 import { clampLine, lineCount, syntaxError, type SyntaxError } from './errors';
 import { tokenize } from './lexer';
-import { isReserved, type Token } from './tokens';
+import { HAUNTS, isReserved, type Haunt, type Token } from './tokens';
 
 export type ParseResult = { ok: true; script: Script } | { ok: false; error: SyntaxError };
 
@@ -45,6 +45,9 @@ const HANDLER_NAMES: ReadonlyMap<string, HandlerName> = new Map([
 const NAV_TARGETS: ReadonlySet<string> = new Set<NavTarget>(['next', 'prev', 'first', 'last']);
 
 const CALCULATION_OPS: ReadonlySet<string> = new Set(['+', '-', '*', '/', '&', '&&']);
+
+/** Haunt entries by their first word (R15.1). */
+const HAUNT_BY_FIRST_WORD: ReadonlyMap<string, Haunt> = new Map(HAUNTS.map((h) => [h.words[0], h]));
 
 const pos = (at: Pos): Pos => ({ line: at.line, column: at.column });
 
@@ -206,12 +209,25 @@ class Parser {
         return this.ifStatement();
       case 'on':
         return this.fail(t, `a new handler starts here; add "end ${this.handlerName}" before it`);
-      default:
+      default: {
+        const haunt = HAUNT_BY_FIRST_WORD.get(t.text.toLowerCase());
+        if (haunt) return this.haunt(haunt);
         if (isReserved(t.text)) {
           this.fail(t, `expected a command such as go, put or answer, but found ${describe(t)}`);
         }
         return this.fail(t, `unknown command "${t.text}"`);
+      }
     }
+  }
+
+  // The words of one HAUNTS entry, in order   (R15.1)
+  private haunt(entry: Haunt): Stmt {
+    const first = this.advance();
+    let last = first;
+    for (const word of entry.words.slice(1)) {
+      last = this.expectWord(word, `expected "${word}" after "${last.text}"`);
+    }
+    return { t: 'haunt', kind: entry.kind, pos: pos(first) };
   }
 
   // go [to] next|prev|first|last card | go [to] card <primary>   (R2.1)
@@ -531,7 +547,7 @@ class Parser {
           return { t: 'bool', value: word === 'true', pos: pos(t) };
         }
         if (word === 'field') return { t: 'field', name: this.fieldName(), pos: pos(t) };
-        if (isReserved(word)) this.fail(t, `expected a value but found "${t.text}"`);
+        if (isReserved(word)) this.fail(t, `expected a value but found "${t.text}", which is a reserved word`);
         this.advance();
         return { t: 'var', name: t.text, pos: pos(t) };
       }

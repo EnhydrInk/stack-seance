@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { parse, parseUnguarded } from '../../src/hypertalk/parser';
 import { stripPositions, type Expr, type IfStmt, type Script, type Stmt } from '../../src/hypertalk/ast';
 import { lineCount, type SyntaxError } from '../../src/hypertalk/errors';
+import { HAUNTS, isReserved } from '../../src/hypertalk/tokens';
 
 const src = (...lines: string[]) => lines.join('\n');
 
@@ -440,6 +441,63 @@ describe('R9.6 else if chains', () => {
   });
 });
 
+describe('R15 haunts', () => {
+  it('R15.1 parses the four haunts to haunt nodes with their kinds', () => {
+    expect(body('release bat', 'howl', 'summon witch', 'drop spider')).toEqual([
+      { t: 'haunt', kind: 'bat' },
+      { t: 'haunt', kind: 'howl' },
+      { t: 'haunt', kind: 'witch' },
+      { t: 'haunt', kind: 'spider' },
+    ]);
+  });
+
+  it('reads haunt words in any case and spacing', () => {
+    expect(body('RELEASE   Bat', 'Howl', 'summon\tWITCH', 'DrOp sPiDeR')).toEqual(
+      body('release bat', 'howl', 'summon witch', 'drop spider'),
+    );
+  });
+
+  it('accepts a haunt as the statement of a one-line if', () => {
+    expect(body('if done then howl else release bat')).toEqual([
+      { t: 'if', cond: { t: 'var', name: 'done' }, then: [{ t: 'haunt', kind: 'howl' }], else: [{ t: 'haunt', kind: 'bat' }] },
+    ]);
+  });
+
+  it('reports a missing or wrong second word on its line', () => {
+    const alone = err(inHandler('go next card', 'release'));
+    expect(alone).toMatchObject({ line: 3 });
+    expect(alone.message).toBe('expected "bat" after "release"');
+    const wrong = err(inHandler('summon cat'));
+    expect(wrong).toMatchObject({ line: 2, column: 10 });
+    expect(wrong.message).toBe('expected "witch" after "summon"');
+    expect(err(inHandler('howl loudly')).message).toBe('unexpected "loudly" after the command');
+  });
+
+  it('R8.4 reserves haunt words', () => {
+    expect(err(inHandler('put 1 into bat'))).toMatchObject({ line: 2, column: 14 });
+    expect(err(inHandler('put 1 into bat')).message).toBe('"bat" is a reserved word and cannot be a variable name');
+    expect(err(inHandler('global spider')).message).toBe('"spider" is a reserved word and cannot be a variable name');
+    const asValue = err(inHandler('put howl into x'));
+    expect(asValue).toMatchObject({ line: 2, column: 7 });
+    expect(asValue.message).toContain('reserved word');
+  });
+
+  it('R15.4 keeps the haunt table within its rules', () => {
+    const otherStarts = ['on', 'end', 'go', 'visual', 'answer', 'ask', 'put', 'show', 'hide', 'wait', 'global', 'if', 'else'];
+    const firstWords = HAUNTS.map((h) => h.words[0]);
+    expect(new Set(firstWords).size).toBe(firstWords.length);
+    for (const h of HAUNTS) {
+      expect(otherStarts, h.kind).not.toContain(h.words[0]);
+      for (const w of h.words) {
+        expect(['it', 'true', 'false'], h.kind).not.toContain(w);
+        // The parser compares lowercase single words.
+        expect(w, h.kind).toMatch(/^[a-z]+$/);
+        expect(isReserved(w), w).toBe(true);
+      }
+    }
+  });
+});
+
 describe('R11 expressions', () => {
   it('R11.1 reads every kind of value', () => {
     expect(['"hi"', '2.5', 'it', 'It', 'score', 'field "Name"', 'true', 'FALSE', '"true"', '(1)'].map(ex)).toEqual([
@@ -492,9 +550,9 @@ describe('R11 expressions', () => {
   });
 
   it('reports values that are missing or not allowed', () => {
-    expect(err(inHandler('put 1 + into x')).message).toBe('expected a value but found "into"');
+    expect(err(inHandler('put 1 + into x')).message).toBe('expected a value but found "into", which is a reserved word');
     expect(err(inHandler('put + 1 into x')).message).toBe('expected a value but found "+"');
-    expect(err(inHandler('answer next')).message).toBe('expected a value but found "next"');
+    expect(err(inHandler('answer next')).message).toBe('expected a value but found "next", which is a reserved word');
     expect(err(inHandler('put -5 into x')).message).toContain('negative numbers are not supported');
     expect(err(inHandler('answer "a" &')).message).toBe('expected a value after "&"');
   });

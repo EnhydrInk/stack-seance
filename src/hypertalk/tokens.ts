@@ -22,8 +22,25 @@ export type Token =
 
 export type TokenKind = Token['kind'];
 
-/** Every word the grammar uses as a keyword (lowercase). */
+/**
+ * The haunt statements (R15). This table is the only place in src/hypertalk that names
+ * a creature (R15.4): the parser, printer and runtime all read it.
+ * Rules for an entry (checked by a test): the first word is unique here and starts no
+ * other statement, and no word is `it`, `true` or `false`.
+ */
+export const HAUNTS = [
+  { words: ['release', 'bat'], kind: 'bat' },
+  { words: ['howl'], kind: 'howl' },
+  { words: ['summon', 'witch'], kind: 'witch' },
+  { words: ['drop', 'spider'], kind: 'spider' },
+] as const;
+
+export type Haunt = (typeof HAUNTS)[number];
+export type HauntKind = Haunt['kind'];
+
+/** Every word the grammar uses as a keyword (lowercase), including every haunt word. */
 export const KEYWORDS: ReadonlySet<string> = new Set([
+  ...HAUNTS.flatMap((h): readonly string[] => h.words),
   'on', 'end',
   'go', 'to', 'next', 'prev', 'first', 'last', 'card',
   'visual', 'effect', 'dissolve', 'wipe', 'left', 'right', 'iris', 'open', 'close',
