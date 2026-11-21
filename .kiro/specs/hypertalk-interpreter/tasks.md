@@ -48,12 +48,12 @@
   - [x] 6.4 `haunt(kind: HauntKind): Promise<void>` in the `Host` interface. The fake host adds `{ call: 'haunt', kind }` to its call log, changes no card, field or visibility state, and resolves at once.
   - _Requirements: R10, R11.4–R11.6, R11.8, R15.2, R15.3_
 
-- [ ] 7. Runtime: expressions and variables
-  - [ ] 7.1 `evaluate` for all expression forms, with runtime errors that carry lines.
-  - [ ] 7.2 Frames, locals, globals, `global` statement, `it`.
-  - [ ] 7.3 Example tests: operators, precedence, `&` vs `&&`, division by zero, non-numeric arithmetic, comparison rules, `contains`, boolean operators.
-  - [ ] 7.4 `bool` evaluation gives the strings `"true"` and `"false"`. Example test: with the `ask` reply `yes`, the script `put it is "yes" into correct` followed by `if correct is true then` takes the then branch; with the reply `no` it takes the else branch.
-  - [ ] 7.5 Runtime check of an `else if` chain: only the first true branch runs, the final `else` runs when none is true, and a non-boolean condition in an `else if` reports the line of that `else if`.
+- [x] 7. Runtime: expressions and variables
+  - [x] 7.1 `evaluate` for all expression forms, with runtime errors that carry lines.
+  - [x] 7.2 Frames, locals, globals, `global` statement, `it`.
+  - [x] 7.3 Example tests: operators, precedence, `&` vs `&&`, division by zero, non-numeric arithmetic, comparison rules, `contains`, boolean operators.
+  - [x] 7.4 `bool` evaluation gives the strings `"true"` and `"false"`. Example test: with the `ask` reply `yes`, the script `put it is "yes" into correct` followed by `if correct is true then` takes the then branch; with the reply `no` it takes the else branch.
+  - [x] 7.5 Runtime check of an `else if` chain: only the first true branch runs, the final `else` runs when none is true, and a non-boolean condition in an `else if` reports the line of that `else if`.
   - _Requirements: R8, R9.4, R9.6, R11_
 
 - [ ] 8. Runtime: statements
