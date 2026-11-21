@@ -66,14 +66,14 @@
   - [x] 8.7 `haunt`: `await ctx.host.haunt(stmt.kind)` and nothing else. Example tests: running each of the four haunts adds exactly one haunt call with its kind to the call log. After a haunt, the current card, fields, visibility, a local, a global and `it` are unchanged. With a host whose `haunt` promise is resolved by the test, the next statement does not run until it resolves.
   - _Requirements: R4, R5, R6, R7, R9, R12.3, R15.2, R15.3_
 
-- [ ] 9. Runtime: navigation, effects, openCard
-  - [ ] 9.1 `go` for next, prev, first, last, with wrap-around.
-  - [ ] 9.2 `go to card` by number, by numeric string and by name, failure leaves the card unchanged. Example test: `ask` replies `3`, then `go to card it` reaches card 3; reply `2.5` and a missing name are errors on the `go` line.
-  - [ ] 9.2a After a successful `go`, later statements in the same handler resolve `field`, `show` and `hide` names on the new card (example test with the same field name on two cards).
-  - [ ] 9.3 Visual effect: pending effect used by the next `go`, cleared on failure and at the end of the run.
-  - [ ] 9.3a Example test: with a haunt between `visual effect dissolve` and `go to next card`, the `go` still plays `dissolve`.
-  - [ ] 9.4 `openCard` after `go` (also when the target is the current card), nested errors with `scriptId` and own line, the move kept after an `openCard` error, depth limit of 16.
-  - [ ] 9.5 **Property P2** (navigation) with all three outcomes, with example tests for both wraps, for a failing go leaving the card unchanged, and for an `openCard` error keeping the move.
+- [x] 9. Runtime: navigation, effects, openCard
+  - [x] 9.1 `go` for next, prev, first, last, with wrap-around.
+  - [x] 9.2 `go to card` by number, by numeric string and by name, failure leaves the card unchanged. Example test: `ask` replies `3`, then `go to card it` reaches card 3; reply `2.5` and a missing name are errors on the `go` line.
+  - [x] 9.2a After a successful `go`, later statements in the same handler resolve `field`, `show` and `hide` names on the new card (example test with the same field name on two cards).
+  - [x] 9.3 Visual effect: pending effect used by the next `go`, cleared on failure and at the end of the run.
+  - [x] 9.3a Example test: with a haunt between `visual effect dissolve` and `go to next card`, the `go` still plays `dissolve`.
+  - [x] 9.4 `openCard` after `go` (also when the target is the current card), nested errors with `scriptId` and own line, the move kept after an `openCard` error, depth limit of 16.
+  - [x] 9.5 **Property P2** (navigation) with all three outcomes, with example tests for both wraps, for a failing go leaving the card unchanged, and for an `openCard` error keeping the move.
   - _Requirements: R2, R3, R12.5, R14, R15.3, P2_
 
 - [ ] 10. Remaining properties

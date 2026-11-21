@@ -2,13 +2,19 @@
 // The runtime reaches the stack and the person only through ctx.host (R10.1). It has no clock,
 // no randomness and no network (R13), so the same inputs always give the same run (P3).
 
-import type { BinOp, Expr, HandlerName, Pos, Stmt } from './ast';
-import { RuntimeAbort, runtimeError } from './errors';
-import type { RunContext, RunResult } from './host';
+import type { BinOp, Effect, Expr, GoTarget, HandlerName, Pos, Stmt } from './ast';
+import { RuntimeAbort, runtimeError, type ScriptError } from './errors';
+import type { CardRef, RunContext, RunResult } from './host';
 import { parse } from './parser';
 import { asBool, compare, quoteValue, toNumber, toStr, type Value } from './values';
 
-/** The variables of one handler run. Keys are lower-cased, because names ignore case (R1.8). */
+/**
+ * How many openCard handlers a chain of `go` commands may start one inside the other (R14.4).
+ * The run the caller starts is depth 0, so a `go` in an openCard at depth 16 is an error.
+ */
+export const MAX_OPEN_CARD_DEPTH = 16;
+
+/** The state of one handler run. Variable keys are lower-cased, because names ignore case (R1.8). */
 export interface Frame {
   /** Variables of this run only (R8.1). `it` lives here unless it is declared global (R8.3). */
   locals: Map<string, Value>;
@@ -16,23 +22,39 @@ export interface Frame {
   globalNames: Set<string>;
   /** Line of the statement being run, so an unexpected exception still names a line (R12.1). */
   line: number;
+  /**
+   * The effect the next `go` plays (R3.2). It lives in the frame, so it ends with the run
+   * that set it (R3.5), and an openCard handler starts without one.
+   */
+  pendingEffect: Effect | undefined;
+  /** 0 for the run the caller starts, one more for each openCard a `go` starts (R14.4). */
+  depth: number;
+}
+
+/** Stops the run with an error that an openCard handler of another card raised (R12.5). */
+class OpenCardAbort {
+  constructor(readonly error: ScriptError) {}
 }
 
 /**
  * Parses `source` and runs one of its handlers. A syntax error is returned as the result,
  * and a handler the script does not define does nothing (R1.7, R12.3).
  */
-export async function runHandler(source: string, handler: HandlerName, ctx: RunContext): Promise<RunResult> {
+export function runHandler(source: string, handler: HandlerName, ctx: RunContext): Promise<RunResult> {
+  return run(source, handler, ctx, 0);
+}
+
+async function run(source: string, handler: HandlerName, ctx: RunContext, depth: number): Promise<RunResult> {
   const parsed = parse(source);
   if (!parsed.ok) return parsed;
   const found = parsed.script.handlers.find((h) => h.name === handler);
   if (!found) return { ok: true };
-  const frame: Frame = { locals: new Map(), globalNames: new Set(), line: found.pos.line };
+  const frame: Frame = { locals: new Map(), globalNames: new Set(), line: found.pos.line, pendingEffect: undefined, depth };
   try {
     await executeAll(found.body, frame, ctx);
     return { ok: true };
   } catch (e) {
-    if (e instanceof RuntimeAbort) return { ok: false, error: e.error };
+    if (e instanceof RuntimeAbort || e instanceof OpenCardAbort) return { ok: false, error: e.error };
     // A bug, or a host that throws or rejects: still an error on the line being run, never a throw.
     return { ok: false, error: runtimeError(frame.line, exceptionMessage(e)) };
   }
@@ -92,11 +114,76 @@ export async function execute(stmt: Stmt, frame: Frame, ctx: RunContext): Promis
       await executeAll(branch, frame, ctx);
       return;
     }
-    case 'go':
     case 'effect':
-      // Implemented by task 9.
-      return fail(stmt.pos, 'this command cannot run yet');
+      // A second effect before a go replaces the first (R3.4).
+      frame.pendingEffect = stmt.effect;
+      return;
+    case 'go':
+      await go(stmt, frame, ctx);
+      return;
   }
+}
+
+/**
+ * Moves to the target card with the pending effect, then runs that card's openCard (R2, R3, R14).
+ * A target that does not exist is an error on the go line before anything changes (R2.4).
+ * An error in the openCard ends this run too, and the move is kept (R12.3, R12.5).
+ */
+async function go(stmt: Extract<Stmt, { t: 'go' }>, frame: Frame, ctx: RunContext): Promise<void> {
+  // The effect belongs to this go: played when it moves, dropped when it fails (R3.2, R3.3).
+  const effect = frame.pendingEffect;
+  frame.pendingEffect = undefined;
+  const card = targetCard(stmt.target, stmt.pos, frame, ctx);
+  if (frame.depth >= MAX_OPEN_CARD_DEPTH) {
+    fail(stmt.pos, `cannot go on: openCard handlers can chain at most ${MAX_OPEN_CARD_DEPTH} levels deep`);
+  }
+  ctx.host.goToCard(card, effect);
+  // Going to the current card still opens it (R2.5). Fresh locals, the same globals (R14.2).
+  const opened = await run(
+    ctx.host.getCardScript(card),
+    'openCard',
+    { host: ctx.host, globals: ctx.globals, scriptId: card.id },
+    frame.depth + 1,
+  );
+  // The innermost card that failed names itself; outer levels pass its error on unchanged.
+  if (!opened.ok) throw new OpenCardAbort({ ...opened.error, scriptId: opened.error.scriptId ?? card.id });
+}
+
+/** The card a go target names. The host is asked each time; the runtime keeps no card state. */
+function targetCard(target: GoTarget, at: Pos, frame: Frame, ctx: RunContext): CardRef {
+  if (target.k === 'card') {
+    const v = evaluate(target.expr, frame, ctx);
+    // A number, or a string that looks like one, is a card number; any other string is a name (R2.3).
+    const n = toNumber(v);
+    if (n !== undefined) {
+      if (!Number.isInteger(n)) fail(at, `expected a whole card number, but got ${quoteValue(v)}`);
+      return cardNumber(n, ctx.host.cardCount(), at, ctx);
+    }
+    if (v === '') fail(at, 'expected a card number or name, but got an empty value');
+    const named = ctx.host.findCardByName(toStr(v));
+    if (!named) fail(at, `there is no card named ${quoteValue(v)}`);
+    return named;
+  }
+  const count = ctx.host.cardCount();
+  switch (target.k) {
+    case 'first':
+      return cardNumber(1, count, at, ctx);
+    case 'last':
+      return cardNumber(count, count, at, ctx);
+    case 'next':
+      // The last card wraps to the first, and the first to the last (R2.2).
+      return cardNumber((ctx.host.currentCard().index % count) + 1, count, at, ctx);
+    case 'prev': {
+      const index = ctx.host.currentCard().index;
+      return cardNumber(index === 1 ? count : index - 1, count, at, ctx);
+    }
+  }
+}
+
+function cardNumber(n: number, count: number, at: Pos, ctx: RunContext): CardRef {
+  const card = n >= 1 && n <= count ? ctx.host.cardAt(n) : undefined;
+  if (!card) fail(at, `there is no card ${quoteValue(n)}: the stack has ${count} card${count === 1 ? '' : 's'}`);
+  return card;
 }
 
 /** `into` replaces the text, `after` appends, `before` prepends (R5.2). A missing field is an error (R5.4). */

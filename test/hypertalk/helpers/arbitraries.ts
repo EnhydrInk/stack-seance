@@ -467,3 +467,180 @@ export const mutantArb: fc.Arbitrary<Mutant> = fc
     return { original, mutations, source: mutations.reduce(applyMutation, original) };
   });
 
+// ---- stacks and go targets (P2) -------------------------------------------------
+// A stack is 1..20 cards with unique names. Each card's script is empty, valid, has a
+// runtime error in openCard, or has a syntax error, so every outcome of P2 comes up.
+
+/** What a card's script does when its openCard runs. */
+export type CardScriptKind = 'empty' | 'valid' | 'runtimeError' | 'syntaxError';
+
+export interface GenCardScript {
+  script: string;
+  kind: CardScriptKind;
+  /** For the two error kinds: the line the error names. */
+  errorLine?: number;
+}
+
+export interface GenCard extends GenCardScript {
+  name: string;
+}
+
+export interface GenStack {
+  cards: GenCard[];
+  /** 1-based index of the current card. */
+  current: number;
+}
+
+/** Letters only, so a card name never looks like a number (R2.3). */
+export const cardNameArb = fc.stringMatching(/^[A-Z][a-z]{0,7}$/);
+
+/** Has a space and a digit, so it is never a card name from cardNameArb, and never looks numeric. */
+const missingNameArb = fc.oneof(fc.stringMatching(/^[A-Za-z]{1,6} [0-9]$/), fc.constant(''));
+
+/** Scripts whose openCard (if any) runs without an error and stays on its card. */
+const VALID_CARD_SCRIPTS: readonly string[] = [
+  'on openCard\n  howl\nend openCard',
+  '-- counts visits\non openCard\n  global visits\n  put visits & "*" into visits\nend openCard\n',
+  // The effect dies with this openCard run (R3.5).
+  'on openCard\n  visual effect dissolve\n  put "seen" into x\nend openCard',
+  // No openCard handler, so going here runs nothing (R1.7).
+  'on mouseUp\n  go to next card\nend mouseUp',
+  'on openCard\nend openCard',
+  '-- nothing happens on this card\n',
+];
+
+const FILLER_LINES: readonly string[] = ['put 1 into x', 'howl', 'global visits', '-- a comment', ''];
+
+/** Each fails at run time on its own line. None moves: a failing go leaves the card alone. */
+const RUNTIME_ERROR_LINES: readonly string[] = [
+  'put 1 / 0 into x',
+  'put "ghost" + 1 into x',
+  'put field "missing" into x',
+  'hide button "missing"',
+  'wait "soon" seconds',
+  'if "maybe" then howl',
+  'go to card 99',
+  'go to card "Nowhere 7"',
+];
+
+/** Each is a syntax error on its own line (lexer or parser). */
+const SYNTAX_ERROR_LINES: readonly string[] = [
+  'go nowhere',
+  'put 1 into true',
+  'summon cat',
+  'put "unclosed into x',
+  'put 1 < 2 < 3 into x',
+  'answer "a" with "b" or "c" or "d" or "e"',
+  'end mouseUp',
+  'put -5 into x',
+  'x = 1',
+];
+
+/** An openCard handler with one bad line among valid ones, and the line number of the bad one. */
+function brokenScriptArb(kind: 'runtimeError' | 'syntaxError'): fc.Arbitrary<GenCardScript> {
+  return fc
+    .tuple(
+      fc.array(fc.constantFrom('-- notes', ''), { maxLength: 2 }),
+      fc.array(fc.constantFrom(...FILLER_LINES), { maxLength: 3 }),
+      fc.constantFrom(...(kind === 'runtimeError' ? RUNTIME_ERROR_LINES : SYNTAX_ERROR_LINES)),
+      fc.array(fc.constantFrom(...FILLER_LINES), { maxLength: 2 }),
+      fc.boolean(),
+    )
+    .map(([head, before, bad, after, finalBreak]): GenCardScript => {
+      const body = [...before, bad, ...after].map((l) => `  ${l}`);
+      const lines = [...head, 'on openCard', ...body, 'end openCard'];
+      return { script: lines.join('\n') + (finalBreak ? '\n' : ''), kind, errorLine: head.length + 2 + before.length };
+    });
+}
+
+export const cardScriptArb: fc.Arbitrary<GenCardScript> = fc.oneof(
+  fc.constant<GenCardScript>({ script: '', kind: 'empty' }),
+  fc.constantFrom(...VALID_CARD_SCRIPTS).map((script): GenCardScript => ({ script, kind: 'valid' })),
+  brokenScriptArb('runtimeError'),
+  brokenScriptArb('syntaxError'),
+);
+
+export const stackArb: fc.Arbitrary<GenStack> = fc
+  .uniqueArray(fc.tuple(cardNameArb, cardScriptArb), {
+    minLength: 1,
+    maxLength: 20,
+    selector: ([name]) => name.toLowerCase(),
+  })
+  .chain((entries) => {
+    const cards = entries.map(([name, s]): GenCard => ({ name, ...s }));
+    // The first and the last card come up often, so both wraps do too.
+    const current = fc.oneof(fc.constant(1), fc.constant(cards.length), fc.integer({ min: 1, max: cards.length }));
+    return current.map((c): GenStack => ({ cards, current: c }));
+  });
+
+/** How a string target reaches the go: as a literal, or as the reply to `ask` in `it` (R2.3). */
+export type Via = 'literal' | 'ask';
+
+export type GoCase =
+  | { k: 'nav'; nav: NavTarget }
+  /** A number value: a literal, or `(0 - n)` for a negative one (there is no unary minus). */
+  | { k: 'number'; n: number }
+  /** A string that looks like a number (R11.4), such as " 3 ", "007", "3.0" or "2.5". */
+  | { k: 'numericString'; text: string; n: number; whole: boolean; via: Via }
+  /** A name of a card in the stack in random case, or a name no card has. */
+  | { k: 'name'; name: string; via: Via };
+
+const viaArb = fc.constantFrom<Via>('literal', 'ask');
+
+const numericStringArb = fc
+  .tuple(
+    fc.integer({ min: -5, max: 30 }),
+    fc.constantFrom('', '.0', '.5'),
+    fc.constantFrom('plain', 'padded', 'zeros'),
+    viaArb,
+  )
+  .map(([n, fraction, style, via]): GoCase => {
+    const digits = style === 'zeros' ? `00${Math.abs(n)}` : `${Math.abs(n)}`;
+    const number = `${n < 0 ? '-' : ''}${digits}${fraction}`;
+    const text = style === 'padded' ? ` ${number} ` : number;
+    return { k: 'numericString', text, n, whole: fraction !== '.5', via };
+  });
+
+/** Go targets for a stack: the four named ones, integers from -5 to 30, numeric strings, names. */
+export function goCaseArb(stack: GenStack): fc.Arbitrary<GoCase> {
+  const names = stack.cards.map((c) => c.name);
+  return fc.oneof(
+    fc.constantFrom<NavTarget>(...NAV).map((nav): GoCase => ({ k: 'nav', nav })),
+    fc.integer({ min: -5, max: 30 }).map((n): GoCase => ({ k: 'number', n })),
+    numericStringArb,
+    fc.tuple(fc.mixedCase(fc.constantFrom(...names)), viaArb).map(([name, via]): GoCase => ({ k: 'name', name, via })),
+    fc.tuple(missingNameArb, viaArb).map(([name, via]): GoCase => ({ k: 'name', name, via })),
+  );
+}
+
+export const navCaseArb: fc.Arbitrary<{ stack: GenStack; target: GoCase }> = stackArb.chain((stack) =>
+  goCaseArb(stack).map((target) => ({ stack, target })),
+);
+
+export interface GoScript {
+  /** A mouseUp handler whose last command is the go. */
+  source: string;
+  /** Replies for the fake host: the text that `ask` returns. */
+  replies: string[];
+  goLine: number;
+}
+
+export function goScript(target: GoCase): GoScript {
+  const handler = (lines: string[]) => ['on mouseUp', ...lines.map((l) => `  ${l}`), 'end mouseUp'].join('\n');
+  switch (target.k) {
+    case 'nav':
+      return { source: handler([`go to ${target.nav} card`]), replies: [], goLine: 2 };
+    case 'number': {
+      const expr = target.n < 0 ? `(0 - ${-target.n})` : `${target.n}`;
+      return { source: handler([`go to card ${expr}`]), replies: [], goLine: 2 };
+    }
+    case 'numericString':
+    case 'name': {
+      const text = target.k === 'name' ? target.name : target.text;
+      if (target.via === 'ask') {
+        return { source: handler(['ask "Which card?"', 'go to card it']), replies: [text], goLine: 3 };
+      }
+      return { source: handler([`go to card "${text}"`]), replies: [], goLine: 2 };
+    }
+  }
+}
