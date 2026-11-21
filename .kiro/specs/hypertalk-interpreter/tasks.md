@@ -76,11 +76,11 @@
   - [x] 9.5 **Property P2** (navigation) with all three outcomes, with example tests for both wraps, for a failing go leaving the card unchanged, and for an `openCard` error keeping the move.
   - _Requirements: R2, R3, R12.5, R14, R15.3, P2_
 
-- [ ] 10. Remaining properties
-  - [ ] 10.1 **Property P3** (determinism) using `fakeHost.clone()` and the script and stack arbitraries.
-  - [ ] 10.1a P3 scripts include haunt statements (4.2a), and the compared call logs include the haunt calls with their kinds.
-  - [ ] 10.2 **Property P5** (runtime error lines). First apply `clampLine` to runtime errors at the public boundary in `runHandler` (design: last guard), then run P5 against an unguarded entry point, as P4 does with `parseUnguarded`, so the guard cannot hide a wrong line. Add a check that the guarded and unguarded results agree.
-  - [ ] 10.3 **Property P6** (global sharing).
+- [x] 10. Remaining properties
+  - [x] 10.1 **Property P3** (determinism) using `fakeHost.clone()` and the script and stack arbitraries.
+  - [x] 10.1a P3 scripts include haunt statements (4.2a), and the compared call logs include the haunt calls with their kinds.
+  - [x] 10.2 **Property P5** (runtime error lines). First apply `clampLine` to runtime errors at the public boundary in `runHandler` (design: last guard), then run P5 against an unguarded entry point, as P4 does with `parseUnguarded`, so the guard cannot hide a wrong line. Add a check that the guarded and unguarded results agree.
+  - [x] 10.3 **Property P6** (global sharing).
   - _Requirements: R8.2, R12.1, R15.2, P3, P5, P6_
 
 - [ ] 11. No network or LLM

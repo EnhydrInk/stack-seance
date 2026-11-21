@@ -5,6 +5,8 @@
 import fc from 'fast-check';
 import type { BinOp, Effect, Expr, HandlerName, IfStmt, NavTarget, Script, Stmt, WithoutPos } from '../../../src/hypertalk/ast';
 import { HAUNTS, isReserved } from '../../../src/hypertalk/tokens';
+import type { Value } from '../../../src/hypertalk/values';
+import type { FakeCardInit, FakeHostInit, Reply } from './fakeHost';
 
 export type E = WithoutPos<Expr>;
 export type S = WithoutPos<Stmt>;
@@ -644,3 +646,208 @@ export function goScript(target: GoCase): GoScript {
     }
   }
 }
+
+// ---- runnable sessions (P3, P5) ---------------------------------------------------
+// A session is a stack whose cards have fields, buttons and scripts, the globals so far,
+// a list of dialog replies, and a mouseUp script to run. The script mostly names fields,
+// buttons, cards and variables that exist, and mostly computes with values of the right
+// type, so most runs get past their first commands. Sometimes it names a missing item or
+// mixes types, so runs also fail (design: "Testing strategy").
+
+export const FIELD_NAMES: readonly string[] = ['score', 'Note', 'out'];
+export const BUTTON_NAMES: readonly string[] = ['Door', 'lamp'];
+/** Few names, so globals, locals and `it` meet. `visits` is also a global in VALID_CARD_SCRIPTS. */
+export const VARIABLE_NAMES: readonly string[] = ['x', 'N', 'it', 'visits'];
+
+/** No field, button or card in a session has this name (card names have no space or digit). */
+const MISSING_NAME = 'Nowhere 7';
+
+/** One of `names` in random case, or now and then a name that does not exist. */
+const someNameArb = (names: readonly string[]): fc.Arbitrary<string> =>
+  fc.oneof(
+    { weight: 12, arbitrary: fc.mixedCase(fc.constantFrom(...names)) },
+    { weight: 1, arbitrary: fc.constant(MISSING_NAME) },
+  );
+
+const smallNumberArb = fc.oneof(fc.integer({ min: 0, max: 20 }), fc.integer({ min: 0, max: 999 }).map((n) => n / 10));
+
+const num = (value: number): E => ({ t: 'num', value });
+const bin = ([op, left, right]: [BinOp, E, E]): E => ({ t: 'bin', op, left, right });
+const runVarArb = fc.mixedCase(fc.constantFrom(...VARIABLE_NAMES)).map((name): E => ({ t: 'var', name }));
+const runFieldArb = someNameArb(FIELD_NAMES).map((name): E => ({ t: 'field', name }));
+
+/**
+ * Expressions by the type they mostly give. Variables and fields can hold anything, so
+ * an arithmetic or boolean operator on them sometimes fails, as it should for P5.
+ * The first alternative of each is a leaf, because oneof falls back to it at maxDepth.
+ */
+const typedExprArb = fc.letrec<{ num: E; value: E; bool: E }>((tie) => ({
+  num: fc.oneof(
+    { maxDepth: 2, depthIdentifier: 'typed' },
+    { weight: 4, arbitrary: smallNumberArb.map(num) },
+    { weight: 1, arbitrary: runVarArb },
+    { weight: 1, arbitrary: runFieldArb },
+    { weight: 2, arbitrary: fc.tuple(fc.constantFrom<BinOp>('+', '-', '*', '/'), tie('num'), tie('num')).map(bin) },
+  ),
+  value: fc.oneof(
+    { maxDepth: 2, depthIdentifier: 'typed' },
+    { weight: 3, arbitrary: textArb.map((value): E => ({ t: 'str', value })) },
+    { weight: 2, arbitrary: tie('num') },
+    { weight: 2, arbitrary: runVarArb },
+    { weight: 2, arbitrary: runFieldArb },
+    { weight: 2, arbitrary: fc.tuple(fc.constantFrom<BinOp>('&', '&&'), tie('value'), tie('value')).map(bin) },
+  ),
+  bool: fc.oneof(
+    { maxDepth: 2, depthIdentifier: 'typed' },
+    { weight: 2, arbitrary: fc.boolean().map((value): E => ({ t: 'bool', value })) },
+    {
+      weight: 4,
+      arbitrary: fc
+        .tuple(fc.constantFrom<BinOp>('is', 'isNot', '<', '>', '<=', '>=', 'contains'), tie('value'), tie('value'))
+        .map(bin),
+    },
+    { weight: 1, arbitrary: tie('bool').map((operand): E => ({ t: 'not', operand })) },
+    { weight: 1, arbitrary: fc.tuple(fc.constantFrom<BinOp>('and', 'or'), tie('bool'), tie('bool')).map(bin) },
+  ),
+}));
+
+/** go to a named target, to a card number (0 and count + 1 are missing), to a card name, or to `it`. */
+function runnableGoArb(cards: readonly string[]): fc.Arbitrary<S> {
+  const toCard = (expr: E): S => ({ t: 'go', target: { k: 'card', expr } });
+  return fc.oneof(
+    { weight: 3, arbitrary: fc.constantFrom(...NAV).map((k): S => ({ t: 'go', target: { k } })) },
+    { weight: 2, arbitrary: fc.integer({ min: 0, max: cards.length + 1 }).map((n) => toCard(num(n))) },
+    { weight: 2, arbitrary: someNameArb(cards).map((value) => toCard({ t: 'str', value })) },
+    { weight: 1, arbitrary: fc.constant(toCard({ t: 'var', name: 'it' })) },
+  );
+}
+
+/** Every command but if. With `cards` null there is no go. */
+function runnableSimpleArb(cards: readonly string[] | null): fc.Arbitrary<S> {
+  const varName = fc.mixedCase(fc.constantFrom(...VARIABLE_NAMES));
+  const item = fc.oneof(
+    someNameArb(BUTTON_NAMES).map((name) => ({ kind: 'button' as const, name })),
+    someNameArb(FIELD_NAMES).map((name) => ({ kind: 'field' as const, name })),
+  );
+  const commands: fc.Arbitrary<S>[] = [
+    fc.constantFrom(...EFFECTS).map((effect): S => ({ t: 'effect', effect })),
+    fc
+      .tuple(typedExprArb.value, fc.array(textArb, { maxLength: 3 }))
+      .map(([prompt, labels]): S => ({ t: 'answer', prompt, labels })),
+    typedExprArb.value.map((prompt): S => ({ t: 'ask', prompt })),
+    fc
+      .tuple(typedExprArb.value, fc.constantFrom<'into' | 'after' | 'before'>('into', 'after', 'before'), someNameArb(FIELD_NAMES))
+      .map(([value, mode, field]): S => ({ t: 'putField', value, mode, field })),
+    fc.tuple(typedExprArb.value, varName).map(([value, name]): S => ({ t: 'putVar', value, name })),
+    fc
+      .tuple(fc.constantFrom<'show' | 'hide'>('show', 'hide'), item)
+      .map(([t, { kind, name }]): S => ({ t, kind, name })),
+    typedExprArb.num.map((seconds): S => ({ t: 'wait', seconds })),
+    fc.array(varName, { minLength: 1, maxLength: 2 }).map((names): S => ({ t: 'global', names })),
+    fc.constantFrom(...HAUNTS.map((h) => h.kind)).map((kind): S => ({ t: 'haunt', kind })),
+  ];
+  if (cards) commands.push(runnableGoArb(cards));
+  return fc.oneof(...commands);
+}
+
+/** Commands with if blocks and else-if chains nested at most `depth` deep. */
+function runnableStmtArb(cards: readonly string[] | null, depth: number): fc.Arbitrary<S> {
+  const simple = runnableSimpleArb(cards);
+  if (depth <= 0) return simple;
+  const body = fc.array(runnableStmtArb(cards, depth - 1), { maxLength: 3 });
+  const cond = typedExprArb.bool;
+  const plainIf = fc.tuple(cond, body, body).map(([c, then, els]): S => ({ t: 'if', cond: c, then, else: els }));
+  const chainIf = fc
+    .tuple(cond, body, fc.array(fc.tuple(cond, body), { minLength: 1, maxLength: 2 }), fc.option(body))
+    .map(([c, then, links, last]): S => chain(c, then, links, last));
+  return fc.oneof(
+    { weight: 4, arbitrary: simple },
+    { weight: 1, arbitrary: plainIf },
+    { weight: 1, arbitrary: chainIf },
+  );
+}
+
+/** A mouseUp handler of 1 to 6 commands for a stack with these card names. */
+export function runnableScriptArb(cards: readonly string[]): fc.Arbitrary<Sc> {
+  return fc
+    .array(runnableStmtArb(cards, 2), { minLength: 1, maxLength: 6 })
+    .map((body): Sc => ({ handlers: [{ name: 'mouseUp', body }] }));
+}
+
+/**
+ * openCard handlers that go on at once, so a go can start a chain of them up to the
+ * depth limit (R14.4). Each has one go, so a chain stays a line and never fans out.
+ */
+const CHAINING_CARD_SCRIPTS: readonly string[] = [
+  'on openCard\n  go to next card\nend openCard',
+  '-- back again\non openCard\n  visual effect dissolve\n\n  go to prev card\nend openCard\n',
+];
+
+/** Generated openCard handlers have no go, for the same reason. */
+const runnableOpenCardArb = fc
+  .tuple(fc.array(runnableStmtArb(null, 1), { minLength: 1, maxLength: 4 }), fc.integer())
+  .map(([body, seed]) => renderScript({ handlers: [{ name: 'openCard', body }] }, seed));
+
+const sessionCardScriptArb: fc.Arbitrary<string> = fc.oneof(
+  cardScriptArb.map((s) => s.script),
+  fc.constantFrom(...CHAINING_CARD_SCRIPTS),
+  runnableOpenCardArb,
+);
+
+/** Each of `arbs` or, one time in ten, nothing, in order. */
+const mostOf = <T>(arbs: fc.Arbitrary<T>[]): fc.Arbitrary<T[]> =>
+  fc
+    .tuple(...arbs.map((a) => fc.option(a, { nil: undefined, freq: 10 })))
+    .map((xs) => xs.filter((x): x is T => x !== undefined));
+
+const fieldTextArb = fc.oneof(fc.constantFrom('', '0', '3', '-2', '2.5', ' 7 ', 'true'), textArb);
+
+const cardItemsArb = fc.record({
+  fields: mostOf(FIELD_NAMES.map((name) => fc.record({ name: fc.constant(name), text: fieldTextArb, visible: fc.boolean() }))),
+  buttons: mostOf(BUTTON_NAMES.map((name) => fc.record({ name: fc.constant(name), visible: fc.boolean() }))),
+});
+
+/** Typed text, a card number or name for `go to card it`, a boolean, or Cancel. */
+const replyArb = (cards: readonly string[]): fc.Arbitrary<Reply> =>
+  fc.option(
+    fc.oneof(textArb, fc.constantFrom('1', '2', ' 3 ', '-1', '2.5', 'true', 'false'), fc.mixedCase(fc.constantFrom(...cards))),
+    { nil: null },
+  );
+
+const globalsArb: fc.Arbitrary<[string, Value][]> = fc.uniqueArray(
+  fc.tuple(fc.constantFrom(...VARIABLE_NAMES.map((n) => n.toLowerCase())), fc.oneof(textArb, smallNumberArb)),
+  { maxLength: 3, selector: ([key]) => key },
+);
+
+export interface Session {
+  /** 1 to 8 cards with unique names, fields, buttons and scripts, the current card, and the replies. */
+  host: FakeHostInit;
+  /** The global store before the run, keys lower-cased. */
+  globals: [string, Value][];
+  /** The mouseUp script to run, rendered with random case, spacing, comments and blank lines. */
+  source: string;
+}
+
+export const sessionArb: fc.Arbitrary<Session> = fc
+  .uniqueArray(fc.tuple(cardNameArb, sessionCardScriptArb, cardItemsArb), {
+    minLength: 1,
+    maxLength: 8,
+    selector: ([name]) => name.toLowerCase(),
+  })
+  .chain((entries) => {
+    const names = entries.map(([name]) => name);
+    const cards = entries.map(([name, script, items]): FakeCardInit => ({ name, script, ...items }));
+    return fc
+      .record({
+        current: fc.integer({ min: 1, max: cards.length }),
+        script: runnableScriptArb(names),
+        seed: fc.integer(),
+        replies: fc.array(replyArb(names), { maxLength: 4 }),
+        globals: globalsArb,
+      })
+      .map(({ current, script, seed, replies, globals }): Session => ({
+        host: { cards, current, replies },
+        globals,
+        source: renderScript(script, seed),
+      }));
+  });

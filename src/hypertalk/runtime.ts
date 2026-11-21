@@ -3,9 +3,9 @@
 // no randomness and no network (R13), so the same inputs always give the same run (P3).
 
 import type { BinOp, Effect, Expr, GoTarget, HandlerName, Pos, Stmt } from './ast';
-import { RuntimeAbort, runtimeError, type ScriptError } from './errors';
+import { clampLine, lineCount, RuntimeAbort, runtimeError, type ScriptError } from './errors';
 import type { CardRef, RunContext, RunResult } from './host';
-import { parse } from './parser';
+import { parseUnguarded } from './parser';
 import { asBool, compare, quoteValue, toNumber, toStr, type Value } from './values';
 
 /**
@@ -31,22 +31,46 @@ export interface Frame {
   depth: number;
 }
 
+/**
+ * How a run ended. A failure keeps the line count of the script its error comes from,
+ * which is another card's script when an openCard failed (R12.5), for the line guard.
+ */
+type Ran = { ok: true } | { ok: false; error: ScriptError; lines: number };
+
 /** Stops the run with an error that an openCard handler of another card raised (R12.5). */
 class OpenCardAbort {
-  constructor(readonly error: ScriptError) {}
+  constructor(
+    readonly error: ScriptError,
+    /** Line count of the card script the error comes from. */
+    readonly lines: number,
+  ) {}
 }
 
 /**
  * Parses `source` and runs one of its handlers. A syntax error is returned as the result,
  * and a handler the script does not define does nothing (R1.7, R12.3).
+ * Error lines are forced into the script they come from as a last guard (P5).
  */
-export function runHandler(source: string, handler: HandlerName, ctx: RunContext): Promise<RunResult> {
-  return run(source, handler, ctx, 0);
+export async function runHandler(source: string, handler: HandlerName, ctx: RunContext): Promise<RunResult> {
+  const ran = await run(source, handler, ctx, 0);
+  if (ran.ok) return ran;
+  return { ok: false, error: { ...ran.error, line: clampLine(ran.error.line, ran.lines) } };
 }
 
-async function run(source: string, handler: HandlerName, ctx: RunContext, depth: number): Promise<RunResult> {
-  const parsed = parse(source);
-  if (!parsed.ok) return parsed;
+/**
+ * runHandler without the line guard, here or in the parser. Not part of the public API:
+ * the P5 property test runs against it so that the guard cannot hide a wrong line.
+ */
+export async function runHandlerUnguarded(source: string, handler: HandlerName, ctx: RunContext): Promise<RunResult> {
+  const ran = await run(source, handler, ctx, 0);
+  return ran.ok ? ran : { ok: false, error: ran.error };
+}
+
+/** Parses without the guard: runHandler guards every error once, syntax errors included. */
+async function run(source: string, handler: HandlerName, ctx: RunContext, depth: number): Promise<Ran> {
+  const failed = (error: ScriptError): Ran => ({ ok: false, error, lines: lineCount(source) });
+  const parsed = parseUnguarded(source);
+  if (!parsed.ok) return failed(parsed.error);
   const found = parsed.script.handlers.find((h) => h.name === handler);
   if (!found) return { ok: true };
   const frame: Frame = { locals: new Map(), globalNames: new Set(), line: found.pos.line, pendingEffect: undefined, depth };
@@ -54,9 +78,10 @@ async function run(source: string, handler: HandlerName, ctx: RunContext, depth:
     await executeAll(found.body, frame, ctx);
     return { ok: true };
   } catch (e) {
-    if (e instanceof RuntimeAbort || e instanceof OpenCardAbort) return { ok: false, error: e.error };
+    if (e instanceof OpenCardAbort) return { ok: false, error: e.error, lines: e.lines };
+    if (e instanceof RuntimeAbort) return failed(e.error);
     // A bug, or a host that throws or rejects: still an error on the line being run, never a throw.
-    return { ok: false, error: runtimeError(frame.line, exceptionMessage(e)) };
+    return failed(runtimeError(frame.line, exceptionMessage(e)));
   }
 }
 
@@ -146,7 +171,9 @@ async function go(stmt: Extract<Stmt, { t: 'go' }>, frame: Frame, ctx: RunContex
     frame.depth + 1,
   );
   // The innermost card that failed names itself; outer levels pass its error on unchanged.
-  if (!opened.ok) throw new OpenCardAbort({ ...opened.error, scriptId: opened.error.scriptId ?? card.id });
+  if (!opened.ok) {
+    throw new OpenCardAbort({ ...opened.error, scriptId: opened.error.scriptId ?? card.id }, opened.lines);
+  }
 }
 
 /** The card a go target names. The host is asked each time; the runtime keeps no card state. */
