@@ -17,6 +17,15 @@
         "type": "agent",
         "prompt": "A spec task just finished. Append one entry to docs/kiro-log.md (create the file with a '# Kiro log' heading if it does not exist). Use this shape:\n\n## <task number and title>\n- Done: what changed (files, tests, properties), with counts.\n- Kiro: which Kiro features this task leaned on (requirement IDs from the spec, property-based tests, hooks, steering) and how.\n- Why it matters: one sentence.\n\nKeep the entry short and factual: it is raw material for the Kiroween write-up. Do not change any other file. Then stage everything and commit with the message `task <number>: <title>`."
       }
+    },
+    {
+      "name": "commit-done-tasks",
+      "trigger": "Stop",
+      "timeout": 180,
+      "action": {
+        "type": "command",
+        "command": "sh .kiro/hooks/scripts/commit-done-tasks.sh"
+      }
     }
   ]
 }
