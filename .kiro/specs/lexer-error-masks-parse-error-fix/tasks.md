@@ -1,0 +1,134 @@
+# Implementation Plan
+
+- [ ] 1. Write bug condition exploration tests
+  - **Property 1: Bug Condition** - A parse error found before the first lexer error is reported
+  - **CRITICAL**: These tests MUST FAIL on unfixed code. The failures confirm the bug exists
+  - **DO NOT attempt to fix the tests or the code when they fail**
+  - **NOTE**: These tests encode the expected behavior. They will validate the fix when they pass after implementation
+  - **GOAL**: Surface counterexamples where a script with a lexer error reports that lexer error although the parser finds a parse error in the tokens before it
+  - **Scoped PBT Approach**: The bug is deterministic. Pin the concrete repros as unit tests, and scope the property to generated shapes that satisfy the bug condition by construction
+  - Bug condition from design (`isBugCondition(s)`): `tokenize(s)` fails with L, and the grammar rules run over before(s), the tokens read before L with no eof, raise a syntax error without reading past the last of those tokens
+  - Expected behavior from design (`expectedBehavior(s, result)`): `result` is `{ ok: false, error: e }`, where `e` has the line, column and message that `parseUnguarded` gives for `textBefore(s, L)` and for the clean twin, and `e` is before L by line, then column. `parse(s)` returns the same value. `runHandler` returns `e` and makes no host call. For another card's `openCard`, the error carries that card's id as `scriptId` and no host call follows `getCardScript`
+  - Unit tests in a new `describe` block in `test/hypertalk/parser.test.ts`, each checking the whole error with `toEqual` (`kind`, `line`, `column`, `message`) through `parse`, and checking that `parseUnguarded` returns the same value. Line 1 is `on mouseUp`:
+    - Repro 1 (`put 1 into` / `answer "unclosed`): line 2, column 13, `expected a variable name after "into"`
+    - Repro 2 (`go to nxt card`, then 39 lines of `answer "ok"`, then `if x = 1 then howl` on line 42): line 2, column 9, `expected next card, prev card, first card, last card or card … after "go"`
+    - Repro 3 (`put into "x`): line 2, column 7, `expected a value but found "into", which is a reserved word`
+    - Repro 1 joined with `\r\n`: the same error as Repro 1
+    - User decision (accepted at design review, no special case for `=`): `x = 1` alone on line 2 of a `mouseUp` handler gives line 2, column 3, `unknown command "x"`. This test pins the change from today's `unexpected character "="; use "is" to compare` at column 5
+    - Lexer error at column 1 of the next line (`put 1 into` on line 2, `#` alone on line 3): line 2, column 13, `expected a variable name after "into"`
+    - Parse error in an earlier complete handler, lexer error in a later one (`on mouseUp` / `  go nowhere` / `end mouseUp` / `on openCard` / `  answer "x` / `end openCard`): line 2, column 6, `expected next card, prev card, first card, last card or card … after "go"`
+  - Runtime test in `test/hypertalk/runtime.statements.test.ts`: Repros 1 to 3 through `runHandler` with the fake host return their 2.x errors. The host call log is empty and the stack state (cards, fields, current card) is unchanged (2.4)
+  - Navigation test in `test/hypertalk/runtime.navigation.test.ts`: a two-card stack where card 1 runs `go to next card` and card 2's script is Repro 1 written as `on openCard` / `end openCard`. The result is line 2, column 13, `expected a variable name after "into"`, scriptId `card-2`. The move to card 2 is kept, and the log ends with `getCardScript` for `card-2` (2.4, R12.5)
+  - Public boundary test in `test/hypertalk/index.test.ts`: `parse` imported from `src/hypertalk/index.ts` returns the 2.x results for Repros 1 to 3 unchanged by the line guard
+  - Shape generator: create `test/hypertalk/helpers/lexMask.ts`
+    - `textBefore(source, L)`: the part of the original source before L's line and column. It walks the source counting `\r\n` as one character, so a cut never splits a `\r\n` pair and the text is normalised only once, by the lexer. Do not slice `normaliseLineBreaks(source)` instead: `'\r\r\n'` normalises to `'\r\n'`, and normalising that again moves positions
+    - A line builder that writes one `on mouseUp` or `on openCard` handler, sometimes after a complete valid handler of the other name. Lines get random indentation and keyword case, plus blank lines and valid filler. Filler includes comment lines holding `=`, `#`, `"`, curly and single quotes, strings holding `--`, one-line `if`s and closed block `if`s (3.9). The script is joined with `\n` or `\r\n`
+    - The tables `PARSE_FIRST_LINES`, `SAME_LINE_PARSE_FIRST` (`{ bad, clean }` pairs, including `x = 1` / `x is 1`) and `LEXER_LINES` (`{ bad, clean }` pairs, one per lexer error kind) with the entries listed in design "Property-Based Tests". `end if` and `else` from `PARSE_FIRST_LINES` appear only at the top level of the handler body. A `\r` is never placed at the end of a line, where it would join the line break
+    - `maskedParseErrorArb` (C holds by construction): filler first, then a target. The target is a `PARSE_FIRST_LINES` line followed by 1 to 60 lines that include 1 to 3 `LEXER_LINES` bad lines (2.1, 2.2), or one `SAME_LINE_PARSE_FIRST` bad line (2.3). Targets that do not start with `end` or `else` are sometimes wrapped in 1 or 2 block `if`s whose `end if` lines come after the lexer error or are missing. The handler's `end` line is present or missing. It yields `{ source, twin, handler, targetLine }`, where `twin` is `source` with every `bad` replaced by its `clean`
+  - Property test in a new `test/hypertalk/lexmask.property.test.ts` for `maskedParseErrorArb` (300 runs):
+    - Generator checks first: `tokenize(source)` fails, `tokenize(twin)` succeeds, and `parseUnguarded(twin)` fails on `targetLine`
+    - Then: `parseUnguarded(source)` equals `parseUnguarded(twin)` and `parseUnguarded(textBefore(source, L))`, the error is before L, `parse(source)` returns the same value, and the same script with the other line ending gives the same result
+  - Run checks in the same file for `maskedParseErrorArb` (100 runs): `runHandler(source, handler)` with a fake host returns the twin's error with an empty log. For `openCard` shapes, a two-card stack whose card 1 runs `on mouseUp` / `  go to next card` / `end mouseUp` returns that error with scriptId `card-2`, and no host call follows `getCardScript`
+  - Mutant count in the `mutation generator (P4)` block of `test/hypertalk/syntaxerror.property.test.ts`, on the existing seed-5 sample of 1,000 mutants: of the mutants where `tokenize(source)` fails, at least a quarter give a `parseUnguarded` result other than `{ ok: false, error: tokenize(source).error }`
+  - Run on UNFIXED code: `npx vitest --run test/hypertalk/parser.test.ts test/hypertalk/runtime.statements.test.ts test/hypertalk/runtime.navigation.test.ts test/hypertalk/index.test.ts test/hypertalk/lexmask.property.test.ts test/hypertalk/syntaxerror.property.test.ts`
+  - **EXPECTED OUTCOME**: The new tests FAIL (this is correct, it proves the bug exists). The generator checks inside the property pass. Counterexamples observed at commit `edef939`:
+    - Repro 1 and Repro 1 with `\r\n`: line 3, column 10, `this string has no closing quote (") on this line`
+    - Repro 2: line 42, column 8, `unexpected character "="; use "is" to compare`
+    - Repro 3: line 2, column 12, the missing-quote message
+    - `x = 1`: line 2, column 5, `unexpected character "="; use "is" to compare`
+    - Column-1 edge: line 3, column 1, `unexpected character "#"`. Two-handler edge: line 5, column 10, the missing-quote message
+    - The runtime and navigation tests return the lexer error (scriptId `card-2` for the navigation test). Their host logs already match, so only the error fails
+    - Mutant count: 0 of the 135 lexer-error mutants report a parse error (the scratch fix gives 74, or 55%)
+  - Document the counterexamples found, and whether they match the root cause in design (the early return in `parseUnguarded`, the lexer dropping its tokens on failure, and eof as the parser's only end marker)
+  - Mark the task complete when the tests are written, run, and the failures are documented
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4_
+
+- [ ] 2. Write preservation property tests (BEFORE implementing the fix)
+  - **Property 2: Preservation** - Every other script lexes, parses and runs as before
+  - **IMPORTANT**: Follow observation-first methodology. Run the unfixed code on inputs where `isBugCondition` is false, record what it returns, and assert that
+  - Non-bug condition: `NOT isBugCondition(s)`. The script has no lexer error, or the rules read past before(s) before they raise any error: the first lexer error comes before any parse error, a rule needs the token at L, or a handler or block `if` is still open at L
+  - Observe on UNFIXED code (values observed at commit `edef939`, line 1 is `on mouseUp`):
+    - 3.2: `answer "unclosed` on line 2 and `put 1 into` on line 3 give line 2, column 10, `this string has no closing quote (") on this line`
+    - 3.3: `put 1 into "x` gives line 2, column 14, the missing-quote message
+    - 3.4: `on mouseUp` / `  if a then` / `    answer "x` / `end mouseUp` gives line 3, column 12. `on mouseUp` / `  go to next card` / `end mouseUp` / `on openCard` / `  answer "x` / `end openCard` gives line 5, column 10. Neither reports a missing `end`
+    - The rule reads the token at L: `answer "a" with "b" or "c" or "d" or "e` gives line 2, column 40, the missing-quote message, not `answer can show at most 3 buttons`
+    - No tokens before L: the script `=` gives line 1, column 1, `unexpected character "="; use "is" to compare`
+    - 3.5: `answer "a`, `put 1 # 2 into x` and `wait .5 seconds` on lines 2 to 4 give only the first error, line 2, column 10
+    - 3.6: `if x = 1 then howl` gives line 2, column 8, `unexpected character "="; use "is" to compare`. `put x = 1 into y` gives line 2, column 9 with the same message. `answer “hi”` gives line 2, column 10, `unexpected character "“"; use straight quotes (")`. `answer 'hi'` gives line 2, column 10, `unexpected character "'"; strings use double quotes (")`
+    - The existing tests in `test/hypertalk/lexer.test.ts`, `test/hypertalk/lexer.property.test.ts`, `test/hypertalk/syntaxerror.property.test.ts`, `test/hypertalk/runtimeerror.property.test.ts` and the runtime suites pass
+  - Unit tests: add each observed example above to the new `describe` block in `test/hypertalk/parser.test.ts`, checking the whole error with `toEqual` through `parse` and `parseUnguarded`. Leave the existing test "passes lexer errors through with their line" (`test/hypertalk/parser.test.ts` lines 573 to 575) unchanged
+  - Navigation test in `test/hypertalk/runtime.navigation.test.ts`: the second 3.4 script as card 2's `openCard`, reached by card 1's `go to next card`, returns line 5, column 10, the missing-quote message, scriptId `card-2` (3.4)
+  - Shape generator: add to `test/hypertalk/helpers/lexMask.ts`
+    - The table `NEEDS_TOKEN_AT_L` with the entries listed in design (`put 1 into "x`, `answer "x`, `go to next card =`, `put x = 1 into y`, `wait 1 #`, `go to card 1.`, `put 'a' into x`, `if a then "x`, the four-label `answer` ending in `"e`, and `end "x` at the top level of the body)
+    - `lexerErrorFirstArb` (C does not hold by construction): filler and 0 to 3 open block `if`s first, then a `LEXER_LINES` bad line or a `NEEDS_TOKEN_AT_L` line. After it comes any mix of `PARSE_FIRST_LINES`, more lexer lines, `end if` lines and the handler's `end` line, any of which may be missing (3.2 to 3.5). It yields `{ source, handler }`
+  - Property test in `test/hypertalk/lexmask.property.test.ts` for `lexerErrorFirstArb` (300 runs): `parseUnguarded(source)` and `parse(source)` both equal `{ ok: false, error: tokenize(source).error }`, also with the other line ending (3.8), and `runHandler(source, handler)` returns that error with an empty fake host log
+  - Mutant invariant in `test/hypertalk/lexmask.property.test.ts` (500 runs over `mutantArb`): for every mutant where `tokenize(source)` fails with L, `parseUnguarded(source)` fails and returns either exactly L, or a parse error before L that equals `parseUnguarded(textBefore(source, L))`. On unfixed code the first branch always holds. Leave the P4 properties in `syntaxerror.property.test.ts` unchanged (3.10)
+  - If the unfixed code disagrees with a generated expectation, correct the generator, not the code. The unfixed code's output is the baseline
+  - Run on UNFIXED code: the new preservation tests, then the full suite with `npx vitest --run`
+  - **EXPECTED OUTCOME**: All tests PASS except the task 1 tests (this confirms the baseline behavior to preserve)
+  - Mark the task complete when the tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11_
+
+- [ ] 3. Fix the lexer error that masks an earlier parse error
+
+  - [ ] 3.1 Keep the tokens the lexer read before its first error
+    - In `src/hypertalk/lexer.ts`, add the exported interface `LexPrefix { tokens: Token[]; error: SyntaxError | undefined }` and move the body of `tokenize` (line 14) into a new exported function `tokenizeUntilError(source): LexPrefix`, with the doc comments from design
+    - `fail` (lines 21 to 24) returns `{ tokens, error: syntaxError(line, column(at), message) }`. The success path pushes eof as now and returns `{ tokens, error: undefined }`. The three `return fail(…)` sites (lines 56, 73 and 95), every lexer rule and every message stay as they are
+    - `tokenize` becomes the two-line wrapper from design: `error ? { ok: false, error } : { ok: true, tokens }`. `LexResult` does not change
+    - Do not export `tokenizeUntilError` from `src/hypertalk/index.ts`
+    - Unit tests in `test/hypertalk/lexer.test.ts`: `tokenizeUntilError('on mouseUp\n  put 1 into "x')` returns the tokens `on`, `mouseUp`, newline, `put`, `1`, `into` with their positions, no eof, and the error at line 2, column 14 with the missing-quote message. `tokenizeUntilError('=')` returns no tokens and the error at line 1, column 1. For a valid script it returns the same tokens as `tokenize`, ending with eof, and `error: undefined`
+    - Property in `test/hypertalk/lexer.property.test.ts` (1,000 runs over `scriptText`): `tokenize(s)` equals the wrapper applied to `tokenizeUntilError(s)`. When there is an error L, the tokens equal `tokenize(textBefore(s, L)).tokens` without its final eof
+    - Run `npx vitest --run test/hypertalk/lexer.test.ts test/hypertalk/lexer.property.test.ts`. They pass, and the parser is not changed yet, so the task 1 tests still fail and the task 2 tests still pass
+    - _Bug_Condition: root cause 2 in design, the lexer's `fail` discards before(s)_
+    - _Expected_Behavior: `tokenizeUntilError(s).tokens` is before(s), so the parser can run on it_
+    - _Preservation: `tokenize` returns the same tokens or the same first error for every input (3.7); `\r\n` and comment handling are unchanged (3.8, 3.9)_
+    - _Requirements: 3.5, 3.7, 3.8, 3.9_
+
+  - [ ] 3.2 Run the parser over the tokens before the lexer error
+    - In `src/hypertalk/parser.ts`, import `tokenizeUntilError` instead of `tokenize` (line 6)
+    - In `parseUnguarded` (line 22), drop the early return `if (!lexed.ok) return lexed;` (line 24) and build the parser with `new Parser(lexed.tokens, lexed.error)` from `tokenizeUntilError(source)`
+    - Give the `Parser` constructor (line 67) the second field `private readonly lexError: SyntaxError | undefined`, with the doc comment from design
+    - In `Parser.peek` (line 75), before the clamp: when `this.lexError` is set and `this.i + offset >= this.tokens.length`, throw `new ParseAbort(this.lexError)`. The thrown error is the lexer's own object, so its line, column and message are the ones `tokenize` returns. Every grammar rule reads through `peek`, so no rule changes
+    - Add `position(): Pos`, which returns the cursor's token position, or L's position past the tokens, and never aborts. In the `catch` of `parseUnguarded`, use `parser.position()` instead of `parser.current()` (line 30), so an internal error is still reported and nothing throws
+    - Update the header comment on line 2 to "Reports the first syntax error met reading from the top, from the lexer or the parser, and never throws (R12.3)."
+    - No message string changes, and no change to `runtime.ts`, `index.ts`, `tokens.ts`, `ast.ts` or `printer.ts`
+    - If the `nested-if-else-attachment-fix` has landed first, the line numbers above may have moved. Find the sites by name. Its new checks read through `atWord` and `current`, so they get the `peek` check without change
+    - _Bug_Condition: `isBugCondition(s)` from design, caused by the early return (root cause 1) and eof being the only end marker (root cause 3)_
+    - _Expected_Behavior: `expectedBehavior(s, result)` from design: the parse error raised from before(s), before L, also through `parse` and `runHandler`_
+    - _Preservation: lexer-clean scripts take the same path (`lexError` is `undefined`); reading past before(s) reports exactly L, and the "never closed" checks cannot fire without an eof (3.1 to 3.6, 3.10)_
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.10_
+
+  - [ ] 3.3 Describe the new rule in the interpreter design
+    - In `.kiro/specs/hypertalk-interpreter/design.md`, module list (line 10): the `lexer.ts` line also names `tokenizeUntilError(source)` as internal
+    - In the "Parser" notes, after the bullet on `parse(source)` (line 160), add a bullet: when the lexer fails, the parser still runs over the tokens read before the error. Reading past them means reading the text at the lexer error, so the parser reports the lexer error there. A parse error found before that point wins. An `on` or `if` still open at that point is not reported, because finding it would need the end of the script
+    - _Bug_Condition: `isBugCondition(s)` from design_
+    - _Expected_Behavior: `expectedBehavior(s, result)` from design_
+    - _Preservation: Preservation Requirements from design_
+    - _Requirements: 2.1, 2.2, 2.3, 3.4_
+
+  - [ ] 3.4 Verify the bug condition exploration tests now pass
+    - **Property 1: Expected Behavior** - A parse error found before the first lexer error is reported
+    - **IMPORTANT**: Re-run the SAME tests from task 1. Do NOT write new tests
+    - The tests from task 1 encode the expected behavior. When they pass, the expected behavior is satisfied, including the `x = 1` decision (line 2, column 3, `unknown command "x"`)
+    - Run `npx vitest --run test/hypertalk/parser.test.ts test/hypertalk/runtime.statements.test.ts test/hypertalk/runtime.navigation.test.ts test/hypertalk/index.test.ts test/hypertalk/lexmask.property.test.ts test/hypertalk/syntaxerror.property.test.ts`
+    - **EXPECTED OUTCOME**: The task 1 tests PASS (confirms the bug is fixed)
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
+
+  - [ ] 3.5 Verify the preservation tests still pass
+    - **Property 2: Preservation** - Every other script lexes, parses and runs as before
+    - **IMPORTANT**: Re-run the SAME tests from task 2. Do NOT write new tests
+    - Run the preservation unit tests, the `lexerErrorFirstArb` property and the mutant invariant from task 2, the lexer tests from task 3.1, and the existing P4, P5 and navigation properties (`SYNTAX_ERROR_LINES` still contains `x = 1`, and its users check only the line, which does not change)
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11_
+
+  - [ ] 3.6 Run the one-off old-versus-new comparison (not committed)
+    - Check out the commit the fix is built on (`edef939` unless another fix has landed since) in a separate git worktree outside the repo, for example `git worktree add ../stack-seance-base edef939`
+    - With `vite-node`, compare the old and fixed `parseUnguarded` and `tokenize` on 20,000 `mutantArb` samples and 3,000 `renderScript` outputs of `scriptArb`
+    - `tokenize` results must be identical for every input. `parseUnguarded` results must be identical for every lexer-clean input. For a lexer-error input, the fixed result either equals the old one (exactly L), or is a parse error before L that equals the old `parseUnguarded(textBefore(source, L))`. The scratch copy gave identical results for 17,213 lexer-clean mutants and all 3,000 rendered scripts
+    - Remove the worktree afterwards with `git worktree remove`, and commit nothing from this step
+    - _Requirements: 3.1, 3.7, 3.10_
+
+- [ ] 4. Checkpoint - Ensure all tests pass
+  - Run `npx vitest --run` and `npm run typecheck`, and make sure both pass
+  - If the `nested-if-else-attachment-fix` has also landed, its tests are part of this run
+  - Ask the user if questions arise
