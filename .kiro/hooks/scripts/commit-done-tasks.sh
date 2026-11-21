@@ -3,7 +3,8 @@
 # Works whether tasks are started from the task list or pushed along in chat.
 msg=""
 for spec in .kiro/specs/*/tasks.md; do
-  done_now=$(git diff -U0 HEAD -- "$spec" | sed -n 's/^+- \[x\] \([0-9][0-9]*\)\. \(.*\)$/task \1: \2/p')
+  name=$(basename "$(dirname "$spec")")
+  done_now=$(git diff -U0 HEAD -- "$spec" | sed -n "s/^+- \\[x\\] \\([0-9][0-9]*\\)\\. \\(.*\\)\$/$name task \\1: \\2/p")
   [ -n "$done_now" ] && msg="${msg:+$msg; }$(echo "$done_now" | paste -sd ';' - | sed 's/;/; /g')"
 done
 [ -n "$msg" ] || exit 0
