@@ -1,16 +1,16 @@
 # Tasks: HyperTalk interpreter
 
-- [ ] 1. Project setup
+- [x] 1. Project setup
   - Check whether the repo has a `package.json`; if not, create a minimal one with TypeScript, vitest and fast-check (Vite arrives with the UI spec).
   - Create `src/hypertalk/` and `test/hypertalk/` with a `tsconfig` that has no DOM lib for `src/hypertalk` (supports R10.2).
   - _Requirements: R10, R13_
 
-- [ ] 2. Errors, tokens and lexer
-  - [ ] 2.1 `errors.ts` with `SyntaxError`, `RuntimeError`, `clampLine`.
-  - [ ] 2.2 `tokens.ts` with keyword and reserved word tables.
-  - [ ] 2.3 `lexer.ts`: words, numbers, strings, comments, two-character operators, line and column on every token, `\r\n` handling.
-  - [ ] 2.4 Example tests: unclosed string reports its line, unknown character, CRLF line numbers, trailing newline does not add a line.
-  - [ ] 2.5 Comment tests: a trailing comment and a comment-only line are ignored, line numbers after a comment are unchanged, `--` inside a string stays in the string, and a syntax error after a comment names the right line.
+- [x] 2. Errors, tokens and lexer
+  - [x] 2.1 `errors.ts` with `SyntaxError`, `RuntimeError`, `clampLine`.
+  - [x] 2.2 `tokens.ts` with keyword and reserved word tables.
+  - [x] 2.3 `lexer.ts`: words, numbers, strings, comments, two-character operators, line and column on every token, `\r\n` handling.
+  - [x] 2.4 Example tests: unclosed string reports its line, unknown character, CRLF line numbers, trailing newline does not add a line.
+  - [x] 2.5 Comment tests: a trailing comment and a comment-only line are ignored, line numbers after a comment are unchanged, `--` inside a string stays in the string, and a syntax error after a comment names the right line.
   - _Requirements: R11.7, R11.9, R12_
 
 - [ ] 3. AST and parser

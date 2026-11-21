@@ -7,7 +7,7 @@ Pure TypeScript, no dependencies other than the test libraries. The pipeline is 
 ```
 src/hypertalk/
   tokens.ts      Token types, keyword table
-  lexer.ts       tokenize(source): Token[] | SyntaxError
+  lexer.ts       tokenize(source): LexResult  ({ ok: true, tokens } | { ok: false, error })
   ast.ts         AST types, stripPositions()
   parser.ts      parse(source): ParseResult
   printer.ts     print(script): string
@@ -85,7 +85,9 @@ Decisions:
 
 ## Lexer
 
-- Tokens: `word` (letters, digits, underscore, starting with a letter or underscore), `number`, `string`, punctuation (`( ) , & &&  + - * / < > <= >=`), `newline`.
+- Tokens: `word` (Unicode letters, combining marks, ASCII digits, underscore, starting with a letter or underscore), `number`, `string`, punctuation (`( ) , & &&  + - * / < > <= >=`), `newline`, and one final `eof` on the last line of the script. Columns are 1-based UTF-16 code units.
+- A number literal too large to be finite is a syntax error. `.5` and `1.` are errors at the dot.
+- Only space and tab are whitespace. A lone `\r` (not part of `\r\n`) is an unexpected character. Invisible characters are named by code point (`U+00A0`) in the message, and `=`, curly quotes and single quotes get a short hint.
 - Comments `-- …` to end of line are skipped (R11.9). `--` must be lexed before `-`. Inside a string literal `--` is plain text, because strings are lexed first when a `"` is seen. The newline token that ends a comment line is kept, so line numbers do not change.
 - `&&` is lexed before `&`; `<=` and `>=` before `<` and `>`.
 - A string runs from `"` to the next `"` on the same line. Reaching the end of the line first gives a syntax error at that line.
