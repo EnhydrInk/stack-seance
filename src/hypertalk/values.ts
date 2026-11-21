@@ -6,15 +6,19 @@ import { RuntimeAbort, runtimeError } from './errors';
 
 export type Value = string | number;
 
-/** Digits with an optional decimal part, surrounded by optional whitespace. No sign, no exponent. */
-const NUMERIC = /^\s*\d+(\.\d+)?\s*$/;
+/**
+ * An optional minus sign, digits and an optional decimal part, surrounded by optional
+ * whitespace (R11.4). No plus sign, no exponent. The minus sign is for values that come
+ * back from fields and `ask`, such as "-5"; number literals in a script stay non-negative.
+ */
+const NUMERIC = /^\s*-?\d+(\.\d+)?\s*$/;
 
 /** Strings as they are; numbers the way JavaScript writes them, so 1/4 gives "0.25" (R11.8). */
 export function toStr(v: Value): string {
   return typeof v === 'string' ? v : String(v);
 }
 
-/** True for a number, and for a string such as "3", " 007 " or "2.5" (R11.4, R11.5, R2.3). */
+/** True for a number, and for a string such as "3", " 007 ", "2.5" or "-5" (R11.4, R11.5, R2.3). */
 export function looksNumeric(v: Value): boolean {
   return typeof v === 'number' || NUMERIC.test(v);
 }

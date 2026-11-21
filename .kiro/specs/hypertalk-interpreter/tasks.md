@@ -42,6 +42,7 @@
 
 - [x] 6. Values and host
   - [x] 6.1 `values.ts`: `toStr`, `toNumber`, `looksNumeric`, `compare`, `asBool`, with example tests.
+  - [x] 6.1a Negative numeric strings (R11.4, R11.5). Example tests: `looksNumeric("-5")` is true, `toNumber(" -2.5 ")` is -2.5, and `compare("-2", "-10")` orders them as numbers.
   - [x] 6.2 `host.ts` interface and `RunContext`.
   - [x] 6.3 `test/hypertalk/helpers/fakeHost.ts` with call log, scripted dialog replies, `clone()`.
   - [x] 6.4 `haunt(kind: HauntKind): Promise<void>` in the `Host` interface. The fake host adds `{ call: 'haunt', kind }` to its call log, changes no card, field or visibility state, and resolves at once.
@@ -56,7 +57,7 @@
   - _Requirements: R8, R9.4, R9.6, R11_
 
 - [ ] 8. Runtime: statements
-  - [ ] 8.1 `put` into field, after, before, and into variable. Missing field error.
+  - [ ] 8.1 `put` into field, after, before, and into variable. Missing field error. Script test for a negative value stored in a field (R11.4): `put 0 - 5 into field "score"`, then `put field "score" + 1 into field "score"`, and the field reads `"-4"`.
   - [ ] 8.2 `show` and `hide`, missing item error.
   - [ ] 8.3 `answer` and `ask` (default label, cancel gives empty `it`).
   - [ ] 8.4 `wait` with validation.

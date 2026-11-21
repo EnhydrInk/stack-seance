@@ -178,7 +178,7 @@ export type Value = string | number;
 ```
 
 - `toStr(v)`: strings as is, numbers by `String(n)`.
-- `looksNumeric(s)`: `/^\s*\d+(\.\d+)?\s*$/` or a number value.
+- `looksNumeric(s)`: `/^\s*-?\d+(\.\d+)?\s*$/` or a number value. The optional `-` lets a negative value survive a trip through a field or `ask` (`"-5"`, R11.4). The lexer still has no negative literals.
 - `toNumber(v)`: number, or numeric string; otherwise returns `undefined`, and the caller raises a runtime error naming the line.
 - `compare(a, b)`: numeric when both look numeric; otherwise `toStr(a).toLowerCase()` against `toStr(b).toLowerCase()`.
 - Boolean results are the strings `'true'` and `'false'`. `asBool(v, pos)` accepts those (case-insensitive) and raises otherwise.

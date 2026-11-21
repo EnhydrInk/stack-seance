@@ -30,9 +30,10 @@ describe('R11.8 toStr', () => {
 });
 
 describe('R11.4 looksNumeric and toNumber', () => {
-  it('accepts numbers and strings of digits with an optional decimal part', () => {
+  it('accepts numbers and strings of digits with an optional minus sign and decimal part', () => {
     for (const [v, n] of [
-      [3, 3], [0.25, 0.25], ['3', 3], ['007', 7], ['3.50', 3.5], [' 3 ', 3], ['\t2\n', 2], ['0', 0],
+      [3, 3], [0.25, 0.25], [-5, -5], ['3', 3], ['007', 7], ['3.50', 3.5], [' 3 ', 3], ['\t2\n', 2], ['0', 0],
+      ['-1', -1], ['-007', -7], [' -3.50 ', -3.5],
     ] as const) {
       expect(looksNumeric(v), JSON.stringify(v)).toBe(true);
       expect(toNumber(v), JSON.stringify(v)).toBe(n);
@@ -40,7 +41,10 @@ describe('R11.4 looksNumeric and toNumber', () => {
   });
 
   it('rejects everything else, and toNumber gives undefined for it', () => {
-    for (const v of ['', ' ', 'abc', '3 4', '3.', '.5', '-1', '+1', '1e3', '0x10', 'Infinity', 'NaN', '1,5', '٣']) {
+    for (const v of [
+      '', ' ', 'abc', '3 4', '3.', '.5', '+1', '1e3', '0x10', 'Infinity', 'NaN', '1,5', '٣',
+      '-', '- 5', '--5', '-.5', '-5.', '5-', '-+5', '−5' /* U+2212 minus sign */, '-Infinity', '-1e3',
+    ]) {
       expect(looksNumeric(v), JSON.stringify(v)).toBe(false);
       expect(toNumber(v), JSON.stringify(v)).toBeUndefined();
     }
@@ -49,7 +53,7 @@ describe('R11.4 looksNumeric and toNumber', () => {
   it('reads back every number that toStr writes without an exponent', () => {
     fc.assert(
       fc.property(
-        fc.double({ min: 0, max: 1e20, noNaN: true }).filter((n) => !toStr(n).includes('e')),
+        fc.double({ min: -1e20, max: 1e20, noNaN: true }).filter((n) => !toStr(n).includes('e')),
         (n) => toNumber(toStr(n)) === n,
       ),
       { numRuns: 300 },
@@ -98,6 +102,24 @@ describe('R11.5 compare', () => {
       }),
       { numRuns: 500 },
     );
+  });
+});
+
+// 6.1a: a score below zero is stored in a field as "-5" and must still count as a number.
+describe('R11.4 / R11.5 negative values read back as strings', () => {
+  it('reads a minus sign before the digits as part of the number', () => {
+    expect(looksNumeric('-5')).toBe(true);
+    expect(toNumber(' -2.5 ')).toBe(-2.5);
+  });
+
+  it('compares negative strings as numbers', () => {
+    expect(compare('-2', '-10')).toBe(1);
+    // The string order gives 1 for the pair above as well. These pairs come out
+    // differently as strings, so they show that the numeric order is the one used.
+    expect(compare('-2', '-1')).toBe(-1);
+    expect(compare('-1', '-2')).toBe(1);
+    expect(compare('-2', '-2.0')).toBe(0);
+    expect(compare(-2, ' -2 ')).toBe(0);
   });
 });
 
