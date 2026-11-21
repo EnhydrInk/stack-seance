@@ -13,16 +13,16 @@
   - [x] 2.5 Comment tests: a trailing comment and a comment-only line are ignored, line numbers after a comment are unchanged, `--` inside a string stays in the string, and a syntax error after a comment names the right line.
   - _Requirements: R11.7, R11.9, R12_
 
-- [ ] 3. AST and parser
-  - [ ] 3.1 `ast.ts` with the types and `stripPositions`.
-  - [ ] 3.2 Expression parser with the precedence levels and `is not`.
-  - [ ] 3.3 Statement parser: go, visual effect, answer, ask, put, show, hide, wait, global.
-  - [ ] 3.4 `if` in block and single-line forms, including the nested single-line error.
-  - [ ] 3.4a `else if` chains in the block form (nested `if` in the else list, one `end if`), and `else if` in the single-line form as a syntax error.
-  - [ ] 3.4b `true` and `false` as `bool` nodes in the primary-expression parser, and both words in the reserved word table.
-  - [ ] 3.5 Handlers: names, mismatched `end`, unclosed handler, duplicate handler, empty script.
-  - [ ] 3.6 Example tests for each syntax error in R1, R4.2, R5.5, R8.4, R9.5, R11.2 (non-chaining comparison) with the expected line numbers. Include `put 1 into true` and `global false` (reserved), and `else if` in a single-line `if`.
-  - [ ] 3.7 Else-if example tests: a three-way chain (`if` / `else if` / `else if` / `else` / `end if`) parses to `if` with `else: [if …, else: [if …, else: […]]]`, and equals the tree of the same logic written as `else` with nested block `if`s. A chain with no `end if` reports a syntax error on the line of the first `if`, not on an `else if` line.
+- [x] 3. AST and parser
+  - [x] 3.1 `ast.ts` with the types and `stripPositions`.
+  - [x] 3.2 Expression parser with the precedence levels and `is not`.
+  - [x] 3.3 Statement parser: go, visual effect, answer, ask, put, show, hide, wait, global.
+  - [x] 3.4 `if` in block and single-line forms, including the nested single-line error.
+  - [x] 3.4a `else if` chains in the block form (nested `if` in the else list, one `end if`), and `else if` in the single-line form as a syntax error.
+  - [x] 3.4b `true` and `false` as `bool` nodes in the primary-expression parser, and both words in the reserved word table.
+  - [x] 3.5 Handlers: names, mismatched `end`, unclosed handler, duplicate handler, empty script.
+  - [x] 3.6 Example tests for each syntax error in R1, R4.2, R5.5, R8.4, R9.5, R11.2 (non-chaining comparison) with the expected line numbers. Include `put 1 into true` and `global false` (reserved), and `else if` in a single-line `if`.
+  - [x] 3.7 Else-if example tests: a three-way chain (`if` / `else if` / `else if` / `else` / `end if`) parses to `if` with `else: [if …, else: [if …, else: […]]]`, and equals the tree of the same logic written as `else` with nested block `if`s. A chain with no `end if` reports a syntax error on the line of the first `if`, not on an `else if` line.
   - _Requirements: R1, R2.1, R3.1, R9.6, R11.9, R11.10, R4.1–R4.3, R5.1, R5.5, R6.1, R7.1, R8, R9, R11_
 
 - [ ] 4. Printer and round trip
@@ -33,7 +33,7 @@
 
 - [ ] 5. Syntax error line property
   - [ ] 5.1 Mutation arbitrary: delete, duplicate, swap, replace tokens, truncate, insert junk lines.
-  - [ ] 5.2 **Property P4**, plus the test that at least 30% of generated mutants fail to parse.
+  - [ ] 5.2 **Property P4** against `parseUnguarded` (so `clampLine` cannot hide a wrong line), plus a check that `parse` and `parseUnguarded` agree, plus the test that at least 30% of generated mutants fail to parse.
   - _Requirements: R12.1, R12.4, P4_
 
 - [ ] 6. Values and host

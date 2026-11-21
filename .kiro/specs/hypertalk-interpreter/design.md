@@ -33,7 +33,7 @@ export type ScriptError = SyntaxError | RuntimeError;
 
 The lexer and parser return results and never throw out of the public API. Internally the parser throws a `ParseAbort` carrying the error, caught in `parse`. The runtime does the same with `RuntimeAbort`.
 
-Line numbers come from the token. The lexer counts lines after normalising `\r\n` to `\n`. Errors found at end of input use the line of the opening construct (R12.4), so `line <= lineCount` always holds. A helper `clampLine(line, lineCount)` is applied at the public boundary as a last guard (P4, P5), with an assertion in tests that it never changes a value.
+Line numbers come from the token. The lexer counts lines after normalising `\r\n` to `\n`. Errors found at end of input use the line of the opening construct (R12.4), so `line <= lineCount` always holds. A helper `clampLine(line, lineCount)` is applied at the public boundary as a last guard (P4, P5), with an assertion in tests that it never changes a value. `parse` applies it; `parseUnguarded` in `parser.ts` is the same parser without the guard. It is not exported from `index.ts`, and the P4 property runs against it so the guard cannot hide a wrong line. An unexpected exception inside the parser (a bug) becomes a syntax error at the current token, so `parse` never throws.
 
 ## AST
 
@@ -132,6 +132,9 @@ Notes:
 - `not` is a prefix operator at its own level, so `not a is b` means `not (a is b)`.
 - Expression parsing stops at tokens that cannot continue it, then the statement parser expects NL or a closer, which gives "unexpected <token>" errors on that line.
 - `parse(source)` returns `{ ok: true, script } | { ok: false, error: SyntaxError }`.
+- An `on` inside a handler body is reported on the line of that `on` ("add end mouseUp before it"), because that is where the `end` is missing. R1.5's "line of its `on`" applies when the script ends with the handler still open.
+- When several constructs are open at the end of the script, the innermost one is reported: an unclosed `if` inside an unclosed handler gives the `if` line (R9.5).
+- `go to card n + 1` gets a hint to use parentheses. `-5` gets a hint to write `0 - 5`, since unary minus is not in the subset.
 
 ## Printer
 
