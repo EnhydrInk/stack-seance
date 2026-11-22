@@ -10,6 +10,8 @@ import { Model, copy } from './model';
 import { Runner } from './runner';
 import { CARD_H, CARD_W, Screen } from './screen';
 import defaults from './stacks.json';
+import { openSaves, openSettings } from './panels';
+import { applyFontSettings } from './settings';
 import { currentTheme, setTheme, startTheme } from './theme';
 import { mountTidePool } from './tidepool';
 import type { StacksDoc } from './types';
@@ -17,6 +19,7 @@ import type { StacksDoc } from './types';
 const AUTOSAVE = 'stack-seance:autosave';
 
 startTheme();
+applyFontSettings();
 
 const saved = localStorage.getItem(AUTOSAVE);
 const model = new Model(saved ? (JSON.parse(saved) as StacksDoc) : copy(defaults as StacksDoc));
@@ -50,8 +53,29 @@ async function navigate(move: () => void, effect?: Effect): Promise<void> {
   await runner.openCard();
 }
 
+/** After the stacks were replaced (revert, load a save): the front of Home, opened. */
+async function afterReplace(): Promise<void> {
+  screen.hideError();
+  if (screen.flipped) await screen.flip(false);
+  screen.renderFront();
+  await runner.openCard();
+}
+
+const panelDeps = { screen, model, defaults: defaults as StacksDoc, afterReplace };
+/** Windows open only between runs, so a revert or a load never lands in the middle of one. */
+const whenIdle = (open: () => void) => () => {
+  if (!runner.running) open();
+};
+
 const cards = () => model.stack.cards.length;
 const menubar = renderMenubar([
+  {
+    title: 'File',
+    items: [
+      { label: 'Saves…', run: whenIdle(() => openSaves(panelDeps)) },
+      { label: 'Settings…', run: whenIdle(() => openSettings(panelDeps)) },
+    ],
+  },
   {
     title: 'Go',
     items: [

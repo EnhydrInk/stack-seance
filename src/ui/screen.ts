@@ -148,6 +148,37 @@ export class Screen implements Stage {
     });
   }
 
+  /**
+   * A HyperCard window over the card (settings, saves). Returns a function that closes it.
+   * Escape and the close box close it too.
+   */
+  openPanel(title: string, body: HTMLElement): () => void {
+    const panel = el('section', 'panel');
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', title);
+    const bar = el('div', 'titlebar');
+    const closeBox = el('button', 'close-box');
+    closeBox.setAttribute('aria-label', `Close ${title}`);
+    const name = el('span', 'title');
+    name.textContent = title;
+    bar.append(closeBox, el('span', 'stripes'), name, el('span', 'stripes'));
+    const content = el('div', 'panel-body');
+    content.appendChild(body);
+    panel.append(bar, content);
+    const close = () => {
+      panel.remove();
+      document.removeEventListener('keydown', onKey);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && this.dialogs.lastElementChild === panel) close();
+    };
+    closeBox.addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    this.dialogs.appendChild(panel);
+    closeBox.focus();
+    return close;
+  }
+
   // ---- haunts
 
   haunt(kind: HauntKind, from: ButtonDoc | undefined): Promise<void> {
