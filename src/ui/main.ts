@@ -11,6 +11,7 @@ import { Runner } from './runner';
 import { CARD_H, CARD_W, Screen } from './screen';
 import defaults from './stacks.json';
 import { currentTheme, setTheme, startTheme } from './theme';
+import { mountTidePool } from './tidepool';
 import type { StacksDoc } from './types';
 
 const AUTOSAVE = 'stack-seance:autosave';
@@ -76,14 +77,25 @@ const menubar = renderMenubar([
 const desk = document.createElement('main');
 desk.className = 'desk';
 desk.appendChild(screen.win);
-document.getElementById('app')!.append(menubar, desk);
+const tide = mountTidePool();
+document.getElementById('app')!.append(menubar, desk, tide);
 
 /** Whole-number zoom so pixels stay crisp; below 1 only when the screen is too small. */
 function fit(): void {
   const w = CARD_W + 8;
   const h = CARD_H + 32;
-  const avail = Math.min((desk.clientWidth - 16) / w, (desk.clientHeight - 16) / h);
-  const zoom = avail >= 1 ? Math.floor(avail) : Math.max(avail, 0.4);
+  const dw = desk.clientWidth;
+  const dh = desk.clientHeight;
+  const avail = Math.min((dw - 16) / w, (dh - 16) / h);
+  // The Tide Pool sits in the bottom-right corner. The card may shrink to make room for it,
+  // but not below 2×; when there is still no room, the Tide Pool hides.
+  tide.hidden = false;
+  tide.style.zoom = '1';
+  const t = tide.getBoundingClientRect();
+  const roomFor = (z: number) => (dw - w * z) / 2 >= t.width + 20 || (dh - h * z) / 2 >= t.height + 20;
+  let zoom = avail >= 1 ? Math.floor(avail) : Math.max(avail, 0.4);
+  while (zoom > 2 && !roomFor(zoom)) zoom--;
+  tide.hidden = !roomFor(zoom);
   screen.win.style.zoom = String(zoom);
 }
 window.addEventListener('resize', fit);

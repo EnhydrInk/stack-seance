@@ -26,3 +26,11 @@ describe('built-in stacks', () => {
     expect(doc.stacks.some((s) => s.id === 'home' && s.name === 'Home')).toBe(true);
   });
 });
+
+describe('Tide Pool', () => {
+  it('its script parses', async () => {
+    const { SCRIPT } = await import('../../src/ui/tidepool');
+    const parsed = parse(SCRIPT);
+    expect(parsed.ok ? 'ok' : parsed.error).toBe('ok');
+  });
+});
