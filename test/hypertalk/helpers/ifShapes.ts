@@ -6,7 +6,7 @@
 // a shape is known by construction, without asking the parser.
 
 import fc from 'fast-check';
-import type { Expr, HandlerName, Pos, Stmt, WithoutPos } from '../../../src/hypertalk/ast';
+import type { Expr, HandlerName, Pos, Script, Stmt, WithoutPos } from '../../../src/hypertalk/ast';
 import type { SyntaxError } from '../../../src/hypertalk/errors';
 import { tokenize } from '../../../src/hypertalk/lexer';
 import { isReserved, type Token } from '../../../src/hypertalk/tokens';
@@ -255,11 +255,13 @@ const frameArb: fc.Arbitrary<Frame> = fc.record({
   finalBreak: fc.boolean(),
 });
 
+const otherName = (handler: HandlerName): HandlerName => (handler === 'mouseUp' ? 'openCard' : 'mouseUp');
+
 /** Writes the other handler if any, then `on <handler>`, the body, and `end <handler>`. */
 function writeScript<T>(frame: Frame, body: (b: LineBuilder) => T): { source: string; result: T } {
   const b = new LineBuilder(frame.styles);
   if (frame.other) {
-    const name: HandlerName = frame.handler === 'mouseUp' ? 'openCard' : 'mouseUp';
+    const name = otherName(frame.handler);
     b.code(0, `on ${name}`);
     b.items(1, frame.other);
     b.code(0, `end ${name}`);
@@ -292,13 +294,33 @@ export interface IfShape {
 type EndedBlock = 'then part' | 'else if link' | 'else part';
 
 /**
- * Family A (2.1, 2.3). Handler-level items, 0 to 2 open block ifs, then E. The block of E
- * that ends is its then part, an else if link, or its else part, and it ends with a one-line
- * if without else. Every block of E before it ends with an item an else may follow. The
- * follower is `else` or `else if c then`, then one or two commands and the end ifs.
+ * A family A script: handler-level items, 0 to 2 open block ifs, then E. The block of E that
+ * ends is its then part, an else if link, or its else part, and it ends with `before` and
+ * `last`. Every block of E before it ends with an item an else may follow. The follower is
+ * `else` or `else if c then`, then one or two commands and the end ifs.
  */
-const elseAfterOneLineIfArb: fc.Arbitrary<IfShape> = fc
-  .record({
+interface ElseParts {
+  frame: Frame;
+  lead: Item[];
+  /** The conditions of the open block ifs around E, outermost first. */
+  wraps: Known<Expr>[];
+  cond: Known<Expr>;
+  ended: EndedBlock;
+  /** E's then part, when it is not the block that ends. */
+  thenBody: Item[];
+  /** The else if links before the block that ends. */
+  links: [Known<Expr>, Item[]][];
+  /** The condition of the link that ends, for 'else if link'. */
+  linkCond: Known<Expr>;
+  before: Item[];
+  last: Item;
+  /** The condition of an `else if` follower, or undefined for a bare `else`. */
+  follower: Known<Expr> | undefined;
+  after: Item[];
+}
+
+const elsePartsArb = (last: fc.Arbitrary<Item>): fc.Arbitrary<ElseParts> =>
+  fc.record({
     frame: frameArb,
     lead: fc.array(anyItemArb, { maxLength: 2 }),
     wraps: fc.array(conditionArb, { maxLength: 2 }),
@@ -308,31 +330,39 @@ const elseAfterOneLineIfArb: fc.Arbitrary<IfShape> = fc
     links: fc.array(fc.tuple(conditionArb, bodyArb(beforeElseItemArb)), { maxLength: 2 }),
     linkCond: conditionArb,
     before: fc.array(anyItemArb, { maxLength: 2 }),
-    trigger: oneLineIfArb(false),
+    last,
     follower: fc.option(conditionArb, { nil: undefined, freq: 2 }),
     after: fc.array(commandItemArb, { minLength: 1, maxLength: 2 }),
-  })
-  .map((s): IfShape => {
-    const { source, result: at } = writeScript(s.frame, (b) => {
-      b.items(1, s.lead);
-      s.wraps.forEach((c, k) => b.code(1 + k, `if ${c.text} then`));
-      const d = 1 + s.wraps.length;
-      b.code(d, `if ${s.cond.text} then`);
-      if (s.ended !== 'then part') {
-        b.items(d + 1, s.thenBody);
-        for (const [c, body] of s.links) {
-          b.code(d, `else if ${c.text} then`);
-          b.items(d + 1, body);
-        }
-        b.code(d, s.ended === 'else if link' ? `else if ${s.linkCond.text} then` : 'else');
+  });
+
+/** Writes a family A script and returns where the follower's else is. */
+function writeElseShape(s: ElseParts): { source: string; result: Pos } {
+  return writeScript(s.frame, (b) => {
+    b.items(1, s.lead);
+    s.wraps.forEach((c, k) => b.code(1 + k, `if ${c.text} then`));
+    const d = 1 + s.wraps.length;
+    b.code(d, `if ${s.cond.text} then`);
+    if (s.ended !== 'then part') {
+      b.items(d + 1, s.thenBody);
+      for (const [c, body] of s.links) {
+        b.code(d, `else if ${c.text} then`);
+        b.items(d + 1, body);
       }
-      b.items(d + 1, [...s.before, s.trigger]);
-      const follower = b.code(d, s.follower ? `else if ${s.follower.text} then` : 'else');
-      b.items(d + 1, s.after);
-      b.code(d, 'end if');
-      for (let k = s.wraps.length - 1; k >= 0; k--) b.code(1 + k, 'end if');
-      return follower;
-    });
+      b.code(d, s.ended === 'else if link' ? `else if ${s.linkCond.text} then` : 'else');
+    }
+    b.items(d + 1, [...s.before, s.last]);
+    const follower = b.code(d, s.follower ? `else if ${s.follower.text} then` : 'else');
+    b.items(d + 1, s.after);
+    b.code(d, 'end if');
+    for (let k = s.wraps.length - 1; k >= 0; k--) b.code(1 + k, 'end if');
+    return follower;
+  });
+}
+
+/** Family A (2.1, 2.3): the block that ends ends with a one-line if without else. */
+const elseAfterOneLineIfArb: fc.Arbitrary<IfShape> = elsePartsArb(oneLineIfArb(false))
+  .map((s): IfShape => {
+    const { source, result: at } = writeElseShape(s);
     return {
       family: 'else',
       detail: `${s.ended}, then ${s.follower ? 'else if' : 'else'}`,
@@ -355,12 +385,35 @@ interface Level {
   last: Item | undefined;
 }
 
-const levelArb: fc.Arbitrary<Level> = fc.record({
-  cond: conditionArb,
-  thenCommand: fc.option(commandArb, { nil: undefined, freq: 2 }),
-  lead: fc.array(commandItemArb, { maxLength: 1 }),
-  last: fc.option(fc.oneof(beforeEndIfItemArb, oneLineIfEitherArb), { nil: undefined, freq: 4 }),
-});
+const levelWith = (last: fc.Arbitrary<Item>): fc.Arbitrary<Level> =>
+  fc.record({
+    cond: conditionArb,
+    thenCommand: fc.option(commandArb, { nil: undefined, freq: 2 }),
+    lead: fc.array(commandItemArb, { maxLength: 1 }),
+    last: fc.option(last, { nil: undefined, freq: 4 }),
+  });
+
+/** A level whose end if may be stray. */
+const levelArb: fc.Arbitrary<Level> = levelWith(fc.oneof(beforeEndIfItemArb, oneLineIfEitherArb));
+
+/** Handler-level items, then a block if of 1 to 3 levels. */
+type Group = [lead: Item[], levels: Level[]];
+
+const groupsArb = (level: fc.Arbitrary<Level>): fc.Arbitrary<Group[]> =>
+  fc.array(fc.tuple(fc.array(anyItemArb, { maxLength: 1 }), fc.array(level, { minLength: 1, maxLength: 3 })), {
+    minLength: 1,
+    maxLength: 3,
+  });
+
+/**
+ * Makes one level end with `last`, so its end if is stray, without changing the generated
+ * values. `forced` counts the levels of all groups in source order, modulo their number.
+ */
+function forceLast(groups: readonly Group[], forced: number, last: Item): Group[] {
+  const total = groups.reduce((n, [, levels]) => n + levels.length, 0);
+  let index = forced % total;
+  return groups.map(([lead, levels]): Group => [lead, levels.map((level) => (index-- === 0 ? { ...level, last } : level))]);
+}
 
 type Unmatched = { k: 'end if' } | { k: 'else' } | { k: 'else if'; cond: Known<Expr> };
 
@@ -392,6 +445,26 @@ function writeLevels(b: LineBuilder, depth: number, levels: readonly Level[], st
   if (level.last?.k === 'oneLineIf') strays.push({ end, head });
 }
 
+/** Writes the groups at handler level and returns their stray end ifs in source order. */
+function writeGroups(b: LineBuilder, groups: readonly Group[]): Stray[] {
+  const strays: Stray[] = [];
+  for (const [lead, levels] of groups) {
+    b.items(1, lead);
+    writeLevels(b, 1, levels, strays);
+  }
+  return strays;
+}
+
+/** Writes the unmatched line at handler level and returns where it starts. An else gets a command and an end if. */
+function writeUnmatched(b: LineBuilder, u: Unmatched, afterElse: Item): Pos {
+  const at = b.code(1, u.k === 'else if' ? `else if ${u.cond.text} then` : u.k);
+  if (u.k !== 'end if') {
+    b.item(2, afterElse);
+    b.code(1, 'end if');
+  }
+  return at;
+}
+
 /**
  * Family B (2.4). 1 to 3 block ifs at handler level, each holding 0 to 2 more levels, and at
  * least one end if right after a one-line if (one level is forced to end with one). Then a
@@ -401,10 +474,7 @@ function writeLevels(b: LineBuilder, depth: number, levels: readonly Level[], st
 const unmatchedAfterStrayEndIfArb: fc.Arbitrary<IfShape> = fc
   .record({
     frame: frameArb,
-    groups: fc.array(fc.tuple(fc.array(anyItemArb, { maxLength: 1 }), fc.array(levelArb, { minLength: 1, maxLength: 3 })), {
-      minLength: 1,
-      maxLength: 3,
-    }),
+    groups: groupsArb(levelArb),
     forced: fc.nat(),
     forcedLast: oneLineIfEitherArb,
     p: fc.option(beforeEndIfItemArb, { nil: undefined }),
@@ -412,27 +482,11 @@ const unmatchedAfterStrayEndIfArb: fc.Arbitrary<IfShape> = fc
     afterElse: commandItemArb,
   })
   .map((s): IfShape => {
-    // Force one level to end with a one-line if, without changing the generated values.
-    const total = s.groups.reduce((n, [, levels]) => n + levels.length, 0);
-    let index = s.forced % total;
-    const groups = s.groups.map(([lead, levels]): [Item[], Level[]] => [
-      lead,
-      levels.map((level) => (index-- === 0 ? { ...level, last: s.forcedLast } : level)),
-    ]);
-
+    const groups = forceLast(s.groups, s.forced, s.forcedLast);
     const { source, result: stray } = writeScript(s.frame, (b) => {
-      const strays: Stray[] = [];
-      for (const [lead, levels] of groups) {
-        b.items(1, lead);
-        writeLevels(b, 1, levels, strays);
-      }
+      const strays = writeGroups(b, groups);
       if (s.p) b.item(1, s.p);
-      const u = s.unmatched;
-      b.code(1, u.k === 'else if' ? `else if ${u.cond.text} then` : u.k);
-      if (u.k !== 'end if') {
-        b.item(2, s.afterElse);
-        b.code(1, 'end if');
-      }
+      writeUnmatched(b, s.unmatched, s.afterElse);
       return strays[strays.length - 1]!;
     });
     return {
@@ -447,6 +501,204 @@ const unmatchedAfterStrayEndIfArb: fc.Arbitrary<IfShape> = fc
 
 /** Scripts in the bug condition C by construction, with the error the fixed parser reports. */
 export const bugShapeArb: fc.Arbitrary<IfShape> = fc.oneof(elseAfterOneLineIfArb, unmatchedAfterStrayEndIfArb);
+
+// ---- the preserved shapes (C does not hold) ---------------------------------------
+
+/** What the unfixed parser says for an unmatched else or else if (3.4, 3.5). */
+export const UNMATCHED_ELSE = '"else" without a matching "if"; a one-line if keeps its else on the same line';
+
+/** What the unfixed parser says for an unmatched end if (3.4, 3.5). */
+export const UNMATCHED_END_IF = '"end if" without a matching "if" (a one-line if has no "end if")';
+
+/** What the unfixed parser says for an else line after an else part (3.8). */
+export const ALREADY_HAS_ELSE = 'this "if" already has an "else"';
+
+/** A parse result with the tree's positions removed. */
+export type ExpectedParse = { ok: true; script: WithoutPos<Script> } | { ok: false; error: SyntaxError };
+
+export interface PreservedShape {
+  /**
+   * The family of design "Property-Based Tests":
+   * 'A': an else or else if line after a block that does not end with a one-line if without else (3.1, 3.2, 3.7, 3.8).
+   * 'B': an unmatched line with no stray end if before it in its handler, or right after a one-line if (3.4, 3.5).
+   * 'C': family B without the unmatched line, so the script is valid (3.3).
+   */
+  family: 'A' | 'B' | 'C';
+  /** Which case of the family, for the coverage check. */
+  detail: string;
+  handler: HandlerName;
+  source: string;
+  /** What the unfixed parser returns, and the fixed parser must still return. */
+  expected: ExpectedParse;
+}
+
+type S = WithoutPos<Stmt>;
+
+const ifTree = (cond: Known<Expr>, then: S[], otherwise: S[] = []): S => ({ t: 'if', cond: cond.tree, then, else: otherwise });
+
+function itemTree(item: Item): S {
+  switch (item.k) {
+    case 'command':
+      return item.cmd.tree;
+    case 'oneLineIf':
+    case 'blockIf':
+      return ifTree(item.cond, [item.then.tree], item.else ? [item.else.tree] : []);
+    case 'strayIf':
+      return ifTree(item.cond, [itemTree(item.last)]);
+  }
+}
+
+const itemTrees = (items: readonly Item[]): S[] => items.map(itemTree);
+
+/** The tree that writeLevels writes, as a list of none or one statement. */
+function levelsTree(levels: readonly Level[]): S[] {
+  const [level, ...inner] = levels;
+  if (!level) return [];
+  const part = [...itemTrees(level.lead), ...levelsTree(inner), ...(level.last ? [itemTree(level.last)] : [])];
+  return [level.thenCommand ? ifTree(level.cond, [level.thenCommand.tree], part) : ifTree(level.cond, part)];
+}
+
+const groupsTree = (groups: readonly Group[]): S[] =>
+  groups.flatMap(([lead, levels]) => [...itemTrees(lead), ...levelsTree(levels)]);
+
+/** The tree of the script writeScript writes, given the body of the frame's handler. */
+function scriptTree(frame: Frame, body: S[]): WithoutPos<Script> {
+  const main = { name: frame.handler, body };
+  return { handlers: frame.other ? [{ name: otherName(frame.handler), body: itemTrees(frame.other) }, main] : [main] };
+}
+
+const syntaxAt = (at: Pos, message: string): SyntaxError => ({ kind: 'syntax', line: at.line, column: at.column, message });
+
+const LAST_KIND: Readonly<Record<Item['k'], string>> = {
+  command: 'a command',
+  blockIf: 'a block if',
+  strayIf: 'a block if closed right after a one-line if',
+  oneLineIf: 'a one-line if with else',
+};
+
+/** What a block may end with before an else line without C: anything but a one-line if without else. */
+const preservedLastArb = fc.oneof(commandItemArb, blockIfItemArb, strayIfArb, oneLineIfArb(true));
+
+/**
+ * Family A without C. The follower attaches to the block that ended: E itself after its then
+ * part, or the last link after an else if link (3.1, 3.2, 3.7). After E's else part the
+ * follower is `this "if" already has an "else"` (3.2, 3.8).
+ */
+const elseAfterOtherStatementArb: fc.Arbitrary<PreservedShape> = elsePartsArb(preservedLastArb).map((s): PreservedShape => {
+  const { source, result: at } = writeElseShape(s);
+  const shape = {
+    family: 'A' as const,
+    detail: `${s.ended} ends with ${LAST_KIND[s.last.k]}, then ${s.follower ? 'else if' : 'else'}`,
+    handler: s.frame.handler,
+    source,
+  };
+  if (s.ended === 'else part') return { ...shape, expected: { ok: false, error: syntaxAt(at, ALREADY_HAS_ELSE) } };
+
+  const ended = [...itemTrees(s.before), itemTree(s.last)];
+  const follower = s.follower ? [ifTree(s.follower, itemTrees(s.after))] : itemTrees(s.after);
+  let e: S;
+  if (s.ended === 'then part') {
+    e = ifTree(s.cond, ended, follower);
+  } else {
+    // The chain is a nested if in each else part (R9.6), so build it from the last link out.
+    let rest = [ifTree(s.linkCond, ended, follower)];
+    for (const [c, body] of [...s.links].reverse()) rest = [ifTree(c, itemTrees(body), rest)];
+    e = ifTree(s.cond, itemTrees(s.thenBody), rest);
+  }
+  const wrapped = s.wraps.reduceRight((inner, c) => ifTree(c, [inner]), e);
+  return { ...shape, expected: { ok: true, script: scriptTree(s.frame, [...itemTrees(s.lead), wrapped]) } };
+});
+
+const unmatchedError = (at: Pos, u: Unmatched): SyntaxError => syntaxAt(at, u.k === 'end if' ? UNMATCHED_END_IF : UNMATCHED_ELSE);
+
+/**
+ * Family B without C, first case: no end if in this handler comes right after a one-line if
+ * (3.5). Levels end with a command, a block if or nothing, and P is anything but a block if
+ * with a stray end if. The other handler, when there is one, may hold a stray end if.
+ */
+const unmatchedWithoutStrayArb: fc.Arbitrary<PreservedShape> = fc
+  .record({
+    frame: frameArb,
+    groups: groupsArb(levelWith(beforeEndIfItemArb)),
+    p: fc.option(anyItemArb, { nil: undefined }),
+    unmatched: unmatchedArb,
+    afterElse: commandItemArb,
+  })
+  .map((s): PreservedShape => {
+    const { source, result: at } = writeScript(s.frame, (b) => {
+      const strays = writeGroups(b, s.groups);
+      if (strays.length > 0) throw new Error('generator: a level without a stray end if has one');
+      if (s.p) b.item(1, s.p);
+      return writeUnmatched(b, s.unmatched, s.afterElse);
+    });
+    const otherStray = s.frame.other?.some((item) => item.k === 'strayIf') ?? false;
+    return {
+      family: 'B',
+      detail: `no stray end if${otherStray ? ' here, one in the other handler' : ''}, then unmatched ${s.unmatched.k}`,
+      handler: s.frame.handler,
+      source,
+      expected: { ok: false, error: unmatchedError(at, s.unmatched) },
+    };
+  });
+
+/** Family B without C, second case: stray end ifs, but P right before the unmatched line is a one-line if (3.4). */
+const unmatchedAfterOneLineIfArb: fc.Arbitrary<PreservedShape> = fc
+  .record({
+    frame: frameArb,
+    groups: groupsArb(levelArb),
+    forced: fc.nat(),
+    forcedLast: oneLineIfEitherArb,
+    p: oneLineIfEitherArb,
+    unmatched: unmatchedArb,
+    afterElse: commandItemArb,
+  })
+  .map((s): PreservedShape => {
+    const groups = forceLast(s.groups, s.forced, s.forcedLast);
+    const { source, result: at } = writeScript(s.frame, (b) => {
+      writeGroups(b, groups);
+      b.item(1, s.p);
+      return writeUnmatched(b, s.unmatched, s.afterElse);
+    });
+    return {
+      family: 'B',
+      detail: `a stray end if, then a one-line if, then unmatched ${s.unmatched.k}`,
+      handler: s.frame.handler,
+      source,
+      expected: { ok: false, error: unmatchedError(at, s.unmatched) },
+    };
+  });
+
+/** Family C: family B without the unmatched line. Valid, with or without stray end ifs (3.3). */
+const validWithStrayEndIfArb: fc.Arbitrary<PreservedShape> = fc
+  .record({
+    frame: frameArb,
+    groups: groupsArb(levelArb),
+    forced: fc.option(fc.nat(), { nil: undefined }),
+    forcedLast: oneLineIfEitherArb,
+    p: fc.option(fc.oneof(anyItemArb, strayIfArb), { nil: undefined }),
+  })
+  .map((s): PreservedShape => {
+    const groups = s.forced === undefined ? s.groups : forceLast(s.groups, s.forced, s.forcedLast);
+    const { source, result: strays } = writeScript(s.frame, (b) => {
+      const found = writeGroups(b, groups).length;
+      if (s.p) b.item(1, s.p);
+      return found + (s.p?.k === 'strayIf' ? 1 : 0);
+    });
+    return {
+      family: 'C',
+      detail: strays > 0 ? 'with a stray end if' : 'without a stray end if',
+      handler: s.frame.handler,
+      source,
+      expected: { ok: true, script: scriptTree(s.frame, [...groupsTree(groups), ...(s.p ? [itemTree(s.p)] : [])]) },
+    };
+  });
+
+/** Scripts outside the bug condition C by construction, with what the unfixed parser returns for them. */
+export const preservedShapeArb: fc.Arbitrary<PreservedShape> = fc.oneof(
+  elseAfterOtherStatementArb,
+  fc.oneof(unmatchedWithoutStrayArb, unmatchedAfterOneLineIfArb),
+  validWithStrayEndIfArb,
+);
 
 // ---- scanning rendered sources ------------------------------------------------------
 

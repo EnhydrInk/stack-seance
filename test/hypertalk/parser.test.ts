@@ -4,7 +4,13 @@ import { stripPositions, type Expr, type IfStmt, type Script, type Stmt } from '
 import { lineCount, type SyntaxError } from '../../src/hypertalk/errors';
 import { HAUNTS, isReserved } from '../../src/hypertalk/tokens';
 import { handlerSource, REPRO_1, REPROS } from './helpers/lexMask';
-import { ELSE_AFTER_ONE_LINE_IF, ONE_LINE_IF_REPRO_1, ONE_LINE_IF_REPRO_2, strayEndIfMessage } from './helpers/ifShapes';
+import {
+  ELSE_AFTER_ONE_LINE_IF,
+  ONE_LINE_IF_REPRO_1,
+  ONE_LINE_IF_REPRO_2,
+  strayEndIfMessage,
+  UNMATCHED_END_IF,
+} from './helpers/ifShapes';
 
 const src = (...lines: string[]) => lines.join('\n');
 
@@ -523,6 +529,60 @@ describe('R9 an else or end if line right after a one-line if inside a block if 
       'end if', //             7
     );
     expectError(source, syntax(5, 5, strayEndIfMessage(3)));
+  });
+
+  // Preservation (3.2 to 3.5): observed on the unfixed parser, and must not change with the fix.
+  it('still attaches an else after a one-line if with its own else to the enclosing if (3.2)', () => {
+    expect(body('if a then', '  if b then howl else go next card', 'else', '  answer "x"', 'end if')).toEqual([
+      {
+        t: 'if',
+        cond: { t: 'var', name: 'a' },
+        then: [
+          { t: 'if', cond: { t: 'var', name: 'b' }, then: [{ t: 'haunt', kind: 'howl' }], else: [{ t: 'go', target: { k: 'next' } }] },
+        ],
+        else: [{ t: 'answer', prompt: { t: 'str', value: 'x' }, labels: [] }],
+      },
+    ]);
+  });
+
+  it('still accepts an end if right after a one-line if when nothing unmatched follows (3.3)', () => {
+    expect(body('if a then', '  if b then go next card', 'end if')).toEqual([
+      {
+        t: 'if',
+        cond: { t: 'var', name: 'a' },
+        then: [{ t: 'if', cond: { t: 'var', name: 'b' }, then: [{ t: 'go', target: { k: 'next' } }], else: [] }],
+        else: [],
+      },
+    ]);
+  });
+
+  it('still reports an unmatched end if on its own line when it follows a one-line if (3.4)', () => {
+    // Repro 2 with line 5 replaced by a one-line if: line 4 is a stray end if, but line 6 follows a one-line if.
+    const source = src(
+      'on mouseUp', //                1
+      '  if a then', //               2
+      '    if b then go next card', // 3
+      '    end if', //                4
+      '    if c then go prev card', // 5
+      '  end if', //                  6
+      'end mouseUp', //               7
+    );
+    expectError(source, syntax(6, 3, UNMATCHED_END_IF));
+  });
+
+  it('still reports an unmatched end if on its own line when the only stray end if is in another handler (3.5)', () => {
+    const source = src(
+      'on openCard', //       1
+      '  if a then', //       2
+      '    if b then howl', // 3
+      '  end if', //          4
+      'end openCard', //      5
+      'on mouseUp', //        6
+      '  howl', //            7
+      '  end if', //          8
+      'end mouseUp', //       9
+    );
+    expectError(source, syntax(8, 3, UNMATCHED_END_IF));
   });
 });
 

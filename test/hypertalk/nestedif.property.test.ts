@@ -3,14 +3,16 @@
 // else is a syntax error on that else, and an unmatched else or end if after a stray end if
 // in the same handler is reported on the last stray end if. parse, parseUnguarded and
 // runHandler all return that error, and running the script calls the host for nothing.
+// Property 2: every other script of the same shapes parses exactly as the unfixed parser does.
 
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
+import { stripPositions } from '../../src/hypertalk/ast';
 import { tokenize } from '../../src/hypertalk/lexer';
-import { parse, parseUnguarded } from '../../src/hypertalk/parser';
+import { parse, parseUnguarded, type ParseResult } from '../../src/hypertalk/parser';
 import { runHandler } from '../../src/hypertalk/runtime';
 import { FakeHost } from './helpers/fakeHost';
-import { bugShapeArb, type IfShape } from './helpers/ifShapes';
+import { bugShapeArb, preservedShapeArb, type ExpectedParse, type IfShape } from './helpers/ifShapes';
 
 /**
  * The generator checks: the source lexes, the expected error is on an `else`, or on the
@@ -66,6 +68,46 @@ describe('if shape generator (Property 1)', () => {
       'end if: unmatched end if',
       'end if: unmatched else',
       'end if: unmatched else if',
+    ];
+    expect([...seen].sort()).toEqual(expected.sort());
+  });
+});
+
+/** A parse result with the tree's positions removed, to compare with a shape's expected result. */
+function withoutPositions(result: ParseResult): ExpectedParse {
+  return result.ok ? { ok: true, script: stripPositions(result.script) } : result;
+}
+
+describe('Property 2: every other script parses as before (3.1 to 3.11)', () => {
+  // **Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11**
+  // The expected results were checked against the unfixed parser before the fix.
+  it('parseUnguarded returns the same tree or the same error as the unfixed parser, and parse agrees', () => {
+    fc.assert(
+      fc.property(preservedShapeArb, (shape) => {
+        const result = parseUnguarded(shape.source);
+        expect(withoutPositions(result), `${shape.family}: ${shape.detail}\n${shape.source}`).toEqual(shape.expected);
+        expect(parse(shape.source)).toEqual(result);
+      }),
+      { numRuns: 300 },
+    );
+  });
+});
+
+describe('if shape generator (Property 2)', () => {
+  it('writes every case of families A, B and C', () => {
+    const seen = new Set(fc.sample(preservedShapeArb, { numRuns: 2000, seed: 7 }).map((s) => `${s.family}: ${s.detail}`));
+    const lasts = ['a command', 'a block if', 'a block if closed right after a one-line if', 'a one-line if with else'];
+    const expected = [
+      ...['then part', 'else if link', 'else part'].flatMap((block) =>
+        lasts.flatMap((last) => ['else', 'else if'].map((follower) => `A: ${block} ends with ${last}, then ${follower}`)),
+      ),
+      ...['end if', 'else', 'else if'].flatMap((u) => [
+        `B: no stray end if, then unmatched ${u}`,
+        `B: no stray end if here, one in the other handler, then unmatched ${u}`,
+        `B: a stray end if, then a one-line if, then unmatched ${u}`,
+      ]),
+      'C: with a stray end if',
+      'C: without a stray end if',
     ];
     expect([...seen].sort()).toEqual(expected.sort());
   });

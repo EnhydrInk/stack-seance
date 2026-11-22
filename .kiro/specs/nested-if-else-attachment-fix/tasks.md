@@ -38,7 +38,7 @@
   - Mark the task complete when the tests are written, run, and the failures are documented
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4_
 
-- [~] 2. Write preservation property tests (BEFORE implementing the fix)
+- [x] 2. Write preservation property tests (BEFORE implementing the fix)
   - **Property 2: Preservation** - Every other script parses and runs as before
   - **IMPORTANT**: Follow observation-first methodology. Run the unfixed parser on inputs where `isBugCondition` is false, record what it returns, and assert that
   - Non-bug condition: `NOT isBugCondition(s)`. A block ends with a command or a closed block `if`, or with a one-line `if` that has its own `else` before an `else` line, or a stray `end if` is followed by nothing unmatched, or the unmatched line itself follows a one-line `if`, or the only stray `end if` is in another handler
