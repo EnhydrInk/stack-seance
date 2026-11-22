@@ -58,7 +58,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - Done when `npm run typecheck` passes again.
     - _Requirements: 7.7, 7.8, 7.9, 7.11, 7.12_
 
-  - [ ] 2.4 Write fake host example tests in `test/hypertalk/fakeHost.test.ts`
+  - [x] 2.4 Write fake host example tests in `test/hypertalk/fakeHost.test.ts`
     - New `describe` blocks for: building from stacks (default ids, given ids, `currentStack` and `current`, `state` being the current entry's object); the cards form holding one stack equal to `DEFAULT_STACK`; each constructor error of Requirement 7.5; `findStackByName` (case, stored name, `undefined` for a missing name and for `''`, logged); `goToStack` (return value, log with and without effect, left stack reset to card 1, current stack as target, both throws leaving the current stack, the current card and `stacks` unchanged, with the call still logged); card calls after `goToStack`, and old refs throwing; `stack()` not logged; `clone()` with several stacks after a `goToStack`, equal and independent.
     - _Requirements: 8.9, 7.1, 7.2, 7.3, 7.4, 7.5, 7.7, 7.8, 7.9, 7.10, 7.11, 7.12_
 
