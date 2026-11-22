@@ -399,7 +399,7 @@ const multiWordHaunts = HAUNTS.filter((h) => h.words.length > 1);
 
 /** Tokens that replace a token: keywords, operators, and characters the lexer rejects. */
 const REPLACEMENTS: readonly string[] = [
-  'on', 'end', 'if', 'then', 'else', 'go', 'to', 'card', 'next', 'put', 'into', 'after', 'field', 'button',
+  'on', 'end', 'if', 'then', 'else', 'go', 'to', 'card', 'stack', 'next', 'put', 'into', 'after', 'field', 'button',
   'with', 'or', 'and', 'not', 'is', 'contains', 'global', 'wait', 'seconds', 'true', 'it', 'x', 'mouseUp',
   ...HAUNTS.flatMap((h): readonly string[] => h.words),
   '(', ')', ',', '+', '-', '*', '<', '>=', '&', '&&', '"', '"text"', '7', '2.5', '.', '.5', '1.',
@@ -411,6 +411,8 @@ const JUNK_LINES: readonly string[] = [
   'end if', 'else', 'else if x then', 'end mouseUp', 'end openCard', 'on mouseUp', 'on openCard', 'on mouseDown', 'end',
   'if x then', 'if x then if y then go to next card', 'if x then go to next card else if y then go to prev card',
   'put 1 into', 'put 1 into true', 'put 1 after x', 'global false', 'go to card', 'go to card n + 1', 'go nowhere',
+  // go-to-stack-command Requirement 9.10
+  'go to stack', 'go to stack n + 1', 'go to card 1 of stack "A"', 'put 1 into stack',
   'answer "a" with "b" or "c" or "d" or "e"', 'answer "a" with b', 'ask', 'wait 1', 'show "x"', 'visual effect wipe up',
   '"unclosed', 'put "a -- b into x', 'x = 1', 'put 1 < 2 < 3 into x', 'put -5 into x', 'put .5 into x', 'put (1 into x',
   "put 'a' into x", 'go\rto next card', '\u00A0',

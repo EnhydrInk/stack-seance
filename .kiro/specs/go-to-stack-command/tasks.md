@@ -106,7 +106,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
 - [x] 5. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 6. Correctness properties
+- [x] 6. Correctness properties
   - [x] 6.1 Extend the P1 generator and write the P1 coverage test
     - **Property 1: Round trip with stack targets (P1)**
     - `test/hypertalk/helpers/arbitraries.ts`: `simpleStmtArb` gains `exprArb.map(expr => ({ t: 'go', target: { k: 'stack', expr } }))`. `Renderer.simple` writes `go [to] stack <expr at PRIMARY>` with `to` dropped at random and random keyword case, as for `card`.
@@ -147,7 +147,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - A coverage test on 1000 fixed-seed samples of `stackSessionArb`: the errors include run-script runtime errors, card-script runtime and syntax errors, and the depth limit.
     - **Validates: Requirements 4.7, 4.8, 9.7, 9.9**
 
-  - [ ] 6.7 Add `stack` to the P4 mutation generator in `test/hypertalk/helpers/arbitraries.ts`
+  - [x] 6.7 Add `stack` to the P4 mutation generator in `test/hypertalk/helpers/arbitraries.ts`
     - **Property 4: Syntax error lines with the stack keyword (P4)**
     - `REPLACEMENTS` gains `'stack'`. `JUNK_LINES` gains `'go to stack'`, `'go to stack n + 1'`, `'go to card 1 of stack "A"'` and `'put 1 into stack'`.
     - `test/hypertalk/syntaxerror.property.test.ts` stays as written; its P4 tests now see stack gos and stack junk through `mutantArb`. Task 7 confirms its fixed-seed ratio tests. Run that file before finishing this task too, with the same rule as in 6.1 if a ratio test fails.
