@@ -80,7 +80,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - `test/hypertalk/lexer.test.ts`: `isReserved` is true for `stack`, `STACK` and `Stack`.
     - _Requirements: 8.1, 8.2, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 1.9, 1.10_
 
-  - [ ] 4.2 Write printer example tests in `test/hypertalk/printer.test.ts`
+  - [x] 4.2 Write printer example tests in `test/hypertalk/printer.test.ts`
     - New `describe('printing go to stack')`: a string target, a variable target, a `bin` target without a `paren` node printed in parentheses, and a `not` target with parentheses. Each printed line parses back to the same node.
     - _Requirements: 8.3, 2.1, 2.2_
 
