@@ -60,3 +60,7 @@
 - Done: `src/hypertalk/parser.ts` (12 lines) adds a `oneLineIfs` `WeakSet<IfStmt>`, filled by `oneLineIf()`, and a `trailingOneLineIf(block)` helper that nothing calls yet. `ast.ts` unchanged, so both `if` forms still give the same tree. Full suite 357 passed, 0 failed, with all 10 `it.fails` tests still failing inside; typecheck passes.
 - Kiro: requirements 2.1, 2.3, 2.4, 3.6 and 3.9; the `it.fails` markers double as a check that this groundwork step changed no parse result; the tests-green PreTaskExec gate.
 - Why it matters: the parser can now tell a one-line `if` from a block `if` without changing the syntax tree the back of the card shows.
+## nested-if-else-attachment-fix, task 3.3: Reject an `else` line directly after a one-line `if` without `else`
+- Done: `src/hypertalk/parser.ts` `blockIf()` tracks the block that just ended and calls the new `rejectElseAfterOneLineIf` at two sites before an `else` is consumed, failing on that `else` with the 2.1 message. 5 `it.fails` markers removed (4 parser `else` tests, the runtime Repro 1 test); 5 remain for task 3.4. Full suite 357 passed, 0 failed, no assertion edited; Property 2 passes; typecheck passes.
+- Kiro: requirements 2.1–2.3, 3.1, 3.2, 3.6–3.8; Property 1's unit cases and Property 2 (preservation) as the check; the tech steering rule that errors name their script line, here the line of the `else`.
+- Why it matters: Repro 1 now stops at line 4 and shows no dialog, so the back of the card points at the line that is wrong.

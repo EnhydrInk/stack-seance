@@ -460,26 +460,25 @@ describe('R9 an else or end if line right after a one-line if inside a block if 
     expect(parse(source)).toEqual({ ok: false, error });
   }
 
-  // Expected to fail until the fix (task 3.3 removes .fails from these four).
-  it.fails('Repro 1 reports the else on line 4 (2.1)', () => {
+  it('Repro 1 reports the else on line 4 (2.1)', () => {
     expectError(ONE_LINE_IF_REPRO_1.source, ONE_LINE_IF_REPRO_1.error);
   });
 
-  it.fails('reports an else if line on its else (2.3)', () => {
+  it('reports an else if line on its else (2.3)', () => {
     expectError(
       inHandler('if a then', '  if b then go next card', 'else if c then', '  howl', 'end if'),
       syntax(4, 3, ELSE_AFTER_ONE_LINE_IF),
     );
   });
 
-  it.fails('reports a second else in an else part with the one-line if message, not "already has an else" (2.1)', () => {
+  it('reports a second else in an else part with the one-line if message, not "already has an else" (2.1)', () => {
     expectError(
       inHandler('if a then', '  howl', 'else', '  if b then go next card', 'else', '  answer "x"', 'end if'),
       syntax(6, 3, ELSE_AFTER_ONE_LINE_IF),
     );
   });
 
-  it.fails('skips blank and comment-only lines between the one-line if and the else (2.1)', () => {
+  it('skips blank and comment-only lines between the one-line if and the else (2.1)', () => {
     const source = src(
       'on mouseUp', //                                     1
       '  if field "key" is "gold" then', //                2

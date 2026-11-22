@@ -404,6 +404,8 @@ class Parser {
     const notClosed = (): never => this.fail(head, '"if" is never closed; add "end if"');
     const root: IfStmt = { t: 'if', cond, then: this.block(), else: [], pos: pos(head) };
     let tail = root;
+    /** The block that just ended: root.then, then each link's then, then tail.else. */
+    let ended = root.then;
     for (;;) {
       if (this.atWord('end')) {
         if (!this.atWord('if', 1)) notClosed();
@@ -412,6 +414,7 @@ class Parser {
         return root;
       }
       if (!this.atWord('else')) notClosed(); // eof
+      this.rejectElseAfterOneLineIf(ended);
       this.advance();
 
       if (this.atWord('if')) {
@@ -425,12 +428,17 @@ class Parser {
         const link: IfStmt = { t: 'if', cond: linkCond, then: this.block(), else: [], pos: pos(linkIf) };
         tail.else = [link];
         tail = link;
+        ended = link.then;
         continue;
       }
 
       if (!this.atLineEnd()) this.fail(this.current(), 'after "else", start the commands on the next line');
       tail.else = this.block();
-      if (this.atWord('else')) this.fail(this.current(), 'this "if" already has an "else"');
+      ended = tail.else;
+      if (this.atWord('else')) {
+        this.rejectElseAfterOneLineIf(ended);
+        this.fail(this.current(), 'this "if" already has an "else"');
+      }
       if (!(this.atWord('end') && this.atWord('if', 1))) notClosed();
       this.advance();
       this.advance();
@@ -459,6 +467,20 @@ class Parser {
   private trailingOneLineIf(block: Stmt[]): IfStmt | undefined {
     const last = block[block.length - 1];
     return last?.t === 'if' && this.oneLineIfs.has(last) ? last : undefined;
+  }
+
+  /**
+   * At an else or else if line that ends `ended`: a one-line if without its own else right before it
+   * was meant to take this else, which it cannot (2.1, 2.3). Call before the else is consumed.
+   */
+  private rejectElseAfterOneLineIf(ended: Stmt[]): void {
+    const t = this.trailingOneLineIf(ended);
+    if (t && t.else.length === 0) {
+      this.fail(
+        this.current(),
+        '"else" right after a one-line if; a one-line if keeps its else on the same line (or write the if in block form with "end if")',
+      );
+    }
   }
 
   // ---- expressions (R11.2: or < and < not < comparison < & && < + - < * / < primary)

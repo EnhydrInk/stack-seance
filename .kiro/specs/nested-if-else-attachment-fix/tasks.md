@@ -85,7 +85,7 @@
     - _Preservation: the syntax tree type and every parse result stay the same (3.6, 3.9)_
     - _Requirements: 2.1, 2.3, 2.4, 3.6, 3.9_
 
-  - [~] 3.3 Reject an `else` line directly after a one-line `if` without `else`
+  - [x] 3.3 Reject an `else` line directly after a one-line `if` without `else`
     - In `blockIf()` (line 389), keep a variable `ended` for the block that just ended: `root.then` first, then each link's `then`, then `tail.else`
     - Add `private rejectElseAfterOneLineIf(ended: Stmt[]): void`. When `trailingOneLineIf(ended)` is set and its `else` is empty, it calls `this.fail(this.current(), '"else" right after a one-line if; a one-line if keeps its else on the same line (or write the if in block form with "end if")')`
     - Call it at two sites, both before the `else` token is consumed: in the loop just before `this.advance()` past `else` (line 400, covers bare `else` and `else if`), and after the `else` part just before the existing `this "if" already has an "else"` failure (line 419)
