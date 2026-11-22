@@ -167,7 +167,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
   - _Requirements: 1.7, 8.2, 9.12_
 
 - [ ] 9. Amend the hypertalk-interpreter spec
-  - [ ] 9.1 Amend `.kiro/specs/hypertalk-interpreter/requirements.md`
+  - [x] 9.1 Amend `.kiro/specs/hypertalk-interpreter/requirements.md`
     - R1.8 adds stack names to the case-insensitive names. R2 opens with the sentence that card targets refer to the current stack, and gains R2.7 to R2.10 as the design words them. R8.4 names `stack` as reserved. R10.1 lists stack lookup by name and going to a stack, and says the card calls refer to the current stack.
     - P1 covers `go to stack` targets of every expression form. P2 gains the stack P2 paragraph with its three outcomes and the note that the card P2 stays on one stack. P3 covers sessions of 1 to 3 stacks and compares all stacks, the current stack and the `findStackByName` and `goToStack` calls. P5 runs on the same sessions and finds the script an error names in any stack.
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
