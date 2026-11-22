@@ -71,7 +71,7 @@
 
 - [ ] 3. Fix the lexer error that masks an earlier parse error
 
-  - [~] 3.1 Keep the tokens the lexer read before its first error
+  - [x] 3.1 Keep the tokens the lexer read before its first error
     - In `src/hypertalk/lexer.ts`, add the exported interface `LexPrefix { tokens: Token[]; error: SyntaxError | undefined }` and move the body of `tokenize` (line 14) into a new exported function `tokenizeUntilError(source): LexPrefix`, with the doc comments from design
     - `fail` (lines 21 to 24) returns `{ tokens, error: syntaxError(line, column(at), message) }`. The success path pushes eof as now and returns `{ tokens, error: undefined }`. The three `return fail(…)` sites (lines 56, 73 and 95), every lexer rule and every message stay as they are
     - `tokenize` becomes the two-line wrapper from design: `error ? { ok: false, error } : { ok: true, tokens }`. `LexResult` does not change

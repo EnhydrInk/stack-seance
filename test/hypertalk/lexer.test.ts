@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { tokenize } from '../../src/hypertalk/lexer';
+import { tokenize, tokenizeUntilError } from '../../src/hypertalk/lexer';
 import { clampLine, lineCount, type SyntaxError } from '../../src/hypertalk/errors';
 import { isReserved } from '../../src/hypertalk/tokens';
 import type { Token } from '../../src/hypertalk/tokens';
@@ -199,6 +199,37 @@ describe('R11.9 comments', () => {
   it('names the right line for an error after a comment', () => {
     expect(lexError('-- greet the user\nput "hi into x')).toMatchObject({ line: 2, column: 5 });
     expect(lexError('go -- "fine here\n  #')).toMatchObject({ line: 2, column: 3 });
+  });
+});
+
+describe('tokenizeUntilError (lexer-error-masks-parse-error-fix)', () => {
+  it('returns the tokens read before the first error, with no eof, and the error', () => {
+    expect(tokenizeUntilError('on mouseUp\n  put 1 into "x')).toEqual({
+      tokens: [
+        { kind: 'word', text: 'on', line: 1, column: 1 },
+        { kind: 'word', text: 'mouseUp', line: 1, column: 4 },
+        { kind: 'newline', text: '\n', line: 1, column: 11 },
+        { kind: 'word', text: 'put', line: 2, column: 3 },
+        { kind: 'number', text: '1', value: 1, line: 2, column: 7 },
+        { kind: 'word', text: 'into', line: 2, column: 9 },
+      ],
+      error: { kind: 'syntax', line: 2, column: 14, message: 'this string has no closing quote (") on this line' },
+    });
+  });
+
+  it('returns no tokens when the error is the first character', () => {
+    expect(tokenizeUntilError('=')).toEqual({
+      tokens: [],
+      error: { kind: 'syntax', line: 1, column: 1, message: 'unexpected character "="; use "is" to compare' },
+    });
+  });
+
+  it('returns the same tokens as tokenize for a valid script, ending with eof', () => {
+    const source = 'on mouseUp\n  answer "a -- b" -- = #\n  go to next card\nend mouseUp\n';
+    const result = tokenizeUntilError(source);
+    expect(result.error).toBeUndefined();
+    expect(result.tokens).toEqual(lex(source));
+    expect(result.tokens.at(-1)).toMatchObject({ kind: 'eof' });
   });
 });
 

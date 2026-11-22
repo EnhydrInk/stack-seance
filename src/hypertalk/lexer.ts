@@ -11,15 +11,30 @@ const NUMBER = /[0-9]+(?:\.[0-9]+)?/y;
 const TWO_CHAR_OPS: readonly Operator[] = ['&&', '<=', '>='];
 const ONE_CHAR_OPS: readonly Operator[] = ['(', ')', ',', '&', '+', '-', '*', '/', '<', '>'];
 
+/** The tokens before the first lexer error, and that error. Without an error the tokens end with eof. */
+export interface LexPrefix {
+  tokens: Token[];
+  error: SyntaxError | undefined;
+}
+
 export function tokenize(source: string): LexResult {
+  const { tokens, error } = tokenizeUntilError(source);
+  return error ? { ok: false, error } : { ok: true, tokens };
+}
+
+/**
+ * The lexer behind tokenize. At its first error it stops and returns the tokens it read
+ * before the error, with no eof, so the parser can still report an earlier parse error.
+ */
+export function tokenizeUntilError(source: string): LexPrefix {
   const text = normaliseLineBreaks(source);
   const tokens: Token[] = [];
   let i = 0;
   let line = 1;
   let lineStart = 0;
   const column = (at: number) => at - lineStart + 1;
-  const fail = (at: number, message: string): LexResult => ({
-    ok: false,
+  const fail = (at: number, message: string): LexPrefix => ({
+    tokens,
     error: syntaxError(line, column(at), message),
   });
 
@@ -96,7 +111,7 @@ export function tokenize(source: string): LexResult {
   }
 
   tokens.push({ kind: 'eof', text: '', ...endPosition(text) });
-  return { ok: true, tokens };
+  return { tokens, error: undefined };
 }
 
 /** Position just after the last character of the last line (glossary: a trailing break adds no line). */
