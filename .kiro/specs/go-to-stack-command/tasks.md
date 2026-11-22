@@ -41,7 +41,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - The test project's type check reports `FakeHost` missing the two methods until 2.3. `npx vitest --run` stays green.
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7_
 
-  - [ ] 2.2 Hold stacks in `test/hypertalk/helpers/fakeHost.ts`: data model and constructor
+  - [x] 2.2 Hold stacks in `test/hypertalk/helpers/fakeHost.ts`: data model and constructor
     - Add `FakeStackEntry`, `FakeStackInit`, `FakeStacksInit` and `DEFAULT_STACK = { id: 'stack-1', name: 'Stack 1' }`. Keep `FakeHostInit` and `FakeStack` with their shapes. Add the `findStackByName` and `goToStack` entries to `HostCall`.
     - Add `readonly stacks: FakeStackEntry[]` and a private `currentStackIndex`. Turn `state` into a getter that returns the current entry's `state` object.
     - The constructor takes `FakeHostInit | FakeStacksInit` and tells them apart with `'stacks' in init`. The cards form becomes one stack equal to `DEFAULT_STACK` whose cards keep the ids `card-<n>`. The stacks form gives stack ids `stack-<n>` and card ids `<stack id>/card-<n>` by default. Every stack other than the current one has `current = 1`.
