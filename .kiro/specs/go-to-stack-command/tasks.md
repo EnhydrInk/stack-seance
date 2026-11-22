@@ -84,7 +84,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - New `describe('printing go to stack')`: a string target, a variable target, a `bin` target without a `paren` node printed in parentheses, and a `not` target with parentheses. Each printed line parses back to the same node.
     - _Requirements: 8.3, 2.1, 2.2_
 
-  - [ ] 4.3 Create `test/hypertalk/runtime.stacks.test.ts` with lookup and effect tests
+  - [x] 4.3 Create `test/hypertalk/runtime.stacks.test.ts` with lookup and effect tests
     - Fixture: a Home stack (`home`, card `Home` with button `House` and field `note`) and a Haunted House stack (`house`, cards `Hall`, `Crypt`, `Attic`, `Lobby`, each with field `note` and button `door`), plus an `inHandler` helper as in `runtime.navigation.test.ts`.
     - Existing stack with the exact log; other case passed to `findStackByName` unchanged; a number target matching a stack named `3` with no `cardCount` or `cardAt` call; `go to stack 2` with no such stack.
     - Missing stack and empty name, as literals and through `ask` (reply and cancel): error on the `go` line, stack and card unchanged, no `goToStack` or `goToCard`, later `answer` not run, no `findStackByName` for the empty name. An evaluation error in the target after `visual effect dissolve`.
