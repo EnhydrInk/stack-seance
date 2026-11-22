@@ -358,6 +358,26 @@ describe('R2.5, R14 / 9.4 openCard', () => {
     expect(host.log.filter((c) => c.call === 'getCardScript')).toHaveLength(1);
   });
 
+  it('reports the first lexer error in the new card’s openCard, not a missing end, with that card’s id (3.4, R12.5)', async () => {
+    const card2 = src('on mouseUp', '  go to next card', 'end mouseUp', 'on openCard', '  answer "x', 'end openCard');
+    const host = stack(2, {}, (i) => ({ script: i === 2 ? card2 : '' }));
+    const { result } = await run(inHandler('go to next card', 'answer "after"'), host);
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        kind: 'syntax',
+        line: 5,
+        column: 10,
+        message: 'this string has no closing quote (") on this line',
+        scriptId: 'card-2',
+      },
+    });
+    // The move is kept, and nothing of card 2's script runs.
+    expect(host.state.current).toBe(2);
+    expect(host.log.at(-1)).toEqual({ call: 'getCardScript', id: 'card-2' });
+    expect(host.log.filter((c) => c.call === 'getCardScript')).toHaveLength(1);
+  });
+
   it('names the card whose openCard failed when openCard handlers chain (R12.5)', async () => {
     const scripts: Record<number, string> = { 2: onOpen('go to next card'), 3: onOpen('hide button "ghost"') };
     const host = stack(3, {}, (i) => ({ script: scripts[i] ?? '' }));

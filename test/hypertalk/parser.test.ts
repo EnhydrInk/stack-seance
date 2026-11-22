@@ -638,3 +638,58 @@ describe('R12.3 the first syntax error from the top, from the lexer or the parse
     });
   });
 });
+
+// lexer-error-masks-parse-error-fix, preservation: when the parser needs the text at the
+// first lexer error before it finds any parse error, that lexer error is reported exactly as
+// today. Values observed on the unfixed code. Line 1 is `on mouseUp`.
+describe('R12.3 the first lexer error, when no parse error is found before it (3.2–3.6)', () => {
+  /** parse and parseUnguarded both return exactly this error. */
+  function expectError(source: string, error: SyntaxError) {
+    expect(parse(source)).toEqual({ ok: false, error });
+    expect(parseUnguarded(source)).toEqual({ ok: false, error });
+  }
+
+  const syntax = (line: number, column: number, message: string): SyntaxError => ({ kind: 'syntax', line, column, message });
+  const NO_CLOSING_QUOTE = 'this string has no closing quote (") on this line';
+  const EQUALS = 'unexpected character "="; use "is" to compare';
+
+  it('reports a lexer error on an earlier line than a parse error (3.2)', () => {
+    expectError(inHandler('answer "unclosed', 'put 1 into'), syntax(2, 10, NO_CLOSING_QUOTE));
+  });
+
+  it('reports the lexer error when the next token put needs is the broken one (3.3)', () => {
+    expectError(inHandler('put 1 into "x'), syntax(2, 14, NO_CLOSING_QUOTE));
+  });
+
+  it('reports the lexer error, not a missing end, when a block if is still open at it (3.4)', () => {
+    expectError(src('on mouseUp', '  if a then', '    answer "x', 'end mouseUp'), syntax(3, 12, NO_CLOSING_QUOTE));
+  });
+
+  it('reports the lexer error, not a missing end, when its handler is still open at it (3.4)', () => {
+    expectError(
+      src('on mouseUp', '  go to next card', 'end mouseUp', 'on openCard', '  answer "x', 'end openCard'),
+      syntax(5, 10, NO_CLOSING_QUOTE),
+    );
+  });
+
+  it('reports the lexer error, not "at most 3 buttons", when that error would name the broken token', () => {
+    expectError(inHandler('answer "a" with "b" or "c" or "d" or "e'), syntax(2, 40, NO_CLOSING_QUOTE));
+  });
+
+  it('reports a lexer error that has no token before it', () => {
+    expectError('=', syntax(1, 1, EQUALS));
+  });
+
+  it('reports only the first of several lexer errors (3.5)', () => {
+    expectError(inHandler('answer "a', 'put 1 # 2 into x', 'wait .5 seconds'), syntax(2, 10, NO_CLOSING_QUOTE));
+  });
+
+  it.each([
+    ['if x = 1 then howl', 8, EQUALS],
+    ['put x = 1 into y', 9, EQUALS],
+    ['answer \u201Chi\u201D', 10, 'unexpected character "\u201C"; use straight quotes (")'],
+    ["answer 'hi'", 10, 'unexpected character "\'"; strings use double quotes (")'],
+  ])('keeps the message and hint for %s word for word (3.6)', (line, column, message) => {
+    expectError(inHandler(line), syntax(2, column, message));
+  });
+});

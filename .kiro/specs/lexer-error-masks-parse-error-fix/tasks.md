@@ -43,7 +43,7 @@
   - Mark the task complete when the tests are written, run, and the failures are documented
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4_
 
-- [~] 2. Write preservation property tests (BEFORE implementing the fix)
+- [x] 2. Write preservation property tests (BEFORE implementing the fix)
   - **Property 2: Preservation** - Every other script lexes, parses and runs as before
   - **IMPORTANT**: Follow observation-first methodology. Run the unfixed code on inputs where `isBugCondition` is false, record what it returns, and assert that
   - Non-bug condition: `NOT isBugCondition(s)`. The script has no lexer error, or the rules read past before(s) before they raise any error: the first lexer error comes before any parse error, a rule needs the token at L, or a handler or block `if` is still open at L

@@ -349,3 +349,98 @@ export const maskedParseErrorArb: fc.Arbitrary<MaskedParseError> = fc
     const join = (pick: (l: Line) => string) => lines.map(pick).join(eol) + (finalBreak ? eol : '');
     return { source: join((l) => l.bad), twin: join((l) => l.clean), handler, targetLine: prefix.length + 1 };
   });
+
+// ---- the lexer error first shape (C does not hold) --------------------------------
+
+/**
+ * Lines where the parser needs the token at the lexer error before it can decide anything
+ * (3.3): the value after `put` or `answer`, the operator or `into` after a value, the line
+ * end after a command, the target after `into`, the command after `then`, the label after
+ * the fourth `or`, the word after `end`. Each has exactly one lexer error.
+ */
+export const NEEDS_TOKEN_AT_L: readonly string[] = [
+  'put 1 into "x',
+  'answer "x',
+  'go to next card =',
+  'put x = 1 into y',
+  'wait 1 #',
+  'go to card 1.',
+  "put 'a' into x",
+  'if a then "x',
+  'answer "a" with "b" or "c" or "d" or "e',
+  'end "x',
+];
+
+/** `end "x` stands for the handler's end: only at the top level of the body, never inside an open if. */
+const NEEDS_TOKEN_TOP_LEVEL_ONLY: ReadonlySet<string> = new Set(['end "x']);
+
+interface LexerFirstLine {
+  text: string;
+  /** Only at the top level of the body, never inside an open if. */
+  topLevelOnly: boolean;
+}
+
+/** The line of the first lexer error: a LEXER_LINES bad line or a NEEDS_TOKEN_AT_L line. */
+const lexerFirstLineArb: fc.Arbitrary<LexerFirstLine> = fc.oneof(
+  lexerLineArb.map((line): LexerFirstLine => ({ text: line.bad, topLevelOnly: false })),
+  fc
+    .tuple(fc.constantFrom(...NEEDS_TOKEN_AT_L), indentArb, caseArb)
+    .map(([text, indent, style]): LexerFirstLine => ({
+      text: decorate(same(text), indent, style).bad,
+      topLevelOnly: NEEDS_TOKEN_TOP_LEVEL_ONLY.has(text),
+    })),
+);
+
+/** Lines after the first lexer error: filler, parse errors, more lexer errors and stray `end if`s. */
+const afterLexerErrorLineArb: fc.Arbitrary<Line> = fc.oneof(
+  { weight: 2, arbitrary: fillerLineArb },
+  { weight: 2, arbitrary: decorated(fc.constantFrom(...PARSE_FIRST_LINES).map(same)) },
+  { weight: 1, arbitrary: lexerLineArb },
+  { weight: 1, arbitrary: decorated(fc.constant(same('end if'))) },
+);
+
+export interface LexerErrorFirst {
+  /** The script: the parser needs the text at the first lexer error before it finds any parse error. */
+  source: string;
+  /** The handler the lexer error is in. */
+  handler: HandlerName;
+  /** The line of the first lexer error. */
+  lexLine: number;
+}
+
+/**
+ * Scripts outside the bug condition C by construction (3.2 to 3.5). Comment or blank lines,
+ * sometimes a complete valid handler of the other name, then `on mouseUp` or `on openCard`,
+ * valid filler, 0 to 3 open block ifs, and the line of the first lexer error. After it come
+ * filler, PARSE_FIRST_LINES, more lexer errors and `end if` lines in any mix, then the `end if`
+ * lines of the open ifs and the handler's `end`, each of which may be missing. Joined with
+ * `\n` or `\r\n`, with or without a final line break.
+ */
+export const lexerErrorFirstArb: fc.Arbitrary<LexerErrorFirst> = fc
+  .constantFrom<HandlerName>('mouseUp', 'openCard')
+  .chain((handler) =>
+    fc.record({
+      handler: fc.constant(handler),
+      head: fc.array(fc.constantFrom('-- the crypt = # "', '').map(same), { maxLength: 2 }),
+      other: fc.option(validHandlerArb(otherName(handler)), { nil: undefined }),
+      header: fc.tuple(indentArb, caseArb).map(([indent, style]) => decorate(same(`on ${handler}`), indent, style)),
+      before: fillerArb,
+      opens: fc.array(decorated(fc.constantFrom(...WRAP_IFS).map(same)), { maxLength: 3 }),
+      lexer: lexerFirstLineArb,
+      after: fc.array(afterLexerErrorLineArb, { maxLength: 12 }),
+      endIfs: fc.array(fc.boolean(), { minLength: 3, maxLength: 3 }),
+      footer: fc.option(
+        fc.tuple(indentArb, caseArb).map(([indent, style]) => decorate(same(`end ${handler}`), indent, style)),
+        { nil: undefined, freq: 4 },
+      ),
+      eol: fc.constantFrom('\n', '\r\n'),
+      finalBreak: fc.boolean(),
+    }),
+  )
+  .map(({ handler, head, other, header, before, opens, lexer, after, endIfs, footer, eol, finalBreak }): LexerErrorFirst => {
+    const open = lexer.topLevelOnly ? [] : opens;
+    const ends = open.flatMap((_, k) => (endIfs[k] ? ['  end if'] : []));
+    const prefix = [...head, ...(other ?? []), header, ...before, ...open].map((l) => l.bad);
+    const lines = [...prefix, lexer.text, ...after.map((l) => l.bad), ...ends, ...(footer ? [footer.bad] : [])];
+    return { source: lines.join(eol) + (finalBreak ? eol : ''), handler, lexLine: prefix.length + 1 };
+  });
