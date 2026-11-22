@@ -50,7 +50,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - Existing tests that build a `FakeHost` from `cards` must pass without edits.
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.10_
 
-  - [ ] 2.3 Add the stack calls, `stack()` and the new `clone()` to the fake host
+  - [x] 2.3 Add the stack calls, `stack()` and the new `clone()` to the fake host
     - `findStackByName(name)` logs `{ call: 'findStackByName', name }` and returns `{ id, name }` with the stored name, matching ignoring case, or `undefined`.
     - `goToStack(stack, effect)` logs `{ call: 'goToStack', id, ...(effect ? { effect } : {}) }`, then throws before any change for an unknown id or a name that differs from that stack's name. Otherwise it sets the left stack's `current` to 1, switches `currentStackIndex`, sets the target's `current` to 1, and returns `{ index: 1, id, name }` of the first card.
     - `stack(): StackRef` returns the current stack's id and name and logs nothing.

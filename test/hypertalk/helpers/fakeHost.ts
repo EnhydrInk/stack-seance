@@ -149,9 +149,19 @@ export class FakeHost implements Host {
     return this.stacks[this.currentStackIndex]!.state;
   }
 
-  /** An independent copy: same stack, same remaining replies, same log so far. */
+  /**
+   * An independent copy: the same stacks, current stack and current card, the same remaining
+   * replies and the same log so far. Every stack but the current one is on card 1, so these
+   * values are the whole state (go-to-stack-command Requirement 7.11).
+   */
   clone(): FakeHost {
-    const copy = new FakeHost({ cards: structuredClone(this.state.cards), current: this.state.current, replies: this.replies });
+    const copy = new FakeHost({
+      // A FakeCard is a valid FakeCardInit, and every card has its id already.
+      stacks: this.stacks.map((s) => ({ id: s.id, name: s.name, cards: structuredClone(s.state.cards) })),
+      currentStack: this.currentStackIndex + 1,
+      current: this.state.current,
+      replies: this.replies,
+    });
     copy.log.push(...structuredClone(this.log));
     return copy;
   }
@@ -185,6 +195,31 @@ export class FakeHost implements Host {
     this.log.push({ call: 'goToCard', index: card.index, id: card.id, ...(effect ? { effect } : {}) });
     this.cardOf(card);
     this.state.current = card.index;
+  }
+
+  findStackByName(name: string): StackRef | undefined {
+    this.log.push({ call: 'findStackByName', name });
+    const key = name.toLowerCase();
+    const entry = this.stacks.find((s) => s.name.toLowerCase() === key);
+    return entry ? { id: entry.id, name: entry.name } : undefined;
+  }
+
+  /**
+   * Logged before the ref is checked, as goToCard is. A ref that is not one of this host's
+   * stacks is a bug in the caller, so it throws before anything changes.
+   */
+  goToStack(stack: StackRef, effect?: Effect): CardRef {
+    this.log.push({ call: 'goToStack', id: stack.id, ...(effect ? { effect } : {}) });
+    const i = this.stacks.findIndex((s) => s.id === stack.id);
+    const target = this.stacks[i];
+    if (!target || target.name !== stack.name) {
+      throw new Error(`fake host: no stack "${stack.id}" named "${stack.name}"`);
+    }
+    // The stack that is left does not remember its card: the next goToStack opens card 1 anyway.
+    this.state.current = 1;
+    this.currentStackIndex = i;
+    target.state.current = 1;
+    return this.ref(1);
   }
 
   getField(name: string): string | undefined {
@@ -242,6 +277,12 @@ export class FakeHost implements Host {
   }
 
   // ---- reads for tests (not host calls, so not logged) ----------------------------
+
+  /** The id and name of the current stack (go-to-stack-command Requirement 7.12). */
+  stack(): StackRef {
+    const { id, name } = this.stacks[this.currentStackIndex]!;
+    return { id, name };
+  }
 
   /** The current card, or the card at a 1-based index. */
   card(index = this.state.current): FakeCard {
