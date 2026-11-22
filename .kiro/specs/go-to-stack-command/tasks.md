@@ -120,7 +120,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - Leave `GenStack`, `stackArb`, `navCaseArb` and `goScript` unchanged, so the card P2 stays on one stack.
     - _Requirements: 9.2, 9.3, 9.6_
 
-  - [ ] 6.3 Write the stack P2 property in `test/hypertalk/stacknavigation.property.test.ts` (new file)
+  - [x] 6.3 Write the stack P2 property in `test/hypertalk/stacknavigation.property.test.ts` (new file)
     - **Property 2: Stack navigation outcomes (P2 stack navigation)**
     - Test name starts with "P2 stack navigation", with the comment `Feature: go-to-stack-command, Property 2: Stack navigation outcomes`. 300 runs.
     - `expectedStackOutcome(case)` comes from the generated stacks alone; `observedStackOutcome(result, host, case, goLine)` classifies the run into (a), (b) or (c). The test checks that exactly one outcome holds, that it is the expected one, and the `findStackByName` and `goToStack` entries of the log.
