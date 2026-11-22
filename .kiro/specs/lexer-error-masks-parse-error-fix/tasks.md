@@ -128,7 +128,7 @@
     - Remove the worktree afterwards with `git worktree remove`, and commit nothing from this step
     - _Requirements: 3.1, 3.7, 3.10_
 
-- [~] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`, and make sure both pass
   - If the `nested-if-else-attachment-fix` has also landed, its tests are part of this run
   - Ask the user if questions arise
