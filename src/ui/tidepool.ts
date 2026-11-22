@@ -37,7 +37,7 @@ const CARDS: TideCard[] = [
   {
     name: 'Floating',
     water: true,
-    pieces: [{ sprite: otterFloat, x: 4, y: 15 }, { sprite: octopusFloat, x: 35, y: 10 }],
+    pieces: [{ sprite: otterFloat, x: 4, y: 15 }, { sprite: octopusFloat, x: 35, y: 15 }],
   },
 ];
 
