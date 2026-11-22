@@ -130,4 +130,31 @@ describe('generator coverage', () => {
     expect(counts.filter((c) => c.elseAfterOwnElse > 0).length, '3.2').toBeGreaterThan(0);
     expect(counts.filter((c) => c.endIfAfter > 0).length, '3.3').toBeGreaterThan(0);
   });
+
+  // Feature: go-to-stack-command, Property 1: Round trip with stack targets. The P1 tests above
+  // get go to stack through scriptArb and renderScript; this checks that they really do.
+  it('produces go to stack with every kind of expression as target, inside if blocks too, written with and without to (9.1)', () => {
+    const kinds = new Set<string>();
+    let insideIf = 0;
+    const visit = (stmts: Sc['handlers'][number]['body'], depth: number) => {
+      for (const s of stmts) {
+        if (s.t === 'go' && s.target.k === 'stack') {
+          kinds.add(s.target.expr.t);
+          if (depth > 0) insideIf++;
+        }
+        if (s.t === 'if') {
+          visit(s.then, depth + 1);
+          visit(s.else, depth + 1);
+        }
+      }
+    };
+    for (const ast of fc.sample(scriptArb, { numRuns: 400, seed: 1 })) {
+      for (const h of ast.handlers) visit(h.body, 0);
+    }
+    expect([...kinds].sort()).toEqual(['bin', 'bool', 'field', 'not', 'num', 'paren', 'str', 'var']);
+    expect(insideIf).toBeGreaterThan(0);
+    // Generated strings, names and comments never hold "go", so these only match the command.
+    expect(renderings.filter((s) => /\bgo[ \t]+to[ \t]+stack\b/i.test(s)).length, 'with to').toBeGreaterThan(0);
+    expect(renderings.filter((s) => /\bgo[ \t]+stack\b/i.test(s)).length, 'without to').toBeGreaterThan(0);
+  });
 });

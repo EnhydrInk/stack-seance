@@ -107,7 +107,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 6. Correctness properties
-  - [ ] 6.1 Extend the P1 generator and write the P1 coverage test
+  - [x] 6.1 Extend the P1 generator and write the P1 coverage test
     - **Property 1: Round trip with stack targets (P1)**
     - `test/hypertalk/helpers/arbitraries.ts`: `simpleStmtArb` gains `exprArb.map(expr => ({ t: 'go', target: { k: 'stack', expr } }))`. `Renderer.simple` writes `go [to] stack <expr at PRIMARY>` with `to` dropped at random and random keyword case, as for `card`.
     - `test/hypertalk/roundtrip.property.test.ts`: the P1 tests stay as written. A new coverage `it` checks that a fixed-seed sample of `scriptArb` has stack targets of every expression kind, inside `if` blocks too, and that renderings write the stack go with and without `to`.

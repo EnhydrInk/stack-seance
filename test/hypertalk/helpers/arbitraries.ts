@@ -61,6 +61,8 @@ const EFFECTS: readonly Effect[] = ['dissolve', 'wipeLeft', 'wipeRight', 'irisOp
 export const simpleStmtArb: fc.Arbitrary<S> = fc.oneof(
   fc.constantFrom(...NAV).map((k): S => ({ t: 'go', target: { k } })),
   exprArb.map((expr): S => ({ t: 'go', target: { k: 'card', expr } })),
+  // go-to-stack-command Requirement 9.1: every expression form as a stack target.
+  exprArb.map((expr): S => ({ t: 'go', target: { k: 'stack', expr } })),
   fc.constantFrom(...EFFECTS).map((effect): S => ({ t: 'effect', effect })),
   fc.tuple(exprArb, fc.array(textArb, { maxLength: 3 })).map(([prompt, labels]): S => ({ t: 'answer', prompt, labels })),
   exprArb.map((prompt): S => ({ t: 'ask', prompt })),
@@ -296,9 +298,13 @@ class Renderer {
       case 'haunt':
         return HAUNTS.find((h) => h.kind === s.kind)!.words.map(kw);
       case 'go':
-        return s.target.k === 'card'
-          ? [kw('go'), ...to(), kw('card'), ...this.expr(s.target.expr, PRIMARY)]
-          : [kw('go'), ...to(), kw(s.target.k), kw('card')];
+        switch (s.target.k) {
+          case 'card':
+          case 'stack':
+            return [kw('go'), ...to(), kw(s.target.k), ...this.expr(s.target.expr, PRIMARY)];
+          default:
+            return [kw('go'), ...to(), kw(s.target.k), kw('card')];
+        }
       case 'effect':
         return [kw('visual'), kw('effect'), ...EFFECT_WORDS[s.effect].map(kw)];
       case 'answer': {
