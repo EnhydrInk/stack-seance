@@ -341,3 +341,99 @@ describe('go-to-stack-command Requirement 5.1, 5.4 / 8.7 after a stack go', () =
     expect(host.fieldText('note')).toBe('[]12');
   });
 });
+
+describe('go-to-stack-command Requirement 5.2, 5.3 / 8.8 cards, fields and buttons resolve in the current stack only', () => {
+  // Home has two cards, Home and Lobby, so the house has more cards and a card with the same name.
+  const twoHomeCards = (init: Fixture = {}) => haunted({ homeCards: ['Home', 'Lobby'], ...init });
+
+  /** The note of every card of a stack, and the door button of every house card. */
+  const notes = (host: FakeHost, stack: number) => host.stacks[stack]!.state.cards.map((c) => c.fields[0]!.text);
+  const doors = (host: FakeHost) => host.stacks[1]!.state.cards.map((c) => c.buttons[0]!.visible);
+
+  it('resolves card numbers and names in Home before the stack go (5.2, 6.5)', async () => {
+    const missing: [string, string][] = [
+      ['go to card 3', 'there is no card 3: the stack has 2 cards'],
+      ['go to card "Crypt"', 'there is no card named "Crypt"'],
+    ];
+    for (const [line, message] of missing) {
+      const host = twoHomeCards();
+      const { result } = await run(inHandler(line), host);
+      expect(result, line).toEqual({ ok: false, error: { kind: 'runtime', line: 2, message } });
+      expect(where(host), line).toEqual({ stack: 'home', card: 1 });
+    }
+    for (const line of ['go to last card', 'go to card "lobby"']) {
+      const host = twoHomeCards();
+      const { result } = await run(inHandler(line), host);
+      expect(result, line).toEqual({ ok: true });
+      expect(where(host), line).toEqual({ stack: 'home', card: 2 });
+      expect(moves(host), line).toEqual([{ call: 'goToCard', index: 2, id: 'home/card-2' }]);
+    }
+  });
+
+  it('resolves card numbers, names, first, last, next and prev in the house after the stack go (5.2)', async () => {
+    const host = twoHomeCards();
+    const { result } = await run(
+      inHandler(
+        'go to stack "Haunted House"',
+        'go to card "Lobby"', // the house's Lobby, card 4, not Home's card 2
+        'go to card 3', //       Attic
+        'go to first card', //   Hall
+        'go to last card', //    Lobby
+        'go to next card', //    wraps to Hall
+        'go to prev card', //    wraps to Lobby
+      ),
+      host,
+    );
+    expect(result).toEqual({ ok: true });
+    expect(moves(host)).toEqual([
+      { call: 'goToStack', id: 'house' },
+      { call: 'goToCard', index: 4, id: 'house/card-4' },
+      { call: 'goToCard', index: 3, id: 'house/card-3' },
+      { call: 'goToCard', index: 1, id: 'house/card-1' },
+      { call: 'goToCard', index: 4, id: 'house/card-4' },
+      { call: 'goToCard', index: 1, id: 'house/card-1' },
+      { call: 'goToCard', index: 4, id: 'house/card-4' },
+    ]);
+    expect(where(host)).toEqual({ stack: 'house', card: 4 });
+    expect(host.stacks[0]!.state.current).toBe(1);
+  });
+
+  it('counts and names the cards of the house only after the stack go (5.2)', async () => {
+    const missing: [string, string][] = [
+      ['go to card 5', 'there is no card 5: the stack has 4 cards'],
+      ['go to card "Home"', 'there is no card named "Home"'],
+    ];
+    for (const [line, message] of missing) {
+      const host = twoHomeCards();
+      const { result } = await run(inHandler('go to stack "Haunted House"', line), host);
+      expect(result, line).toEqual({ ok: false, error: { kind: 'runtime', line: 3, message } });
+      expect(where(host), line).toEqual({ stack: 'house', card: 1 });
+    }
+  });
+
+  it('reads and writes fields and buttons on the house’s current card only after the stack go (5.3)', async () => {
+    const host = twoHomeCards();
+    const { result } = await run(
+      inHandler(
+        'put "home" into field "note"',
+        'go to stack "Haunted House"',
+        'go to card 2',
+        'put "[" & field "note" & "]" into field "note"',
+        'hide button "door"',
+      ),
+      host,
+    );
+    expect(result).toEqual({ ok: true });
+    expect(notes(host, 0)).toEqual(['home', '']);
+    expect(notes(host, 1)).toEqual(['', '[]', '', '']);
+    expect(doors(host)).toEqual([true, false, true, true]);
+
+    // Home's button is not on the house's card.
+    const other = twoHomeCards();
+    expect((await run(inHandler('go to stack "Haunted House"', 'hide button "House"'), other)).result).toEqual({
+      ok: false,
+      error: { kind: 'runtime', line: 3, message: 'there is no button "House" on this card' },
+    });
+    expect(other.stacks[0]!.state.cards[0]!.buttons).toEqual([{ name: 'House', visible: true }]);
+  });
+});

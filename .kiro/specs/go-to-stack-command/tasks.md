@@ -73,7 +73,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
   - The runtime caches no card or stack state.
   - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6, 3.7, 3.8, 4.1, 4.2, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.1, 5.2, 5.3, 5.4, 6.8_
 
-- [ ] 4. Example tests for parsing, printing and running `go to stack`
+- [x] 4. Example tests for parsing, printing and running `go to stack`
   - [x] 4.1 Write parser and lexer example tests
     - `test/hypertalk/parser.test.ts`, new `describe('go to stack (go-to-stack-command Requirement 1)')`: with and without `to` and in mixed case giving the same tree; each primary kind as target (`"Home"`, `3`, `true`, `it`, `dest`, `field "Where"`, `("Haunted" && "House")`); inside a block `if`, a one-line `if` with `else`, and an `else if` chain.
     - Syntax errors from the design's table, with line, column and full message: one parentheses-hint case per operator `+ - * / & &&`, the missing target (also as the last line with no `end mouseUp`), `go to stack "A" "B"`, `go to card 1 of stack "A"`, `put 1 into stack` and `global stack`, plus the variants `put 1 into STACK` and `global a, stack`. The `go home` case waits for task 8.
@@ -97,7 +97,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - The rest of the handler runs after a stack go and writes the new card's field only. A global set on Home is appended to by Hall's `openCard`, which reads the local `x` as `''`; the store ends with `visits = "12"`.
     - _Requirements: 8.6, 8.7, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.1, 5.4_
 
-  - [ ] 4.5 Add current-stack-only card resolution tests to `test/hypertalk/runtime.stacks.test.ts`
+  - [x] 4.5 Add current-stack-only card resolution tests to `test/hypertalk/runtime.stacks.test.ts`
     - A fixture variant where Home has cards `Home` and `Lobby`, so the house has more cards and a card with the same name.
     - Before the stack go: `go to card 3` fails with `there is no card 3: the stack has 2 cards`, `go to card "Crypt"` fails, `go to last card` and `go to card "lobby"` reach Home's card 2.
     - After the stack go: `go to card "Lobby"` reaches the house's card 4, `go to card 3` reaches Attic, `go to first card` from Attic reaches Hall, `go to last card` reaches Lobby, next from Lobby wraps to Hall, prev from Hall wraps to Lobby, and `field "note"` and `hide button "door"` act on the house's current card only.
