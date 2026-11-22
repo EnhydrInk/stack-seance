@@ -454,25 +454,26 @@ describe('R9 an else or end if line right after a one-line if inside a block if 
     expect(parse(source)).toEqual({ ok: false, error });
   }
 
-  it('Repro 1 reports the else on line 4 (2.1)', () => {
+  // Expected to fail until the fix (task 3.3 removes .fails from these four).
+  it.fails('Repro 1 reports the else on line 4 (2.1)', () => {
     expectError(ONE_LINE_IF_REPRO_1.source, ONE_LINE_IF_REPRO_1.error);
   });
 
-  it('reports an else if line on its else (2.3)', () => {
+  it.fails('reports an else if line on its else (2.3)', () => {
     expectError(
       inHandler('if a then', '  if b then go next card', 'else if c then', '  howl', 'end if'),
       syntax(4, 3, ELSE_AFTER_ONE_LINE_IF),
     );
   });
 
-  it('reports a second else in an else part with the one-line if message, not "already has an else" (2.1)', () => {
+  it.fails('reports a second else in an else part with the one-line if message, not "already has an else" (2.1)', () => {
     expectError(
       inHandler('if a then', '  howl', 'else', '  if b then go next card', 'else', '  answer "x"', 'end if'),
       syntax(6, 3, ELSE_AFTER_ONE_LINE_IF),
     );
   });
 
-  it('skips blank and comment-only lines between the one-line if and the else (2.1)', () => {
+  it.fails('skips blank and comment-only lines between the one-line if and the else (2.1)', () => {
     const source = src(
       'on mouseUp', //                                     1
       '  if field "key" is "gold" then', //                2
@@ -487,18 +488,19 @@ describe('R9 an else or end if line right after a one-line if inside a block if 
     expectError(source, syntax(6, 5, ELSE_AFTER_ONE_LINE_IF));
   });
 
-  it('Repro 2 reports the stray end if on line 4, naming the if on line 2 (2.4)', () => {
+  // Expected to fail until the fix (task 3.4 removes .fails from these four).
+  it.fails('Repro 2 reports the stray end if on line 4, naming the if on line 2 (2.4)', () => {
     expectError(ONE_LINE_IF_REPRO_2.source, ONE_LINE_IF_REPRO_2.error);
   });
 
-  it('reports the stray end if when the unmatched line is an else (2.4)', () => {
+  it.fails('reports the stray end if when the unmatched line is an else (2.4)', () => {
     expectError(
       inHandler('if a then', '  if b then go next card', 'end if', 'answer "x"', 'else', 'answer "y"', 'end if'),
       syntax(4, 3, strayEndIfMessage(2)),
     );
   });
 
-  it('reports the last of several stray end ifs (2.4)', () => {
+  it.fails('reports the last of several stray end ifs (2.4)', () => {
     const source = inHandler(
       'if a then', //                2
       '  if b then howl', //         3
@@ -511,7 +513,7 @@ describe('R9 an else or end if line right after a one-line if inside a block if 
     expectError(source, syntax(7, 3, strayEndIfMessage(5)));
   });
 
-  it('reports a stray end if that closes an inner block if two levels deep (2.4)', () => {
+  it.fails('reports a stray end if that closes an inner block if two levels deep (2.4)', () => {
     const source = inHandler(
       'if a then', //          2
       '  if b then', //        3

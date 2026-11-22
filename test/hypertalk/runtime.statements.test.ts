@@ -460,7 +460,8 @@ describe('R12.3 / 2.4 a parse error found before a lexer error', () => {
 });
 
 describe('R9 / 2.2 an else line right after a one-line if inside a block if', () => {
-  it('Repro 1 returns the syntax error on line 4 and runs nothing: no host call, no dialog, same card', async () => {
+  // Expected to fail until the fix (task 3.3 removes .fails).
+  it.fails('Repro 1 returns the syntax error on line 4 and runs nothing: no host call, no dialog, same card', async () => {
     const init: Partial<FakeHostInit> = {
       cards: [{ fields: [{ name: 'key', text: 'iron' }, { name: 'door', text: 'open' }] }, { name: 'Hall' }],
     };

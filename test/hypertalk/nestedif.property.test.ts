@@ -36,7 +36,8 @@ function checkShape(shape: IfShape): void {
 }
 
 describe('Property 1: an else or end if line right after a one-line if inside a block if (2.1, 2.2, 2.3, 2.4)', () => {
-  it('parseUnguarded, parse and runHandler return the expected syntax error, and the host is never called', async () => {
+  // Expected to fail until the fix (task 3.4 removes .fails).
+  it.fails('parseUnguarded, parse and runHandler return the expected syntax error, and the host is never called', async () => {
     await fc.assert(
       fc.asyncProperty(bugShapeArb, async (shape) => {
         checkShape(shape);
