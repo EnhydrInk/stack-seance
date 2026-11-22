@@ -106,7 +106,7 @@
     - _Preservation: 3.3, 3.4, 3.5 and 3.10 from Preservation Requirements in design_
     - _Requirements: 2.4, 3.3, 3.4, 3.5, 3.10_
 
-  - [~] 3.5 Describe the new rule in the interpreter design
+  - [x] 3.5 Describe the new rule in the interpreter design
     - In `.kiro/specs/hypertalk-interpreter/design.md`, "Parser" section, extend the single-line `if` bullet (line 153) with the rule: inside a block `if`, an `else` or `else if` line right after a one-line `if` without its own `else` is a syntax error on that `else`. An `end if` right after a one-line `if` closes the enclosing block `if`, and when a later `else` or `end if` in the same handler is then unmatched, the error names that `end if`
     - Do not change `ast.ts`, `printer.ts`, `runtime.ts`, `lexer.ts` or `index.ts`
     - _Bug_Condition: `isBugCondition(s)` from design_
