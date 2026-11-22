@@ -128,7 +128,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - `test/hypertalk/navigation.property.test.ts` stays as written.
     - **Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 4.1, 4.2, 4.3, 4.4, 4.7, 4.9, 9.2, 9.3, 9.4, 9.5, 9.6**
 
-  - [ ] 6.4 Add `stackSessionArb` and `anySessionArb` to `test/hypertalk/helpers/arbitraries.ts`
+  - [x] 6.4 Add `stackSessionArb` and `anySessionArb` to `test/hypertalk/helpers/arbitraries.ts`
     - `runnableSimpleArb`, `runnableStmtArb` and `runnableScriptArb` take an optional list of stack names. Without it, their `commands` list is the same as today, so `sessionArb` draws the same values for the existing fixed-seed coverage tests.
     - With stack names, they add `runnableStackGoArb(stacks)`: an existing name in random case, sometimes `Nowhere 7`, the empty string, or `it`.
     - `stackSessionArb`: 1 to 3 lettered stack names; 1 to 3 cards per stack cut in order from one `fc.uniqueArray` of card names; fields and buttons from `cardItemsArb`; card scripts from `sessionCardScriptArb` plus `on openCard` / `go to stack "<name>"` / `end openCard`; a random starting stack and card; replies over card and stack names; a `mouseUp` from `runnableScriptArb(cardNames, stackNames)`.
