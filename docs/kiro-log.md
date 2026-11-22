@@ -34,3 +34,8 @@
 - Done: re-ran task 2's tests unchanged on the fixed code: 11 preservation unit tests, the 3.4 `openCard` navigation test, the `lexerErrorFirstArb` property (300 runs) and the mutant invariant (500 runs), plus task 3.1's lexer tests and the existing P4, P5 and P2 navigation properties. 8 files, 180 tests passed; full suite 338 passed, 0 failed. Only `tasks.meta.json` changed (PBT status).
 - Kiro: Property 2 (Preservation), requirements 3.1–3.11; property-based tests written against the unfixed code and re-run against the fix; PBT status set to passed for tasks 2 and 3.5.
 - Why it matters: scripts outside the bug condition, including every lexer-clean script, still give exactly the error and hint they gave before.
+
+## lexer-error-masks-parse-error-fix, task 3.6: Run the one-off old-versus-new comparison (not committed)
+- Done: compared the base `edef939` and the fixed lexer and parser on 20,000 `mutantArb` samples and 3,000 rendered `scriptArb` scripts (seed 7), using a temporary worktree in `/tmp` that was removed afterwards. `tokenize` identical for all 23,000 inputs. 17,213 lexer-clean mutants and all 3,000 rendered scripts identical. Of 2,787 lexer-error mutants, 1,200 still report the lexer error and 1,587 now report an earlier parse error matching the old parser on `textBefore`. 0 violations. No repo file changed apart from task status.
+- Kiro: requirements 3.1, 3.7 and 3.10; the spec's test generators reused outside vitest for a differential check against the base commit.
+- Why it matters: across 23,000 scripts the fix changes only the error reported for scripts with a lexer error, and only to an earlier one.

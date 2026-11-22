@@ -69,7 +69,7 @@
   - Mark the task complete when the tests are written, run, and passing on unfixed code
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11_
 
-- [ ] 3. Fix the lexer error that masks an earlier parse error
+- [x] 3. Fix the lexer error that masks an earlier parse error
 
   - [x] 3.1 Keep the tokens the lexer read before its first error
     - In `src/hypertalk/lexer.ts`, add the exported interface `LexPrefix { tokens: Token[]; error: SyntaxError | undefined }` and move the body of `tokenize` (line 14) into a new exported function `tokenizeUntilError(source): LexPrefix`, with the doc comments from design
@@ -121,7 +121,7 @@
     - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11_
 
-  - [~] 3.6 Run the one-off old-versus-new comparison (not committed)
+  - [x] 3.6 Run the one-off old-versus-new comparison (not committed)
     - Check out the commit the fix is built on (`edef939` unless another fix has landed since) in a separate git worktree outside the repo, for example `git worktree add ../stack-seance-base edef939`
     - With `vite-node`, compare the old and fixed `parseUnguarded` and `tokenize` on 20,000 `mutantArb` samples and 3,000 `renderScript` outputs of `scriptArb`
     - `tokenize` results must be identical for every input. `parseUnguarded` results must be identical for every lexer-clean input. For a lexer-error input, the fixed result either equals the old one (exactly L), or is a parse error before L that equals the old `parseUnguarded(textBefore(source, L))`. The scratch copy gave identical results for 17,213 lexer-clean mutants and all 3,000 rendered scripts
