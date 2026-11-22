@@ -60,7 +60,7 @@
   - Mark the task complete when the tests are written, run, and passing on unfixed code
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11_
 
-- [ ] 3. Fix the attachment of `else` and `end if` after a one-line `if` inside a block `if`
+- [x] 3. Fix the attachment of `else` and `end if` after a one-line `if` inside a block `if`
 
   - [x] 3.1 Stop the test renderer from writing the rejected shape
     - Do this before the parser change, so P1 and P5 stay green at every step
@@ -129,7 +129,7 @@
     - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11_
 
-  - [~] 3.8 Run the one-off old-versus-new parser comparison (not committed)
+  - [x] 3.8 Run the one-off old-versus-new parser comparison (not committed)
     - Extract the old parser with `git show edef939:src/hypertalk/parser.ts` into a temporary file outside the repo, with its imports pointed at `src/hypertalk`
     - With `vite-node`, run both parsers on about 20000 sources: P4 mutants, rendered `scriptArb` scripts, and both shape families from `ifShapes.ts`
     - Wherever the results differ, the fixed result must carry one of the two new messages, and its line must be no later than the old error's line (or the old parse succeeded). For the shape families, the results must differ exactly on the inputs the generator marks as C
