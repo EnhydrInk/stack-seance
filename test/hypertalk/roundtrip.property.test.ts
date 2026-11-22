@@ -6,11 +6,13 @@ import { stripPositions, type Script } from '../../src/hypertalk/ast';
 import {
   renderScript,
   scriptArb,
+  sessionArb,
   simpleStmtArb,
   exprArb,
   type I,
   type Sc,
 } from './helpers/arbitraries';
+import { oneLineIfFollowers } from './helpers/ifShapes';
 
 function ok(source: string): Script {
   const result = parse(source);
@@ -103,5 +105,29 @@ describe('generator coverage', () => {
     for (const kind of ['go', 'effect', 'answer', 'ask', 'putField', 'putVar', 'show', 'hide', 'wait', 'global', 'haunt', 'if', 'chain', 'nested 4 deep']) {
       expect(seen, kind).toContain(kind);
     }
+  });
+
+  // nested-if-else-attachment-fix: the parser rejects a one-line if without else right
+  // before an else or else if line, so rendered valid scripts must not have one.
+  const renderings = fc
+    .sample(fc.tuple(scriptArb, fc.integer()), { numRuns: 2000, seed: 1 })
+    .map(([ast, seed]) => renderScript(ast, seed));
+  const runScripts = fc.sample(sessionArb, { numRuns: 1000, seed: 11 }).map((s) => s.source);
+
+  it('never writes a one-line if without else directly before an else or else if line (2.1, 2.3)', () => {
+    const rejected = (sources: string[]) => sources.filter((s) => oneLineIfFollowers(s).elseAfterNoElse > 0);
+    const badRenderings = rejected(renderings);
+    const badRunScripts = rejected(runScripts);
+    const shortest = [...badRenderings, ...badRunScripts].sort((a, b) => a.length - b.length)[0];
+    expect(
+      { scriptArbRenderings: badRenderings.length, sessionArbRunScripts: badRunScripts.length },
+      `the shortest one:\n${shortest}`,
+    ).toEqual({ scriptArbRenderings: 0, sessionArbRunScripts: 0 });
+  });
+
+  it('still writes a one-line if with its own else before an else line (3.2) and a one-line if before end if (3.3)', () => {
+    const counts = renderings.map(oneLineIfFollowers);
+    expect(counts.filter((c) => c.elseAfterOwnElse > 0).length, '3.2').toBeGreaterThan(0);
+    expect(counts.filter((c) => c.endIfAfter > 0).length, '3.3').toBeGreaterThan(0);
   });
 });

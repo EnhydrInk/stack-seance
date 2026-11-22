@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Write bug condition exploration tests
+- [x] 1. Write bug condition exploration tests
   - **Property 1: Bug Condition** - Else and stray end if after a one-line if inside a block if
   - **CRITICAL**: These tests MUST FAIL on unfixed code. The failures confirm the bug exists
   - **DO NOT attempt to fix the tests or the code when they fail**
@@ -38,7 +38,7 @@
   - Mark the task complete when the tests are written, run, and the failures are documented
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 2. Write preservation property tests (BEFORE implementing the fix)
+- [~] 2. Write preservation property tests (BEFORE implementing the fix)
   - **Property 2: Preservation** - Every other script parses and runs as before
   - **IMPORTANT**: Follow observation-first methodology. Run the unfixed parser on inputs where `isBugCondition` is false, record what it returns, and assert that
   - Non-bug condition: `NOT isBugCondition(s)`. A block ends with a command or a closed block `if`, or with a one-line `if` that has its own `else` before an `else` line, or a stray `end if` is followed by nothing unmatched, or the unmatched line itself follows a one-line `if`, or the only stray `end if` is in another handler
@@ -62,7 +62,7 @@
 
 - [ ] 3. Fix the attachment of `else` and `end if` after a one-line `if` inside a block `if`
 
-  - [ ] 3.1 Stop the test renderer from writing the rejected shape
+  - [~] 3.1 Stop the test renderer from writing the rejected shape
     - Do this before the parser change, so P1 and P5 stay green at every step
     - In `test/hypertalk/helpers/arbitraries.ts` (`Renderer.block` and `Renderer.ifStmt`, lines 238 to 277), change `block(stmts, depth)` to `block(stmts, depth, beforeElse = false)` and pass `beforeElse` to `ifStmt` for the last statement only
     - In `ifStmt(s, depth, beforeElse = false)`, allow the one-line form only when `fits && !(beforeElse && s.else.length === 0)`. A one-line `if` with its own `else` before an `else` line, and a one-line `if` before `end if`, are still written
@@ -75,7 +75,7 @@
     - _Preservation: P1 round trip and P5 generator checks keep passing; 3.2 and 3.3 shapes are still rendered_
     - _Requirements: 3.6, 3.9, 3.11_
 
-  - [ ] 3.2 Remember which `if` nodes were parsed in the one-line form
+  - [~] 3.2 Remember which `if` nodes were parsed in the one-line form
     - In `src/hypertalk/parser.ts`, add `private readonly oneLineIfs = new WeakSet<IfStmt>()` to the parser
     - In `oneLineIf()` (line 428), add the node to `oneLineIfs` before returning it
     - Add the helper `private trailingOneLineIf(block: Stmt[]): IfStmt | undefined` that returns the block's last statement when it is an `if` in `oneLineIfs`, and `undefined` otherwise
@@ -85,7 +85,7 @@
     - _Preservation: the syntax tree type and every parse result stay the same (3.6, 3.9)_
     - _Requirements: 2.1, 2.3, 2.4, 3.6, 3.9_
 
-  - [ ] 3.3 Reject an `else` line directly after a one-line `if` without `else`
+  - [~] 3.3 Reject an `else` line directly after a one-line `if` without `else`
     - In `blockIf()` (line 389), keep a variable `ended` for the block that just ended: `root.then` first, then each link's `then`, then `tail.else`
     - Add `private rejectElseAfterOneLineIf(ended: Stmt[]): void`. When `trailingOneLineIf(ended)` is set and its `else` is empty, it calls `this.fail(this.current(), '"else" right after a one-line if; a one-line if keeps its else on the same line (or write the if in block form with "end if")')`
     - Call it at two sites, both before the `else` token is consumed: in the loop just before `this.advance()` past `else` (line 400, covers bare `else` and `else if`), and after the `else` part just before the existing `this "if" already has an "else"` failure (line 419)
@@ -95,7 +95,7 @@
     - _Preservation: 3.1, 3.2, 3.6, 3.7 and 3.8 from Preservation Requirements in design_
     - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.6, 3.7, 3.8_
 
-  - [ ] 3.4 Record stray `end if`s and report the last one at an unmatched line
+  - [~] 3.4 Record stray `end if`s and report the last one at an unmatched line
     - Add `private strayEndIf: { end: Token; closes: Token } | undefined`, reset to `undefined` at the start of `handler()` (line 147) next to `this.handlerName = name`
     - In `blockIf()`, at both places that consume `end if` (the loop's `end` branch at line 393 and after the `else` part at line 421), record `{ end: this.current(), closes: head }` when `trailingOneLineIf(ended)` is set, with or without its own `else`. Later records overwrite earlier ones, so the last one wins. Nothing fails here (3.3)
     - In `handler()`, after `const body = this.block()` and the eof check, and before the existing `else` check (line 164): when the current line is `else` or `end if`, `this.strayEndIf` is set, and `trailingOneLineIf(body)` is not set, call `this.fail(end, …)` with the template literal from design, whose text is `"end if" right after a one-line if closes the "if" on line <closes.line>; a one-line if has no "end if"`
@@ -106,7 +106,7 @@
     - _Preservation: 3.3, 3.4, 3.5 and 3.10 from Preservation Requirements in design_
     - _Requirements: 2.4, 3.3, 3.4, 3.5, 3.10_
 
-  - [ ] 3.5 Describe the new rule in the interpreter design
+  - [~] 3.5 Describe the new rule in the interpreter design
     - In `.kiro/specs/hypertalk-interpreter/design.md`, "Parser" section, extend the single-line `if` bullet (line 153) with the rule: inside a block `if`, an `else` or `else if` line right after a one-line `if` without its own `else` is a syntax error on that `else`. An `end if` right after a one-line `if` closes the enclosing block `if`, and when a later `else` or `end if` in the same handler is then unmatched, the error names that `end if`
     - Do not change `ast.ts`, `printer.ts`, `runtime.ts`, `lexer.ts` or `index.ts`
     - _Bug_Condition: `isBugCondition(s)` from design_
@@ -114,7 +114,7 @@
     - _Preservation: Preservation Requirements from design_
     - _Requirements: 2.1, 2.3, 2.4_
 
-  - [ ] 3.6 Verify the bug condition exploration tests now pass
+  - [~] 3.6 Verify the bug condition exploration tests now pass
     - **Property 1: Expected Behavior** - Else and stray end if after a one-line if inside a block if
     - **IMPORTANT**: Re-run the SAME tests from task 1. Do NOT write new tests
     - The tests from task 1 encode the expected behavior. When they pass, the expected behavior is satisfied
@@ -122,20 +122,20 @@
     - **EXPECTED OUTCOME**: The task 1 tests PASS (confirms the bug is fixed)
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-  - [ ] 3.7 Verify the preservation tests still pass
+  - [~] 3.7 Verify the preservation tests still pass
     - **Property 2: Preservation** - Every other script parses and runs as before
     - **IMPORTANT**: Re-run the SAME tests from task 2. Do NOT write new tests
     - Run the preservation unit tests and property from task 2, the existing tests at `test/hypertalk/parser.test.ts` lines 325 to 328, 336 to 341 and 350 to 354, and the existing P1, P3, P4, P5 and P6 properties with their generator threshold tests
     - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11_
 
-  - [ ] 3.8 Run the one-off old-versus-new parser comparison (not committed)
+  - [~] 3.8 Run the one-off old-versus-new parser comparison (not committed)
     - Extract the old parser with `git show edef939:src/hypertalk/parser.ts` into a temporary file outside the repo, with its imports pointed at `src/hypertalk`
     - With `vite-node`, run both parsers on about 20000 sources: P4 mutants, rendered `scriptArb` scripts, and both shape families from `ifShapes.ts`
     - Wherever the results differ, the fixed result must carry one of the two new messages, and its line must be no later than the old error's line (or the old parse succeeded). For the shape families, the results must differ exactly on the inputs the generator marks as C
     - Delete the temporary files afterwards and commit nothing from this step
     - _Requirements: 3.9, 3.10_
 
-- [ ] 4. Checkpoint - Ensure all tests pass
+- [~] 4. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`, and make sure both pass
   - Ask the user if questions arise

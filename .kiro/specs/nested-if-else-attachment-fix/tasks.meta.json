@@ -1,0 +1,98 @@
+{
+  "pbtResults": {
+    "1. Write bug condition exploration tests": {
+      "status": "passed",
+      "failingExample": "Property 1 failed after 1 run on the unfixed parser, as intended. Shrunk counterexample (family 'end if', unmatched else if): \"on mouseup\\n  if a then\\n    if a then howl\\n  end if\\n  else if a then\\n    howl\\n  end if\\nend mouseup\". Expected 4:3 '\"end if\" right after a one-line if closes the \"if\" on line 2; a one-line if has no \"end if\"'. The unfixed parser returned 5:3 '\"else\" without a matching \"if\"; a one-line if keeps its else on the same line'. Across 3000 sampled bug shapes, none matched the expected result. Family A else-if-link and then-part shapes were accepted. Family A else-part shapes gave 'this \"if\" already has an \"else\"' on the same line. Family B shapes gave the old message on the later unmatched line.",
+      "lastRunTimestamp": 1795319375224
+    }
+  },
+  "executionHistory": {
+    "1. Write bug condition exploration tests": [
+      {
+        "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795318668299
+      },
+      {
+        "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795318676973
+      },
+      {
+        "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795319411152
+      }
+    ],
+    "2. Write preservation property tests (BEFORE implementing the fix)": [
+      {
+        "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795318668325
+      }
+    ],
+    "3.1 Stop the test renderer from writing the rejected shape": [
+      {
+        "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795318668352
+      }
+    ],
+    "3.2 Remember which `if` nodes were parsed in the one-line form": [
+      {
+        "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795318668378
+      }
+    ],
+    "3.3 Reject an `else` line directly after a one-line `if` without `else`": [
+      {
+        "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795318668406
+      }
+    ],
+    "3.4 Record stray `end if`s and report the last one at an unmatched line": [
+      {
+        "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795318668430
+      }
+    ],
+    "3.5 Describe the new rule in the interpreter design": [
+      {
+        "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795318668454
+      }
+    ],
+    "3.6 Verify the bug condition exploration tests now pass": [
+      {
+        "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795318668477
+      }
+    ],
+    "3.7 Verify the preservation tests still pass": [
+      {
+        "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795318668501
+      }
+    ],
+    "3.8 Run the one-off old-versus-new parser comparison (not committed)": [
+      {
+        "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795318668523
+      }
+    ],
+    "4. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795318668547
+      }
+    ]
+  }
+}

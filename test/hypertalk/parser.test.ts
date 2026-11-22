@@ -4,6 +4,7 @@ import { stripPositions, type Expr, type IfStmt, type Script, type Stmt } from '
 import { lineCount, type SyntaxError } from '../../src/hypertalk/errors';
 import { HAUNTS, isReserved } from '../../src/hypertalk/tokens';
 import { handlerSource, REPRO_1, REPROS } from './helpers/lexMask';
+import { ELSE_AFTER_ONE_LINE_IF, ONE_LINE_IF_REPRO_1, ONE_LINE_IF_REPRO_2, strayEndIfMessage } from './helpers/ifShapes';
 
 const src = (...lines: string[]) => lines.join('\n');
 
@@ -439,6 +440,87 @@ describe('R9.6 else if chains', () => {
   it('reports a command on the same line as else if … then', () => {
     expect(err(inHandler('if a then', '  go next card', 'else if b then go prev card', 'end if')))
       .toMatchObject({ line: 4, column: 18 });
+  });
+});
+
+// nested-if-else-attachment-fix: inside a block if, an else or end if line right after a
+// one-line if is meant for the one-line if, which cannot take it. Line 1 is `on mouseUp`.
+describe('R9 an else or end if line right after a one-line if inside a block if (2.1, 2.3, 2.4)', () => {
+  const syntax = (line: number, column: number, message: string): SyntaxError => ({ kind: 'syntax', line, column, message });
+
+  /** parse and parseUnguarded both return exactly this error. */
+  function expectError(source: string, error: SyntaxError) {
+    expect(parseUnguarded(source)).toEqual({ ok: false, error });
+    expect(parse(source)).toEqual({ ok: false, error });
+  }
+
+  it('Repro 1 reports the else on line 4 (2.1)', () => {
+    expectError(ONE_LINE_IF_REPRO_1.source, ONE_LINE_IF_REPRO_1.error);
+  });
+
+  it('reports an else if line on its else (2.3)', () => {
+    expectError(
+      inHandler('if a then', '  if b then go next card', 'else if c then', '  howl', 'end if'),
+      syntax(4, 3, ELSE_AFTER_ONE_LINE_IF),
+    );
+  });
+
+  it('reports a second else in an else part with the one-line if message, not "already has an else" (2.1)', () => {
+    expectError(
+      inHandler('if a then', '  howl', 'else', '  if b then go next card', 'else', '  answer "x"', 'end if'),
+      syntax(6, 3, ELSE_AFTER_ONE_LINE_IF),
+    );
+  });
+
+  it('skips blank and comment-only lines between the one-line if and the else (2.1)', () => {
+    const source = src(
+      'on mouseUp', //                                     1
+      '  if field "key" is "gold" then', //                2
+      '    if field "door" is "open" then go next card', // 3
+      '', //                                               4
+      '    -- otherwise', //                               5
+      '    else', //                                       6
+      '      answer "The door is locked."', //             7
+      '  end if', //                                       8
+      'end mouseUp', //                                    9
+    );
+    expectError(source, syntax(6, 5, ELSE_AFTER_ONE_LINE_IF));
+  });
+
+  it('Repro 2 reports the stray end if on line 4, naming the if on line 2 (2.4)', () => {
+    expectError(ONE_LINE_IF_REPRO_2.source, ONE_LINE_IF_REPRO_2.error);
+  });
+
+  it('reports the stray end if when the unmatched line is an else (2.4)', () => {
+    expectError(
+      inHandler('if a then', '  if b then go next card', 'end if', 'answer "x"', 'else', 'answer "y"', 'end if'),
+      syntax(4, 3, strayEndIfMessage(2)),
+    );
+  });
+
+  it('reports the last of several stray end ifs (2.4)', () => {
+    const source = inHandler(
+      'if a then', //                2
+      '  if b then howl', //         3
+      'end if', //                   4
+      'if c then', //                5
+      '  if d then go next card', // 6
+      'end if', //                   7
+      'end if', //                   8
+    );
+    expectError(source, syntax(7, 3, strayEndIfMessage(5)));
+  });
+
+  it('reports a stray end if that closes an inner block if two levels deep (2.4)', () => {
+    const source = inHandler(
+      'if a then', //          2
+      '  if b then', //        3
+      '    if c then howl', // 4
+      '  end if', //           5
+      'end if', //             6
+      'end if', //             7
+    );
+    expectError(source, syntax(5, 5, strayEndIfMessage(3)));
   });
 });
 

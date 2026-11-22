@@ -8,6 +8,7 @@ import { runHandler } from '../../src/hypertalk/runtime';
 import type { HauntKind } from '../../src/hypertalk/tokens';
 import type { Value } from '../../src/hypertalk/values';
 import { FakeHost, type FakeHostInit } from './helpers/fakeHost';
+import { ONE_LINE_IF_REPRO_1 } from './helpers/ifShapes';
 import { handlerSource, REPROS } from './helpers/lexMask';
 
 const src = (...lines: string[]) => lines.join('\n');
@@ -454,6 +455,19 @@ describe('R12.3 / 2.4 a parse error found before a lexer error', () => {
     const { result, host } = await run(handlerSource('mouseUp', body), makeHost(init));
     expect(result).toEqual({ ok: false, error });
     expect(host.log).toEqual([]);
+    expect(host.state).toEqual(makeHost(init).state);
+  });
+});
+
+describe('R9 / 2.2 an else line right after a one-line if inside a block if', () => {
+  it('Repro 1 returns the syntax error on line 4 and runs nothing: no host call, no dialog, same card', async () => {
+    const init: Partial<FakeHostInit> = {
+      cards: [{ fields: [{ name: 'key', text: 'iron' }, { name: 'door', text: 'open' }] }, { name: 'Hall' }],
+    };
+    const { result, host } = await run(ONE_LINE_IF_REPRO_1.source, makeHost(init));
+    // One assertion, so a failure shows both what came back and what the host was asked to do.
+    expect({ result, calls: host.log }).toEqual({ result: { ok: false, error: ONE_LINE_IF_REPRO_1.error }, calls: [] });
+    expect(host.state.current).toBe(1);
     expect(host.state).toEqual(makeHost(init).state);
   });
 });
