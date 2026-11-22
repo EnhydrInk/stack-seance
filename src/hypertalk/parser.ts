@@ -64,6 +64,11 @@ class Parser {
   private handlerName: HandlerName = 'mouseUp';
   /** The if nodes oneLineIf() built. Both forms give the same tree (R9.3), so the form is kept here. */
   private readonly oneLineIfs = new WeakSet<IfStmt>();
+  /**
+   * The last `end if` in this handler that closed a block if right after a one-line if, and the
+   * first `if` of the chain it closed. It was most likely meant for the one-line if (2.4).
+   */
+  private strayEndIf: { end: Token; closes: Token } | undefined;
 
   constructor(
     private readonly tokens: Token[],
@@ -167,6 +172,7 @@ class Parser {
     if (seen.has(name)) this.fail(on, `this script already has an "on ${name}" handler`);
     seen.add(name);
     this.handlerName = name;
+    this.strayEndIf = undefined;
     this.advance();
     this.expectLineEnd(`"on ${name}"`);
 
@@ -174,6 +180,7 @@ class Parser {
 
     const t = this.current();
     if (t.kind === 'eof') this.fail(on, `"on ${name}" is never closed; add "end ${name}"`);
+    this.rejectUnmatchedAfterStrayEndIf(body);
     if (this.atWord('else')) {
       this.fail(t, '"else" without a matching "if"; a one-line if keeps its else on the same line');
     }
@@ -409,6 +416,7 @@ class Parser {
     for (;;) {
       if (this.atWord('end')) {
         if (!this.atWord('if', 1)) notClosed();
+        this.noteStrayEndIf(ended, head);
         this.advance();
         this.advance();
         return root;
@@ -440,6 +448,7 @@ class Parser {
         this.fail(this.current(), 'this "if" already has an "else"');
       }
       if (!(this.atWord('end') && this.atWord('if', 1))) notClosed();
+      this.noteStrayEndIf(ended, head);
       this.advance();
       this.advance();
       return root;
@@ -479,6 +488,33 @@ class Parser {
       this.fail(
         this.current(),
         '"else" right after a one-line if; a one-line if keeps its else on the same line (or write the if in block form with "end if")',
+      );
+    }
+  }
+
+  /**
+   * At an end if line that ends `ended` and closes the chain started by `head`: when a one-line if
+   * (with or without its own else) is right before it, remember this end if. It is valid (3.3), and
+   * is reported only if an unmatched else or end if follows in the handler (2.4). The last one wins.
+   * Call before the end is consumed.
+   */
+  private noteStrayEndIf(ended: Stmt[], head: Token): void {
+    if (this.trailingOneLineIf(ended)) this.strayEndIf = { end: this.current(), closes: head };
+  }
+
+  /**
+   * At the else or end that ends a handler's `body`: an unmatched else or end if after a stray end if
+   * in this handler is reported on the last stray end if, which closed its block if too early (2.4).
+   * When `body` itself ends with a one-line if, or there is no stray end if, nothing happens here and
+   * handler() reports the unmatched line as before (3.4, 3.5).
+   */
+  private rejectUnmatchedAfterStrayEndIf(body: Stmt[]): void {
+    const stray = this.strayEndIf;
+    if (!stray || this.trailingOneLineIf(body)) return;
+    if (this.atWord('else') || (this.atWord('end') && this.atWord('if', 1))) {
+      this.fail(
+        stray.end,
+        `"end if" right after a one-line if closes the "if" on line ${stray.closes.line}; a one-line if has no "end if"`,
       );
     }
   }

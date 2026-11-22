@@ -2,12 +2,11 @@
   "pbtResults": {
     "1. Write bug condition exploration tests": {
       "status": "passed",
-      "failingExample": "Property 1 failed after 1 run on the unfixed parser, as intended. Shrunk counterexample (family 'end if', unmatched else if): \"on mouseup\\n  if a then\\n    if a then howl\\n  end if\\n  else if a then\\n    howl\\n  end if\\nend mouseup\". Expected 4:3 '\"end if\" right after a one-line if closes the \"if\" on line 2; a one-line if has no \"end if\"'. The unfixed parser returned 5:3 '\"else\" without a matching \"if\"; a one-line if keeps its else on the same line'. Across 3000 sampled bug shapes, none matched the expected result. Family A else-if-link and then-part shapes were accepted. Family A else-part shapes gave 'this \"if\" already has an \"else\"' on the same line. Family B shapes gave the old message on the later unmatched line.",
-      "lastRunTimestamp": 1795319375224
+      "lastRunTimestamp": 1795320894714
     },
     "2. Write preservation property tests (BEFORE implementing the fix)": {
       "status": "passed",
-      "lastRunTimestamp": 1795320737376
+      "lastRunTimestamp": 1795320895348
     }
   },
   "executionHistory": {
@@ -101,6 +100,16 @@
         "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
         "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
         "timestamp": 1795318668430
+      },
+      {
+        "executionId": "b5121f11-0456-49a1-b8f6-ddafd4812c98",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795320768533
+      },
+      {
+        "executionId": "b5121f11-0456-49a1-b8f6-ddafd4812c98",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795320910904
       }
     ],
     "3.5 Describe the new rule in the interpreter design": [

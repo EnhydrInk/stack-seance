@@ -95,7 +95,7 @@
     - _Preservation: 3.1, 3.2, 3.6, 3.7 and 3.8 from Preservation Requirements in design_
     - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.6, 3.7, 3.8_
 
-  - [~] 3.4 Record stray `end if`s and report the last one at an unmatched line
+  - [x] 3.4 Record stray `end if`s and report the last one at an unmatched line
     - Add `private strayEndIf: { end: Token; closes: Token } | undefined`, reset to `undefined` at the start of `handler()` (line 147) next to `this.handlerName = name`
     - In `blockIf()`, at both places that consume `end if` (the loop's `end` branch at line 393 and after the `else` part at line 421), record `{ end: this.current(), closes: head }` when `trailingOneLineIf(ended)` is set, with or without its own `else`. Later records overwrite earlier ones, so the last one wins. Nothing fails here (3.3)
     - In `handler()`, after `const body = this.block()` and the eof check, and before the existing `else` check (line 164): when the current line is `else` or `end if`, `this.strayEndIf` is set, and `trailingOneLineIf(body)` is not set, call `this.fail(end, …)` with the template literal from design, whose text is `"end if" right after a one-line if closes the "if" on line <closes.line>; a one-line if has no "end if"`
