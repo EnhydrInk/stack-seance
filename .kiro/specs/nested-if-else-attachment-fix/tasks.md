@@ -136,6 +136,6 @@
     - Delete the temporary files afterwards and commit nothing from this step
     - _Requirements: 3.9, 3.10_
 
-- [~] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`, and make sure both pass
   - Ask the user if questions arise
