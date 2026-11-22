@@ -122,7 +122,7 @@
     - **EXPECTED OUTCOME**: The task 1 tests PASS (confirms the bug is fixed)
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-  - [~] 3.7 Verify the preservation tests still pass
+  - [x] 3.7 Verify the preservation tests still pass
     - **Property 2: Preservation** - Every other script parses and runs as before
     - **IMPORTANT**: Re-run the SAME tests from task 2. Do NOT write new tests
     - Run the preservation unit tests and property from task 2, the existing tests at `test/hypertalk/parser.test.ts` lines 325 to 328, 336 to 341 and 350 to 354, and the existing P1, P3, P4, P5 and P6 properties with their generator threshold tests

@@ -11,6 +11,10 @@
     "3.6 Verify the bug condition exploration tests now pass": {
       "status": "passed",
       "lastRunTimestamp": 1795321100313
+    },
+    "3.7 Verify the preservation tests still pass": {
+      "status": "passed",
+      "lastRunTimestamp": 1795321253951
     }
   },
   "executionHistory": {
@@ -155,6 +159,16 @@
         "executionId": "aa324eda-daf6-46d7-9671-ec067a26cc7c",
         "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
         "timestamp": 1795318668501
+      },
+      {
+        "executionId": "b5121f11-0456-49a1-b8f6-ddafd4812c98",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795321135971
+      },
+      {
+        "executionId": "b5121f11-0456-49a1-b8f6-ddafd4812c98",
+        "chatSessionId": "sess_e19029c5-bce1-4761-83b1-94aa4a9f88d6",
+        "timestamp": 1795321272201
       }
     ],
     "3.8 Run the one-off old-versus-new parser comparison (not committed)": [

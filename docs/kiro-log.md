@@ -76,3 +76,7 @@
 - Done: re-ran the 4 task 1 test files unchanged: 136 of 136 tests passed, including all 11 exploration tests (8 parser, 1 runtime, Property 1 at 300 runs, the renderer shape check). Against the task 1 commit b6b7398 the 11 test bodies are identical; the only diffs are task 2's preservation additions. No `it.fails` left in `test/`. No file changed except PBT status.
 - Kiro: Property 1 (Expected Behavior), requirements 2.1–2.4; the same property-based tests that failed in task 1 now pass, with PBT status set to passed.
 - Why it matters: the tests that proved the bug now prove the fix, with no edits in between other than the temporary markers.
+## nested-if-else-attachment-fix, task 3.7: Verify the preservation tests still pass
+- Done: re-ran task 2's tests unchanged on the fixed parser: the 4 preservation unit tests, Property 2 (300 runs) and its 35-case coverage test, plus the three older `if` tests (byte-identical to f1b5c4f) and the P1, P3, P4, P5 and P6 property files (5 files, 31 tests). Full suite 20 files, 357 passed, 0 failed, none skipped. No `.fails`, `.skip`, `.only` or `.todo` in `test/`. No file changed except PBT status.
+- Kiro: Property 2 (Preservation), requirements 3.1–3.11; property-based tests written against the unfixed parser and re-run against the fix; PBT status set to passed.
+- Why it matters: else-if chains, a one-line `if … then … else …` on one line, and every other script outside the bug condition parse and run exactly as before.
