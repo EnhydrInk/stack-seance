@@ -72,3 +72,7 @@
 - Done: `.kiro/specs/hypertalk-interpreter/design.md` line 153, the single-line `if` bullet in "Parser", gains two sentences: an `else` or `else if` line right after an else-less single-line `if` inside a block `if` is an error on that `else`, and a later unmatched line after a stray `end if` is reported on the last stray `end if`. Each clause was checked against the three new parser methods. No code changed; suite 357 passed.
 - Kiro: requirements 2.1, 2.3 and 2.4; the bugfix spec feeding a one-line update back into the original feature spec's design, in that spec's own terms.
 - Why it matters: the interpreter design again describes what the parser does, so the next spec starts from the real rule.
+## nested-if-else-attachment-fix, task 3.6: Verify the bug condition exploration tests now pass
+- Done: re-ran the 4 task 1 test files unchanged: 136 of 136 tests passed, including all 11 exploration tests (8 parser, 1 runtime, Property 1 at 300 runs, the renderer shape check). Against the task 1 commit b6b7398 the 11 test bodies are identical; the only diffs are task 2's preservation additions. No `it.fails` left in `test/`. No file changed except PBT status.
+- Kiro: Property 1 (Expected Behavior), requirements 2.1–2.4; the same property-based tests that failed in task 1 now pass, with PBT status set to passed.
+- Why it matters: the tests that proved the bug now prove the fix, with no edits in between other than the temporary markers.

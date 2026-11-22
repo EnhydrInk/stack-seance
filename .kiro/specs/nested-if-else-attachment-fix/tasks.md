@@ -114,7 +114,7 @@
     - _Preservation: Preservation Requirements from design_
     - _Requirements: 2.1, 2.3, 2.4_
 
-  - [~] 3.6 Verify the bug condition exploration tests now pass
+  - [x] 3.6 Verify the bug condition exploration tests now pass
     - **Property 1: Expected Behavior** - Else and stray end if after a one-line if inside a block if
     - **IMPORTANT**: Re-run the SAME tests from task 1. Do NOT write new tests
     - The tests from task 1 encode the expected behavior. When they pass, the expected behavior is satisfied
