@@ -48,9 +48,3 @@ export interface StackDoc {
 export interface StacksDoc {
   stacks: StackDoc[];
 }
-
-/** A stack as the host reports it (go-to-stack contract with the interpreter). */
-export interface StackRef {
-  id: string;
-  name: string;
-}

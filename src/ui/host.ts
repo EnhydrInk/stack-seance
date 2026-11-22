@@ -1,9 +1,9 @@
 // The interpreter's Host in the browser: every call reads or changes the model, and the
 // stage shows it (card changes with their effect, dialogs, haunts).
 
-import type { CardRef, Effect, HauntKind, Host } from '../hypertalk/index';
+import type { CardRef, Effect, HauntKind, Host, StackRef } from '../hypertalk/index';
 import type { Model } from './model';
-import type { ButtonDoc, StackRef } from './types';
+import type { ButtonDoc } from './types';
 
 /** What the host needs from the screen. */
 export interface Stage {

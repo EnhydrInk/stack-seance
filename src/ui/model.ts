@@ -1,8 +1,8 @@
 // What the app shows: every stack, and where the reader is. The host and the views read
 // and change it; every change tells the listeners (the views redraw, autosave writes).
 
-import type { CardRef } from '../hypertalk/index';
-import type { ButtonDoc, CardDoc, FieldDoc, StackDoc, StackRef, StacksDoc } from './types';
+import type { CardRef, StackRef } from '../hypertalk/index';
+import type { ButtonDoc, CardDoc, FieldDoc, StackDoc, StacksDoc } from './types';
 
 export type Change = 'content' | 'place';
 

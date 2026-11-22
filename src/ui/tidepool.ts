@@ -87,8 +87,12 @@ class TideHost implements Host {
     this.index = card.index - 1;
     this.pending = this.draw(effect);
   }
+  /** Tide Pool is the only stack here, so `go to stack` always finds nothing. */
   findStackByName(): undefined {
     return undefined;
+  }
+  goToStack(): CardRef {
+    return this.currentCard();
   }
   getField(name: string): string | undefined {
     return name.toLowerCase() === 'heart' ? '♥' : undefined;
