@@ -42,7 +42,7 @@ export type HauntKind = Haunt['kind'];
 export const KEYWORDS: ReadonlySet<string> = new Set([
   ...HAUNTS.flatMap((h): readonly string[] => h.words),
   'on', 'end',
-  'go', 'to', 'next', 'prev', 'first', 'last', 'card',
+  'go', 'to', 'next', 'prev', 'first', 'last', 'card', 'stack',
   'visual', 'effect', 'dissolve', 'wipe', 'left', 'right', 'iris', 'open', 'close',
   'answer', 'with', 'or', 'ask',
   'put', 'into', 'after', 'before', 'field',

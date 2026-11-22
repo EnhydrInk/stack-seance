@@ -158,6 +158,8 @@ async function go(stmt: Extract<Stmt, { t: 'go' }>, frame: Frame, ctx: RunContex
   // The effect belongs to this go: played when it moves, dropped when it fails (R3.2, R3.3).
   const effect = frame.pendingEffect;
   frame.pendingEffect = undefined;
+  // Placeholder until go-to-stack-command task 3 adds the stack branch.
+  if (stmt.target.k === 'stack') fail(stmt.pos, 'go to stack is not supported yet');
   const card = targetCard(stmt.target, stmt.pos, frame, ctx);
   if (frame.depth >= MAX_OPEN_CARD_DEPTH) {
     fail(stmt.pos, `cannot go on: openCard handlers can chain at most ${MAX_OPEN_CARD_DEPTH} levels deep`);
@@ -176,8 +178,11 @@ async function go(stmt: Extract<Stmt, { t: 'go' }>, frame: Frame, ctx: RunContex
   }
 }
 
+/** The targets that name a card of the current stack. */
+type CardTarget = Exclude<GoTarget, { k: 'stack' }>;
+
 /** The card a go target names. The host is asked each time; the runtime keeps no card state. */
-function targetCard(target: GoTarget, at: Pos, frame: Frame, ctx: RunContext): CardRef {
+function targetCard(target: CardTarget, at: Pos, frame: Frame, ctx: RunContext): CardRef {
   if (target.k === 'card') {
     const v = evaluate(target.expr, frame, ctx);
     // A number, or a string that looks like one, is a card number; any other string is a name (R2.3).

@@ -50,7 +50,11 @@ export type Stmt =
 
 export type NavTarget = 'next' | 'prev' | 'first' | 'last';
 
-export type GoTarget = { k: NavTarget } | { k: 'card'; expr: Expr };
+export type GoTarget =
+  | { k: NavTarget }
+  | { k: 'card'; expr: Expr }
+  /** A stack name. Never a number: `go to stack 3` looks for the stack named "3". */
+  | { k: 'stack'; expr: Expr };
 
 export type Effect = 'dissolve' | 'wipeLeft' | 'wipeRight' | 'irisOpen' | 'irisClose';
 
