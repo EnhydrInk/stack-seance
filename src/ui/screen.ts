@@ -234,10 +234,10 @@ export class Screen implements Stage {
     this.fx.appendChild(sprite);
     const anim = sprite.animate(
       [
-        { transform: `translate(420px, ${CARD_H}px)` },
-        { transform: `translate(420px, ${CARD_H - 70}px)`, offset: 0.2 },
-        { transform: `translate(420px, ${CARD_H - 70}px)`, offset: 0.8 },
-        { transform: `translate(420px, ${CARD_H}px)` },
+        { transform: `translate(424px, ${CARD_H}px)` },
+        { transform: `translate(424px, ${CARD_H - 80}px)`, offset: 0.2 },
+        { transform: `translate(424px, ${CARD_H - 80}px)`, offset: 0.8 },
+        { transform: `translate(424px, ${CARD_H}px)` },
       ],
       { duration: 2000, easing: 'steps(20, end)' },
     );

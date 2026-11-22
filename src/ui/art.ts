@@ -3,6 +3,7 @@
 //   .  nothing        k  ink          w  paper        g  50% ink dither (1-bit grey)
 //   o  pumpkin        p  ghost        y  glow (lit windows, eyes, moon)
 //   f  face of the button pumpkin: paper while unlit, glow when lit
+//   G  ghost white and X ghost eyes: the same by day and by night, so a ghost stays a ghost
 
 const SVG = 'http://www.w3.org/2000/svg';
 
@@ -183,22 +184,25 @@ export const BAT_DOWN: Sprite = [
 ];
 
 export const WOLF: Sprite = [
-  'k..............k',
-  'kk............kk',
-  'kgk..........kgk',
-  'kggk.kkkkkk.kggk',
-  'kggggggggggggggk',
-  'kggggggggggggggk',
-  'kgykkggggggkkygk',
-  'kgggggggggggggg.',
-  '.kgggggkkgggggk.',
-  '.kggggkkkkggggk.',
-  '..kgggkwkwkgggk.',
-  '..kggkwkkkwkggk.',
-  '...kgkkkkkkkgk..',
-  '....kgwkkkwgk...',
-  '.....kkkkkkk....',
-  '................',
+  'k................k',
+  'kk..............kk',
+  'kwk............kwk',
+  'kwwk..........kwwk',
+  'kwwkk.kkkkkk.kkwwk',
+  '.kkkkkkkkkkkkkkkk.',
+  'kkkkkkkkkkkkkkkkkk',
+  '.kkwwkkkkkkkkwwkk.',
+  'kkkkwwkkkkkkwwkkkk',
+  '.kkkkkkkkkkkkkkkk.',
+  'kkkkkkkwwwwkkkkkkk',
+  '.kkkkkwwkkwwkkkkk.',
+  '..kkkkwwwwwwkkkk..',
+  '...kkkwwkkwwkkk...',
+  '...kkkwkkkkwkkk...',
+  '....kkwkkkkwkk....',
+  '....kkwwkkwwkk....',
+  '.....kkwwwwkk.....',
+  '......kkkkkk......',
 ];
 
 export const WITCH: Sprite = [
@@ -232,16 +236,16 @@ export const SPIDER: Sprite = [
 
 export const GHOST: Sprite = [
   '....kkkk....',
-  '..kkwwwwkk..',
-  '.kwwwwwwwwk.',
-  '.kwwkwwkwwk.',
-  'kwwwkwwkwwwk',
-  'kwpwwwwwwpwk',
-  'kwwwwkkwwwwk',
-  'kwwwwwwwwwwk',
-  'kwwwwwwwwwwk',
-  'kwwwwwwwwwwk',
-  'kwkwwkkwwkwk',
+  '..kkGGGGkk..',
+  '.kGGGGGGGGk.',
+  '.kGGXGGXGGk.',
+  'kGGGXGGXGGGk',
+  'kGpGGGGGGpGk',
+  'kGGGGXXGGGGk',
+  'kGGGGGGGGGGk',
+  'kGGGGGGGGGGk',
+  'kGGGGGGGGGGk',
+  'kGkGGkkGGkGk',
   'kk.kk..kk.kk',
 ];
 

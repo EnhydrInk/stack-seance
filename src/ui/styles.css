@@ -245,6 +245,8 @@ body.busy .viewport {
 .c-p { fill: var(--ghost); }
 .c-y { fill: var(--glow); }
 .c-f { fill: var(--glow); }
+.c-G { fill: #fffdf8; }
+.c-X { fill: #111014; }
 
 /* ---- fields */
 
@@ -496,8 +498,8 @@ body.busy .viewport {
 
 .bubble {
   position: absolute;
-  right: 54px;
-  top: -6px;
+  right: 78px;
+  top: 4px;
   padding: 2px 8px;
   border: 2px solid var(--ink);
   border-radius: 8px;
