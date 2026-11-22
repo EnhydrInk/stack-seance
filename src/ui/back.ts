@@ -4,6 +4,7 @@
 // back always shows what runs.
 
 import { parse } from '../hypertalk/index';
+import { MAX_SENTENCE } from './compile';
 import type { CardDoc } from './types';
 import { spiritsWriting } from './writing';
 
@@ -42,6 +43,7 @@ export function renderBack(
     const input = document.createElement('textarea');
     input.className = 'sentence';
     input.rows = 2;
+    input.maxLength = MAX_SENTENCE;
     input.value = sentence;
     input.setAttribute('aria-label', 'The sentence this script came from');
     const go = document.createElement('button');

@@ -2,7 +2,7 @@
 // what is there (drag, delete, edit text), recompile a button from its edited sentence, and
 // make a new stack.
 
-import { compileSentence, requestFor, type CompileResponse } from './compile';
+import { compileSentence, MAX_SENTENCE, requestFor, type CompileResponse } from './compile';
 import type { Model } from './model';
 import type { Runner } from './runner';
 import { CARD_H, CARD_W, type Screen } from './screen';
@@ -86,6 +86,7 @@ export class Authoring {
     box.style.top = rect[1] > CARD_H - 150 ? `${rect[1] - 128}px` : `${rect[1] + 28}px`;
     const input = el('textarea', 'grow-input');
     input.rows = 3;
+    input.maxLength = MAX_SENTENCE;
     input.placeholder = 'Describe the button in one sentence, in any language.';
     input.setAttribute('aria-label', 'Describe the button in one sentence');
     const row = el('div', 'buttons');
@@ -162,6 +163,8 @@ export class Authoring {
     if (!button) return;
     const reply = await compileSentence(requestFor(this.model, sentence, buttonId));
     if (reply.ok) {
+      // The new script may name the button by its new label (the compiler's Rule 6).
+      button.name = reply.label;
       button.sentence = sentence;
       button.script = reply.script;
       this.model.addCards(reply.newCards);

@@ -3,6 +3,9 @@
 
 import type { Model } from './model';
 
+/** The longest sentence the compiler takes. */
+export const MAX_SENTENCE = 500;
+
 export interface CompileRequest {
   sentence: string;
   stackName: string;
