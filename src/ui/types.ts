@@ -11,7 +11,7 @@ export interface FieldDoc {
   rect: Rect;
   visible: boolean;
   /** 'plain' is text on the card; 'box' draws a HyperCard rectangle field around it. */
-  style: 'plain' | 'box' | 'title';
+  style: 'plain' | 'box' | 'title' | 'heading';
   align?: 'left' | 'center';
 }
 

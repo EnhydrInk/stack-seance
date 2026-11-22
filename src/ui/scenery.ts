@@ -274,6 +274,103 @@ const WEB: Sprite = [
   '...........k',
 ];
 
+/** Frankenstein's lab, for the Help stack. M is the monster's green, the same by day and by night. */
+const MONSTER: Sprite = [
+  '...kkkkkkkkkkkk...',
+  '..kkkkkkkkkkkkkk..',
+  '..kkkkkkkkkkkkkk..',
+  '..kkMkkkMkkkMkMk..',
+  '..kMMMMMMMMMMMMk..',
+  '..kMkMkMkMMMMMMk..',
+  '..kMMMMMMMMMMMMk..',
+  '..kMkkkMMMMkkkMk..',
+  '..kMMXXMMMMXXMMk..',
+  '..kMMXXMMMMXXMMk..',
+  '..kMMMMMMMMMMMMk..',
+  '..kMMMMMMkMMMMMk..',
+  '..kMMMMMMMMMMMMk..',
+  '..kMMMkkkkkkMMMk..',
+  '...kMMMMMMMMMMk...',
+  '....kkMMMMMMkk....',
+  'kkwkkkMMMMMMkkkwkk',
+  'kkwk.kkMMMMkk.kwkk',
+  '..kkkkkkkkkkkkkk..',
+  '.kkkkkkkwwkkkkkkk.',
+  'kkkkkkkkwwkkkkkkkk',
+  'kkkkkkkkwwkkkkkkkk',
+];
+
+const FLASK: Sprite = [
+  '..w.....',
+  '.....w..',
+  '...w....',
+  '..kkkk..',
+  '...kk...',
+  '...kk...',
+  '..kwwk..',
+  '.kwwwwk.',
+  'kppppppk',
+  'kppwpppk',
+  'kppppwpk',
+  '.kppppk.',
+  '..kkkk..',
+];
+
+const TUBE: Sprite = [
+  '.y.',
+  '...',
+  'kkk',
+  'kwk',
+  'kwk',
+  'kok',
+  'kok',
+  'kok',
+  '.k.',
+];
+
+const STORM: Sprite = [
+  '....kkkkkkkk....',
+  '..kkXXXXXXXXkk..',
+  '.kXXXXXXyXXXXXk.',
+  '.kXXXXXyyXXXXXk.',
+  'kXXXXXyyXXXXXXXk',
+  'kXXXXyyXXXXXXXXk',
+  'kXXXyyyyyyXXXXXk',
+  'kXXXXXXyyXXXXXXk',
+  'kXXXXXyyXXXXXXXk',
+  'kkkkkkyykkkkkkkk',
+  'kXXXXyyXXXXXXXXk',
+  'kXXXXyXXXXXXXXXk',
+  'kXXXXXXXXXXXXXXk',
+  'kXXXXXXXXXXXXXXk',
+  'kXXXXXXXXXXXXXXk',
+  'kkkkkkkkkkkkkkkk',
+];
+
+const LEVER: Sprite = [
+  '.......kk',
+  '......kok',
+  '.....k.kk',
+  '....k....',
+  '...k.....',
+  'kkkkkkk..',
+  'kwwwwwk..',
+  'kwkwkwk..',
+  'kwwwwwk..',
+  'kkkkkkk..',
+];
+
+const ARROW: Sprite = [
+  'kk......',
+  'kwk.....',
+  '.kwk....',
+  '..kwk..k',
+  '...kwk.k',
+  '....kwkk',
+  '.....kwk',
+  '..kkkkkk',
+];
+
 /** A ground band of dither, `h` card pixels high, across the bottom of the card. */
 function ground(h: number): HTMLElement {
   const el = document.createElement('div');
@@ -354,6 +451,45 @@ const ART: Record<string, { pieces: Piece[]; ground?: number }> = {
       { sprite: ICONS.grave!, x: 110, y: 252, px: 2 },
       { sprite: ICONS.grave!, x: 200, y: 236, px: 3 },
       { sprite: ICONS.patch!, x: 280, y: 270, px: 2 },
+    ],
+  },
+  // ---- the Help stack: Frankenstein's lab
+  'lab-cover': {
+    ground: 30,
+    pieces: [
+      { sprite: STORM, x: 420, y: 14, px: 4 },
+      { sprite: TUBE, x: 300, y: 285, px: 3 },
+      { sprite: FLASK, x: 322, y: 247, px: 5 },
+      { sprite: MONSTER, x: 392, y: 202, px: 5 },
+    ],
+  },
+  lab: {
+    ground: 24,
+    pieces: [
+      { sprite: STORM, x: 448, y: 12, px: 3 },
+      { sprite: FLASK, x: 420, y: 266, px: 4 },
+      { sprite: TUBE, x: 398, y: 291, px: 3 },
+    ],
+  },
+  'lab-flip': {
+    ground: 24,
+    pieces: [
+      { sprite: STORM, x: 448, y: 12, px: 3 },
+      { sprite: ARROW, x: 452, y: 266, px: 5 },
+    ],
+  },
+  'lab-broken': {
+    ground: 24,
+    pieces: [
+      { sprite: STORM, x: 448, y: 12, px: 3 },
+      { sprite: LEVER, x: 400, y: 276, px: 4 },
+    ],
+  },
+  'lab-monster': {
+    ground: 24,
+    pieces: [
+      { sprite: STORM, x: 448, y: 12, px: 3 },
+      { sprite: MONSTER, x: 424, y: 230, px: 4 },
     ],
   },
 };

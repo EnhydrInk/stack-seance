@@ -115,3 +115,9 @@ export class Model {
 export function copy<T>(x: T): T {
   return JSON.parse(JSON.stringify(x)) as T;
 }
+
+/** A save made before a built-in stack existed gets that stack added, so a new stack never goes missing. */
+export function withMissingStacks(doc: StacksDoc, defaults: StacksDoc): StacksDoc {
+  const have = new Set(doc.stacks.map((s) => s.id));
+  return { ...doc, stacks: [...doc.stacks, ...defaults.stacks.filter((s) => !have.has(s.id)).map(copy)] };
+}

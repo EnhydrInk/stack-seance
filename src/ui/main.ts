@@ -6,7 +6,7 @@ import './styles.css';
 import type { Effect } from '../hypertalk/index';
 import { BrowserHost } from './host';
 import { renderMenubar } from './menubar';
-import { Model, copy } from './model';
+import { Model, copy, withMissingStacks } from './model';
 import { Runner } from './runner';
 import { CARD_H, CARD_W, Screen } from './screen';
 import defaults from './stacks.json';
@@ -22,7 +22,7 @@ startTheme();
 applyFontSettings();
 
 const saved = localStorage.getItem(AUTOSAVE);
-const model = new Model(saved ? (JSON.parse(saved) as StacksDoc) : copy(defaults as StacksDoc));
+const model = new Model(saved ? withMissingStacks(JSON.parse(saved) as StacksDoc, defaults as StacksDoc) : copy(defaults as StacksDoc));
 model.stackIndex = Math.max(0, model.doc.stacks.findIndex((s) => s.id === 'home'));
 
 const screen = new Screen(model);
@@ -80,6 +80,7 @@ const menubar = renderMenubar([
     title: 'Go',
     items: [
       { label: 'Home', run: () => void navigate(() => model.goToStack('home'), 'dissolve') },
+      { label: 'Help', run: () => void navigate(() => model.goToStack('help'), 'dissolve') },
       { label: 'First card', run: () => void navigate(() => model.goToCard(0)) },
       { label: 'Previous card', run: () => void navigate(() => model.goToCard((model.cardIndex - 1 + cards()) % cards())) },
       { label: 'Next card', run: () => void navigate(() => model.goToCard((model.cardIndex + 1) % cards())) },

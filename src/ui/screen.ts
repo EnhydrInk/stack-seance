@@ -43,7 +43,7 @@ export class Screen implements Stage {
     this.back.hidden = true;
     this.fx = el('div', 'fx');
     this.dialogs = el('div', 'dialogs');
-    this.notice = el('button', 'notice');
+    this.notice = el('div', 'notice');
     this.notice.hidden = true;
     const corner = el('button', 'corner');
     corner.setAttribute('aria-label', 'Flip the card');
@@ -303,19 +303,24 @@ export class Screen implements Stage {
   showError(error: ScriptError, owner: ScriptOwner): void {
     const who = owner.kind === 'card' ? `Card “${owner.card.name}”` : `Button “${owner.button.name}”`;
     this.notice.replaceChildren();
+    const close = el('button', 'close-box');
+    close.setAttribute('aria-label', 'Dismiss');
+    close.addEventListener('click', () => this.hideError());
+    const open = el('button', 'notice-open');
     const text = el('span', 'notice-text');
     text.textContent = `${who}, line ${error.line}: ${error.message}`;
     const hint = el('span', 'notice-hint');
     hint.textContent = 'Flip to see it';
-    this.notice.append(text, hint);
+    open.append(text, hint);
+    this.notice.append(close, open);
     this.notice.hidden = false;
-    this.notice.onclick = async () => {
+    open.addEventListener('click', async () => {
       this.notice.hidden = true;
       const id = owner.kind === 'card' ? owner.card.id : owner.button.id;
       if (this.model.card !== owner.card) this.model.goToOwner(owner);
       await this.flip(true);
       this.backHandle?.mark(id, error.line, error.message);
-    };
+    });
   }
 
   hideError(): void {

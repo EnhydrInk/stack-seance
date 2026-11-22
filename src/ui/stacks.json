@@ -481,6 +481,753 @@
           ]
         }
       ]
+    },
+    {
+      "id": "help",
+      "name": "Help",
+      "cards": [
+        {
+          "id": "help-alive",
+          "name": "It's Alive!",
+          "art": "lab-cover",
+          "script": "",
+          "fields": [
+            {
+              "id": "f-alive-title",
+              "name": "title",
+              "text": "It's alive!",
+              "rect": [
+                24,
+                20,
+                340,
+                44
+              ],
+              "visible": true,
+              "style": "title"
+            },
+            {
+              "id": "f-alive-body",
+              "name": "body",
+              "text": "Welcome to Stack Séance, HyperCard back from the dead.\n\nEvery button here was written from one plain sentence. Flip any card over and you see that sentence next to the script it became. The script is what really runs, and you can change it.",
+              "rect": [
+                24,
+                74,
+                340,
+                170
+              ],
+              "visible": true,
+              "style": "plain"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-alive-tour",
+              "name": "Show me around",
+              "rect": [
+                24,
+                266,
+                160,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this starts the tour on the next card.",
+              "script": "on mouseUp\n  visual effect iris open\n  go to next card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-alive-home",
+              "name": "Home",
+              "rect": [
+                196,
+                266,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes back to the Home stack.",
+              "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        },
+        {
+          "id": "help-around",
+          "name": "Getting Around",
+          "art": "lab",
+          "script": "",
+          "fields": [
+            {
+              "id": "f-around-head",
+              "name": "heading",
+              "text": "Getting around",
+              "rect": [
+                24,
+                18,
+                410,
+                30
+              ],
+              "visible": true,
+              "style": "heading"
+            },
+            {
+              "id": "f-around-body",
+              "name": "body",
+              "text": "Click a button to run its script. A button can take you to another card, ask you something, or let something out of the closet.\n\nThe Go menu at the top goes to the first, previous, next or last card of a stack, and Home. These buttons do the same:",
+              "rect": [
+                24,
+                56,
+                410,
+                150
+              ],
+              "visible": true,
+              "style": "plain"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-around-first",
+              "name": "First card",
+              "rect": [
+                24,
+                220,
+                104,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the first card of this stack.",
+              "script": "on mouseUp\n  go to first card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-around-last",
+              "name": "Last card",
+              "rect": [
+                136,
+                220,
+                104,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the last card of this stack.",
+              "script": "on mouseUp\n  go to last card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-around-back",
+              "name": "Back",
+              "rect": [
+                24,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the previous help card.",
+              "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-around-next",
+              "name": "Next",
+              "rect": [
+                112,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the next help card.",
+              "script": "on mouseUp\n  visual effect wipe left\n  go to next card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-around-home",
+              "name": "Home",
+              "rect": [
+                200,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes back to the Home stack.",
+              "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        },
+        {
+          "id": "help-flip",
+          "name": "Flip the Card",
+          "art": "lab-flip",
+          "script": "",
+          "fields": [
+            {
+              "id": "f-flip-head",
+              "name": "heading",
+              "text": "Flip the card",
+              "rect": [
+                24,
+                18,
+                410,
+                30
+              ],
+              "visible": true,
+              "style": "heading"
+            },
+            {
+              "id": "f-flip-body",
+              "name": "body",
+              "text": "Every card has a back. Click the folded corner at the bottom right, or View › Flip, to turn it over.\n\nThe back shows each button's sentence and its HyperTalk script. Change a script and the button changes at once.\n\nTry it: flip this card, change \"Hello!\" in Say hello, flip back and click it.",
+              "rect": [
+                24,
+                56,
+                410,
+                190
+              ],
+              "visible": true,
+              "style": "plain"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-flip-hello",
+              "name": "Say hello",
+              "rect": [
+                24,
+                262,
+                120,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this says hello.",
+              "script": "on mouseUp\n  answer \"Hello!\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-flip-back",
+              "name": "Back",
+              "rect": [
+                24,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the previous help card.",
+              "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-flip-next",
+              "name": "Next",
+              "rect": [
+                112,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the next help card.",
+              "script": "on mouseUp\n  visual effect wipe left\n  go to next card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-flip-home",
+              "name": "Home",
+              "rect": [
+                200,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes back to the Home stack.",
+              "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        },
+        {
+          "id": "help-broken",
+          "name": "When Something Breaks",
+          "art": "lab-broken",
+          "script": "",
+          "fields": [
+            {
+              "id": "f-broken-head",
+              "name": "heading",
+              "text": "When something breaks",
+              "rect": [
+                24,
+                18,
+                410,
+                30
+              ],
+              "visible": true,
+              "style": "heading"
+            },
+            {
+              "id": "f-broken-body",
+              "name": "body",
+              "text": "When a script goes wrong, a note pops up at the bottom of the card, naming the script and the line.\n\nClick the note and the card flips over to that line, lit up, so you can see what went wrong and fix it.\n\nThis button is broken on purpose. Click it, then click the note.",
+              "rect": [
+                24,
+                56,
+                410,
+                190
+              ],
+              "visible": true,
+              "style": "plain"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-broken-try",
+              "name": "Broken button",
+              "rect": [
+                24,
+                262,
+                140,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to a card named Nowhere.",
+              "script": "on mouseUp\n  go to card \"Nowhere\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-broken-back",
+              "name": "Back",
+              "rect": [
+                24,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the previous help card.",
+              "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-broken-next",
+              "name": "Next",
+              "rect": [
+                112,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the next help card.",
+              "script": "on mouseUp\n  visual effect wipe left\n  go to next card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-broken-home",
+              "name": "Home",
+              "rect": [
+                200,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes back to the Home stack.",
+              "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        },
+        {
+          "id": "help-spells1",
+          "name": "HyperTalk 1",
+          "art": "lab",
+          "script": "",
+          "fields": [
+            {
+              "id": "f-spells1-head",
+              "name": "heading",
+              "text": "HyperTalk, part 1",
+              "rect": [
+                24,
+                18,
+                410,
+                30
+              ],
+              "visible": true,
+              "style": "heading"
+            },
+            {
+              "id": "f-spells1-body",
+              "name": "body",
+              "text": "go to next card\nvisual effect dissolve\nanswer \"Hi\" with \"A\" or \"B\"\nask \"Your name?\"\nput \"text\" into field \"out\"\nhide field \"out\"\nwait 1 second",
+              "rect": [
+                24,
+                54,
+                220,
+                150
+              ],
+              "visible": true,
+              "style": "plain"
+            },
+            {
+              "id": "f-spells1-out",
+              "name": "out",
+              "text": "Results show up here.",
+              "rect": [
+                24,
+                222,
+                260,
+                52
+              ],
+              "visible": true,
+              "style": "box"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-spells1-answer",
+              "name": "Try answer",
+              "rect": [
+                300,
+                66,
+                180,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this asks what to do with the monster and writes down the choice.",
+              "script": "on mouseUp\n  answer \"It's alive!\" with \"Run\" or \"Hug it\"\n  put \"You chose: \" & it into field \"out\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-spells1-ask",
+              "name": "Try ask",
+              "rect": [
+                300,
+                98,
+                180,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this asks for a name for the monster.",
+              "script": "on mouseUp\n  ask \"What should we call the monster?\"\n  put \"Hello,\" && it & \"!\" into field \"out\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-spells1-put",
+              "name": "Try put",
+              "rect": [
+                300,
+                130,
+                180,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this writes Zap! in front of the result.",
+              "script": "on mouseUp\n  put \"Zap! \" before field \"out\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-spells1-hide",
+              "name": "Try hide and show",
+              "rect": [
+                300,
+                162,
+                180,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this hides the result for a second.",
+              "script": "on mouseUp\n  hide field \"out\"\n  wait 1 second\n  show field \"out\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-spells1-effect",
+              "name": "Try a visual effect",
+              "rect": [
+                300,
+                194,
+                180,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this opens this card again with an iris.",
+              "script": "on mouseUp\n  visual effect iris open\n  go to card \"HyperTalk 1\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-spells1-back",
+              "name": "Back",
+              "rect": [
+                24,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the previous help card.",
+              "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-spells1-next",
+              "name": "Next",
+              "rect": [
+                112,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the next help card.",
+              "script": "on mouseUp\n  visual effect wipe left\n  go to next card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-spells1-home",
+              "name": "Home",
+              "rect": [
+                200,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes back to the Home stack.",
+              "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        },
+        {
+          "id": "help-spells2",
+          "name": "HyperTalk 2",
+          "art": "lab-monster",
+          "script": "",
+          "fields": [
+            {
+              "id": "f-spells2-head",
+              "name": "heading",
+              "text": "HyperTalk, part 2",
+              "rect": [
+                24,
+                18,
+                410,
+                30
+              ],
+              "visible": true,
+              "style": "heading"
+            },
+            {
+              "id": "f-spells2-body",
+              "name": "body",
+              "text": "release bat\nhowl\nsummon witch\ndrop spider\n\nglobal name\nif ... then ... else ... end if",
+              "rect": [
+                24,
+                54,
+                220,
+                170
+              ],
+              "visible": true,
+              "style": "plain"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-spells2-bat",
+              "name": "Release a bat",
+              "rect": [
+                260,
+                58,
+                176,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this lets a bat out.",
+              "script": "on mouseUp\n  release bat\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-spells2-howl",
+              "name": "Howl",
+              "rect": [
+                260,
+                90,
+                176,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this makes the werewolf howl.",
+              "script": "on mouseUp\n  howl\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-spells2-witch",
+              "name": "Summon the witch",
+              "rect": [
+                260,
+                122,
+                176,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this summons the witch.",
+              "script": "on mouseUp\n  summon witch\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-spells2-spider",
+              "name": "Drop a spider",
+              "rect": [
+                260,
+                154,
+                176,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this drops a spider.",
+              "script": "on mouseUp\n  drop spider\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-spells2-if",
+              "name": "Try if",
+              "rect": [
+                260,
+                186,
+                176,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this asks if it is alive and answers yes or no.",
+              "script": "on mouseUp\n  ask \"Is it alive?\"\n  if it contains \"yes\" then\n    answer \"It's alive!\"\n  else\n    answer \"Not yet. More lightning!\"\n  end if\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-spells2-back",
+              "name": "Back",
+              "rect": [
+                24,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the previous help card.",
+              "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-spells2-next",
+              "name": "Next",
+              "rect": [
+                112,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the next help card.",
+              "script": "on mouseUp\n  visual effect wipe left\n  go to next card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-spells2-home",
+              "name": "Home",
+              "rect": [
+                200,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes back to the Home stack.",
+              "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        },
+        {
+          "id": "help-saves",
+          "name": "Saves and Settings",
+          "art": "lab",
+          "script": "",
+          "fields": [
+            {
+              "id": "f-saves-head",
+              "name": "heading",
+              "text": "Saves and settings",
+              "rect": [
+                24,
+                18,
+                410,
+                30
+              ],
+              "visible": true,
+              "style": "heading"
+            },
+            {
+              "id": "f-saves-body",
+              "name": "body",
+              "text": "File › Saves keeps three copies of every stack in this browser. Export a save to a file to keep it or take it to another computer, and import it back.\n\nFile › Settings: day or night, pixel or plain font, bigger text on the back of the card, and Revert to original for when a script is broken beyond repair.",
+              "rect": [
+                24,
+                56,
+                410,
+                190
+              ],
+              "visible": true,
+              "style": "plain"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-saves-start",
+              "name": "Back to the start",
+              "rect": [
+                24,
+                262,
+                170,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this closes with an iris and goes to the first help card.",
+              "script": "on mouseUp\n  visual effect iris close\n  go to first card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-saves-back",
+              "name": "Back",
+              "rect": [
+                24,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the previous help card.",
+              "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-saves-home",
+              "name": "Home",
+              "rect": [
+                112,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes back to the Home stack.",
+              "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

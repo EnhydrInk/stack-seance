@@ -56,3 +56,15 @@ describe('font settings', () => {
     expect(document.documentElement.style.getPropertyValue('--font-scale')).toBe('1.3');
   });
 });
+
+describe('older saves', () => {
+  it('get the built-in stacks they were made without, and keep their own', async () => {
+    const { withMissingStacks } = await import('../../src/ui/model');
+    const old = doc();
+    old.stacks = old.stacks.filter((s) => s.id !== 'help');
+    old.stacks[0]!.cards[0]!.fields[1]!.text = 'mine';
+    const upgraded = withMissingStacks(old, doc());
+    expect(upgraded.stacks.map((s) => s.id)).toEqual(['home', 'haunted', 'help']);
+    expect(upgraded.stacks[0]!.cards[0]!.fields[1]!.text).toBe('mine');
+  });
+});
