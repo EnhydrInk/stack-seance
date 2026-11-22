@@ -144,3 +144,7 @@
 - Done: 4 new tests on a fixture variant where Home has cards Home and Lobby. Before the stack go, `go to card 3` fails with `there is no card 3: the stack has 2 cards`, `go to card "Crypt"` fails, and `go to last card` and `go to card "lobby"` reach Home's card 2. After it, one handler goes `"Lobby"` → card 4, `3` → Attic, first → Hall, last → Lobby, next wraps to Hall, prev wraps to Lobby, with the exact move log; `go to card 5` reports 4 cards and `go to card "Home"` is missing; `field "note"` and `hide button "door"` change only the crypt, and Home's `House` button is not found from the house. Task 4 is done: suite 21 files, 428 passed, 0 failed; typecheck passes.
 - Kiro: requirements 8.8, 5.2, 5.3, 6.5 and 6.8; the Host rule from this spec that every card call refers to the current stack, tested through the runtime rather than the fake host alone.
 - Why it matters: a card name used in two stacks always means the card in the stack the user is in.
+## go-to-stack-command, task 5: Checkpoint - Ensure all tests pass
+- Done: full suite 21 files, 428 tests passed, 0 failed (357 before this spec, 71 new); `npm run typecheck` passes for `tsconfig.json` and `tsconfig.test.json`. No `.only`, `.skip`, `.todo` or `.fails` in `test/`. No file changed.
+- Kiro: the spec's mid-point checkpoint between the example tests (tasks 1–4) and the properties (task 6).
+- Why it matters: the properties start from a green suite, so any failure in task 6 comes from the generators it changes.

@@ -103,7 +103,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - After the stack go: `go to card "Lobby"` reaches the house's card 4, `go to card 3` reaches Attic, `go to first card` from Attic reaches Hall, `go to last card` reaches Lobby, next from Lobby wraps to Hall, prev from Hall wraps to Lobby, and `field "note"` and `hide button "door"` act on the house's current card only.
     - _Requirements: 8.8, 5.2, 5.3, 6.5, 6.8_
 
-- [ ] 5. Checkpoint - Ensure all tests pass
+- [x] 5. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 6. Correctness properties
