@@ -62,6 +62,8 @@ function describe(t: Token): string {
 class Parser {
   private i = 0;
   private handlerName: HandlerName = 'mouseUp';
+  /** The if nodes oneLineIf() built. Both forms give the same tree (R9.3), so the form is kept here. */
+  private readonly oneLineIfs = new WeakSet<IfStmt>();
 
   constructor(
     private readonly tokens: Token[],
@@ -448,7 +450,15 @@ class Parser {
       if (this.atLineEnd()) this.fail(this.current(), 'expected a command after "else"');
       elseStmts = [this.statement(true)];
     }
-    return { t: 'if', cond, then: [thenStmt], else: elseStmts, pos: pos(head) };
+    const node: IfStmt = { t: 'if', cond, then: [thenStmt], else: elseStmts, pos: pos(head) };
+    this.oneLineIfs.add(node);
+    return node;
+  }
+
+  /** The last statement of `block` if it was written as a one-line if. */
+  private trailingOneLineIf(block: Stmt[]): IfStmt | undefined {
+    const last = block[block.length - 1];
+    return last?.t === 'if' && this.oneLineIfs.has(last) ? last : undefined;
   }
 
   // ---- expressions (R11.2: or < and < not < comparison < & && < + - < * / < primary)

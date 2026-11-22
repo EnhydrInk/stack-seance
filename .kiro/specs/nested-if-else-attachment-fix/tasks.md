@@ -75,7 +75,7 @@
     - _Preservation: P1 round trip and P5 generator checks keep passing; 3.2 and 3.3 shapes are still rendered_
     - _Requirements: 3.6, 3.9, 3.11_
 
-  - [~] 3.2 Remember which `if` nodes were parsed in the one-line form
+  - [x] 3.2 Remember which `if` nodes were parsed in the one-line form
     - In `src/hypertalk/parser.ts`, add `private readonly oneLineIfs = new WeakSet<IfStmt>()` to the parser
     - In `oneLineIf()` (line 428), add the node to `oneLineIfs` before returning it
     - Add the helper `private trailingOneLineIf(block: Stmt[]): IfStmt | undefined` that returns the block's last statement when it is an `if` in `oneLineIfs`, and `undefined` otherwise
