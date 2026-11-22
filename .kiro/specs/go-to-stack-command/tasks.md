@@ -153,7 +153,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - `test/hypertalk/syntaxerror.property.test.ts` stays as written; its P4 tests now see stack gos and stack junk through `mutantArb`. Task 7 confirms its fixed-seed ratio tests. Run that file before finishing this task too, with the same rule as in 6.1 if a ratio test fails.
     - **Validates: Requirements 1.4, 1.5, 1.6, 1.8, 1.10, 9.10**
 
-- [ ] 7. Checkpoint - Full suite and the P4 ratio tests
+- [x] 7. Checkpoint - Full suite and the P4 ratio tests
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
   - The design flagged the P4 fixed-seed ratio tests as unverified, because 6.1 and 6.7 change what `mutantArb` draws for `seed: 5`. Run `npx vitest --run test/hypertalk/syntaxerror.property.test.ts` and confirm both pass in `describe('mutation generator (P4)')`: "at least 30% of generated mutants fail to parse" and "at least a quarter of the mutants with a lexer error report a parse error found before it (2.1–2.3)".
   - If either fails, do not edit the test, its threshold or its seed (Requirement 9.12). Report the measured ratios and ask the user before changing the generators.
