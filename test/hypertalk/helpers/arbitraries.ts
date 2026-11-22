@@ -6,7 +6,7 @@ import fc from 'fast-check';
 import type { BinOp, Effect, Expr, HandlerName, IfStmt, NavTarget, Script, Stmt, WithoutPos } from '../../../src/hypertalk/ast';
 import { HAUNTS, isReserved } from '../../../src/hypertalk/tokens';
 import type { Value } from '../../../src/hypertalk/values';
-import type { FakeCardInit, FakeHostInit, Reply } from './fakeHost';
+import type { FakeCardInit, FakeHostInit, FakeStackInit, FakeStacksInit, Reply } from './fakeHost';
 
 export type E = WithoutPos<Expr>;
 export type S = WithoutPos<Stmt>;
@@ -61,6 +61,8 @@ const EFFECTS: readonly Effect[] = ['dissolve', 'wipeLeft', 'wipeRight', 'irisOp
 export const simpleStmtArb: fc.Arbitrary<S> = fc.oneof(
   fc.constantFrom(...NAV).map((k): S => ({ t: 'go', target: { k } })),
   exprArb.map((expr): S => ({ t: 'go', target: { k: 'card', expr } })),
+  // go-to-stack-command Requirement 9.1: every expression form as a stack target.
+  exprArb.map((expr): S => ({ t: 'go', target: { k: 'stack', expr } })),
   fc.constantFrom(...EFFECTS).map((effect): S => ({ t: 'effect', effect })),
   fc.tuple(exprArb, fc.array(textArb, { maxLength: 3 })).map(([prompt, labels]): S => ({ t: 'answer', prompt, labels })),
   exprArb.map((prompt): S => ({ t: 'ask', prompt })),
@@ -296,9 +298,13 @@ class Renderer {
       case 'haunt':
         return HAUNTS.find((h) => h.kind === s.kind)!.words.map(kw);
       case 'go':
-        return s.target.k === 'card'
-          ? [kw('go'), ...to(), kw('card'), ...this.expr(s.target.expr, PRIMARY)]
-          : [kw('go'), ...to(), kw(s.target.k), kw('card')];
+        switch (s.target.k) {
+          case 'card':
+          case 'stack':
+            return [kw('go'), ...to(), kw(s.target.k), ...this.expr(s.target.expr, PRIMARY)];
+          default:
+            return [kw('go'), ...to(), kw(s.target.k), kw('card')];
+        }
       case 'effect':
         return [kw('visual'), kw('effect'), ...EFFECT_WORDS[s.effect].map(kw)];
       case 'answer': {
@@ -393,7 +399,7 @@ const multiWordHaunts = HAUNTS.filter((h) => h.words.length > 1);
 
 /** Tokens that replace a token: keywords, operators, and characters the lexer rejects. */
 const REPLACEMENTS: readonly string[] = [
-  'on', 'end', 'if', 'then', 'else', 'go', 'to', 'card', 'next', 'put', 'into', 'after', 'field', 'button',
+  'on', 'end', 'if', 'then', 'else', 'go', 'to', 'card', 'stack', 'next', 'put', 'into', 'after', 'field', 'button',
   'with', 'or', 'and', 'not', 'is', 'contains', 'global', 'wait', 'seconds', 'true', 'it', 'x', 'mouseUp',
   ...HAUNTS.flatMap((h): readonly string[] => h.words),
   '(', ')', ',', '+', '-', '*', '<', '>=', '&', '&&', '"', '"text"', '7', '2.5', '.', '.5', '1.',
@@ -405,6 +411,8 @@ const JUNK_LINES: readonly string[] = [
   'end if', 'else', 'else if x then', 'end mouseUp', 'end openCard', 'on mouseUp', 'on openCard', 'on mouseDown', 'end',
   'if x then', 'if x then if y then go to next card', 'if x then go to next card else if y then go to prev card',
   'put 1 into', 'put 1 into true', 'put 1 after x', 'global false', 'go to card', 'go to card n + 1', 'go nowhere',
+  // go-to-stack-command Requirement 9.10
+  'go to stack', 'go to stack n + 1', 'go to card 1 of stack "A"', 'put 1 into stack',
   'answer "a" with "b" or "c" or "d" or "e"', 'answer "a" with b', 'ask', 'wait 1', 'show "x"', 'visual effect wipe up',
   '"unclosed', 'put "a -- b into x', 'x = 1', 'put 1 < 2 < 3 into x', 'put -5 into x', 'put .5 into x', 'put (1 into x',
   "put 'a' into x", 'go\rto next card', '\u00A0',
@@ -659,6 +667,138 @@ export function goScript(target: GoCase): GoScript {
   }
 }
 
+// ---- stacks and go to stack targets (stack P2) ------------------------------------
+// go-to-stack-command Requirement 9.2, 9.3: 1 to 5 stacks with names unique ignoring case,
+// each with 1 to 4 cards whose ids are unique across all stacks. Only the first card of the
+// target stack is ever opened, so its script kind decides between outcomes (a) and (c).
+// The card P2 above keeps its single stack (Requirement 9.6).
+
+export interface GenStackOfCards {
+  /** `st<n>`, n the 1-based position in the set. Given to the fake host explicitly. */
+  id: string;
+  name: string;
+  /** 1 to 4. Ids are `st<n>-c<m>`; scripts come from cardScriptArb. */
+  cards: (GenCard & { id: string })[];
+}
+
+export interface GenStackSet {
+  /** 1 to 5, names unique ignoring case. */
+  stacks: GenStackOfCards[];
+  /** 1-based position in `stacks` of the starting stack. */
+  currentStack: number;
+  /** 1-based index of the starting card, in that stack. */
+  current: number;
+}
+
+export interface StackTarget {
+  /** What the generator meant the text to be: a stack's name as written or in other case, or no stack's name. */
+  rel: 'asWritten' | 'otherCase' | 'missing';
+  /** The text the runtime must pass to findStackByName. */
+  text: string;
+  /** A string literal, the reply to `ask` read through `it`, or a number literal whose String(n) is `text`. */
+  via: 'literal' | 'ask' | 'number';
+}
+
+export interface StackNavCase {
+  set: GenStackSet;
+  target: StackTarget;
+  /** The `visual effect` before the go, if any. */
+  effect: Effect | null;
+}
+
+const DIGIT_NAMES: readonly string[] = ['0', '1', '2', '3', '4', '5'];
+
+/** One or two capitalised words: never numeric, never empty, and never MISSING_NAME or a missingNameArb name. */
+const letteredStackNameArb = fc.stringMatching(/^[A-Z][a-z]{0,6}( [A-Z][a-z]{0,6})?$/);
+
+/**
+ * Lettered names, or one time in five a digit name, so a name never looks like a missing name
+ * from missingNameArb (those have a space and a digit, or are empty).
+ */
+const stackNameArb = fc.oneof(
+  { weight: 4, arbitrary: letteredStackNameArb },
+  { weight: 1, arbitrary: fc.constantFrom(...DIGIT_NAMES) },
+);
+
+const isDigitName = (name: string) => /^[0-9]$/.test(name);
+
+/** Swaps the case of every letter. A lettered name always changes, and still matches only its own stack. */
+const swapCase = (text: string) =>
+  [...text].map((c) => (c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase())).join('');
+
+/** A target and, when it names a stack, that stack's 0-based position. */
+function stackTargetArb(stacks: readonly GenStackOfCards[]): fc.Arbitrary<[StackTarget, number | undefined]> {
+  const textVia = fc.constantFrom<StackTarget['via']>('literal', 'ask');
+  const named = stacks.map((s, i) => [s, i] as const);
+  const lettered = named.filter(([s]) => !isDigitName(s.name));
+  const used = new Set(stacks.map((s) => s.name));
+  const unusedDigits = Array.from({ length: 10 }, (_, d) => String(d)).filter((d) => !used.has(d));
+  const asWritten = fc.constantFrom(...named).chain(([s, i]) =>
+    // A number literal can only write a digit name.
+    (isDigitName(s.name) ? fc.constantFrom<StackTarget['via']>('literal', 'ask', 'number') : textVia).map(
+      (via): [StackTarget, number] => [{ rel: 'asWritten', text: s.name, via }, i],
+    ),
+  );
+  const otherCase = lettered.length
+    ? [
+        fc
+          .tuple(fc.constantFrom(...lettered), textVia)
+          .map(([[s, i], via]): [StackTarget, number] => [{ rel: 'otherCase', text: swapCase(s.name), via }, i]),
+      ]
+    : [];
+  const missing = fc.oneof(
+    { weight: 3, arbitrary: fc.tuple(missingNameArb, textVia).map(([text, via]): StackTarget => ({ rel: 'missing', text, via })) },
+    // 6 to 9 are never stack names, so there is always an unused digit.
+    { weight: 1, arbitrary: fc.constantFrom(...unusedDigits).map((text): StackTarget => ({ rel: 'missing', text, via: 'number' })) },
+  );
+  return fc.oneof(
+    asWritten,
+    ...otherCase,
+    missing.map((t): [StackTarget, undefined] => [t, undefined]),
+  );
+}
+
+export const stackNavCaseArb: fc.Arbitrary<StackNavCase> = fc
+  .uniqueArray(fc.tuple(stackNameArb, fc.array(fc.tuple(cardNameArb, cardScriptArb), { minLength: 1, maxLength: 4 })), {
+    minLength: 1,
+    maxLength: 5,
+    selector: ([name]) => name.toLowerCase(),
+  })
+  .chain((entries) => {
+    const stacks = entries.map(
+      ([name, cards], i): GenStackOfCards => ({
+        id: `st${i + 1}`,
+        name,
+        cards: cards.map(([cardName, script], j) => ({ id: `st${i + 1}-c${j + 1}`, name: cardName, ...script })),
+      }),
+    );
+    return stackTargetArb(stacks).chain(([target, index]) => {
+      const anyStack = fc.integer({ min: 1, max: stacks.length });
+      // Often the target stack itself, so a go to the current stack from a card other than 1 comes up.
+      const start = index === undefined ? anyStack : fc.oneof(fc.constant(index + 1), anyStack);
+      return start.chain((currentStack) => {
+        const count = stacks[currentStack - 1]!.cards.length;
+        return fc
+          .tuple(fc.oneof(fc.constant(count), fc.integer({ min: 1, max: count })), fc.option(fc.constantFrom(...EFFECTS), { nil: null }))
+          .map(([current, effect]): StackNavCase => ({ set: { stacks, currentStack, current }, target, effect }));
+      });
+    });
+  });
+
+/** `on mouseUp`, [`visual effect …`], [`ask "Which stack?"`], `go to stack …`, `end mouseUp`. */
+export function stackGoScript(c: StackNavCase): GoScript {
+  const { text, via } = c.target;
+  const lines: string[] = [];
+  if (c.effect) lines.push(`visual effect ${EFFECT_WORDS[c.effect].join(' ')}`);
+  if (via === 'ask') lines.push('ask "Which stack?"');
+  lines.push(via === 'ask' ? 'go to stack it' : via === 'number' ? `go to stack ${text}` : `go to stack "${text}"`);
+  return {
+    source: ['on mouseUp', ...lines.map((l) => `  ${l}`), 'end mouseUp'].join('\n'),
+    replies: via === 'ask' ? [text] : [],
+    goLine: lines.length + 1,
+  };
+}
+
 // ---- runnable sessions (P3, P5) ---------------------------------------------------
 // A session is a stack whose cards have fields, buttons and scripts, the globals so far,
 // a list of dialog replies, and a mouseUp script to run. The script mostly names fields,
@@ -734,8 +874,24 @@ function runnableGoArb(cards: readonly string[]): fc.Arbitrary<S> {
   );
 }
 
-/** Every command but if. With `cards` null there is no go. */
-function runnableSimpleArb(cards: readonly string[] | null): fc.Arbitrary<S> {
+/**
+ * go to stack with an existing name in random case, sometimes MISSING_NAME, the empty name,
+ * or `it`, which holds a stack name when `ask` got one (go-to-stack-command Requirement 9.7).
+ */
+function runnableStackGoArb(stacks: readonly string[]): fc.Arbitrary<S> {
+  const toStack = (expr: E): S => ({ t: 'go', target: { k: 'stack', expr } });
+  return fc.oneof(
+    { weight: 4, arbitrary: someNameArb(stacks).map((value) => toStack({ t: 'str', value })) },
+    { weight: 1, arbitrary: fc.constant(toStack({ t: 'str', value: '' })) },
+    { weight: 1, arbitrary: fc.constant(toStack({ t: 'var', name: 'it' })) },
+  );
+}
+
+/**
+ * Every command but if. With `cards` null there is no go. Without `stacks` there is no
+ * go to stack, and the commands are exactly the ones sessionArb has always drawn from.
+ */
+function runnableSimpleArb(cards: readonly string[] | null, stacks?: readonly string[]): fc.Arbitrary<S> {
   const varName = fc.mixedCase(fc.constantFrom(...VARIABLE_NAMES));
   const item = fc.oneof(
     someNameArb(BUTTON_NAMES).map((name) => ({ kind: 'button' as const, name })),
@@ -759,14 +915,15 @@ function runnableSimpleArb(cards: readonly string[] | null): fc.Arbitrary<S> {
     fc.constantFrom(...HAUNTS.map((h) => h.kind)).map((kind): S => ({ t: 'haunt', kind })),
   ];
   if (cards) commands.push(runnableGoArb(cards));
+  if (stacks) commands.push(runnableStackGoArb(stacks));
   return fc.oneof(...commands);
 }
 
 /** Commands with if blocks and else-if chains nested at most `depth` deep. */
-function runnableStmtArb(cards: readonly string[] | null, depth: number): fc.Arbitrary<S> {
-  const simple = runnableSimpleArb(cards);
+function runnableStmtArb(cards: readonly string[] | null, depth: number, stacks?: readonly string[]): fc.Arbitrary<S> {
+  const simple = runnableSimpleArb(cards, stacks);
   if (depth <= 0) return simple;
-  const body = fc.array(runnableStmtArb(cards, depth - 1), { maxLength: 3 });
+  const body = fc.array(runnableStmtArb(cards, depth - 1, stacks), { maxLength: 3 });
   const cond = typedExprArb.bool;
   const plainIf = fc.tuple(cond, body, body).map(([c, then, els]): S => ({ t: 'if', cond: c, then, else: els }));
   const chainIf = fc
@@ -779,10 +936,10 @@ function runnableStmtArb(cards: readonly string[] | null, depth: number): fc.Arb
   );
 }
 
-/** A mouseUp handler of 1 to 6 commands for a stack with these card names. */
-export function runnableScriptArb(cards: readonly string[]): fc.Arbitrary<Sc> {
+/** A mouseUp handler of 1 to 6 commands for these card names and, if given, these stack names. */
+export function runnableScriptArb(cards: readonly string[], stacks?: readonly string[]): fc.Arbitrary<Sc> {
   return fc
-    .array(runnableStmtArb(cards, 2), { minLength: 1, maxLength: 6 })
+    .array(runnableStmtArb(cards, 2, stacks), { minLength: 1, maxLength: 6 })
     .map((body): Sc => ({ handlers: [{ name: 'mouseUp', body }] }));
 }
 
@@ -832,8 +989,12 @@ const globalsArb: fc.Arbitrary<[string, Value][]> = fc.uniqueArray(
 );
 
 export interface Session {
-  /** 1 to 8 cards with unique names, fields, buttons and scripts, the current card, and the replies. */
-  host: FakeHostInit;
+  /**
+   * sessionArb: one stack of 1 to 8 cards. stackSessionArb: 1 to 3 stacks of 1 to 3 cards each.
+   * Either way, cards with names unique across the session, fields, buttons and scripts, the
+   * current card (and stack), and the replies.
+   */
+  host: FakeHostInit | FakeStacksInit;
   /** The global store before the run, keys lower-cased. */
   globals: [string, Value][];
   /** The mouseUp script to run, rendered with random case, spacing, comments and blank lines. */
@@ -863,3 +1024,63 @@ export const sessionArb: fc.Arbitrary<Session> = fc
         source: renderScript(script, seed),
       }));
   });
+
+// ---- sessions with several stacks (P3, P5; go-to-stack-command Requirement 9.7) -----
+// sessionArb above stays as it is, so the fixed-seed coverage tests that sample it keep
+// their meaning. These sessions add stacks, and go to stack in the run script and in card
+// scripts. Card gos draw from every card name of the session, so the name of a card in
+// another stack is a missing card.
+
+/** An openCard handler that goes to a stack at once, so stack gos can chain to the depth limit (R14.4). */
+const stackGoCardScriptArb = (stacks: readonly string[]): fc.Arbitrary<string> =>
+  someNameArb(stacks).map((name) => `on openCard\n  go to stack "${name}"\nend openCard`);
+
+export const stackSessionArb: fc.Arbitrary<Session> = fc
+  .uniqueArray(letteredStackNameArb, { minLength: 1, maxLength: 3, selector: (name) => name.toLowerCase() })
+  .chain((stackNames) =>
+    fc.array(fc.integer({ min: 1, max: 3 }), { minLength: stackNames.length, maxLength: stackNames.length }).chain((sizes) => {
+      const total = sizes.reduce((a, b) => a + b, 0);
+      const script = fc.oneof(
+        { weight: 3, arbitrary: sessionCardScriptArb },
+        { weight: 1, arbitrary: stackGoCardScriptArb(stackNames) },
+      );
+      return fc
+        .uniqueArray(fc.tuple(cardNameArb, script, cardItemsArb), {
+          minLength: total,
+          maxLength: total,
+          selector: ([name]) => name.toLowerCase(),
+        })
+        .map((entries) => ({ stackNames, sizes, entries }));
+    }),
+  )
+  .chain(({ stackNames, sizes, entries }) => {
+    // One list of unique card names, cut into the stacks in order.
+    const starts = sizes.map((_, i) => sizes.slice(0, i).reduce((a, b) => a + b, 0));
+    const stacks = stackNames.map(
+      (name, i): FakeStackInit => ({
+        name,
+        cards: entries
+          .slice(starts[i], starts[i]! + sizes[i]!)
+          .map(([cardName, script, items]): FakeCardInit => ({ name: cardName, script, ...items })),
+      }),
+    );
+    const cardNames = entries.map(([name]) => name);
+    return fc.integer({ min: 1, max: stacks.length }).chain((currentStack) =>
+      fc
+        .record({
+          current: fc.integer({ min: 1, max: sizes[currentStack - 1]! }),
+          script: runnableScriptArb(cardNames, stackNames),
+          seed: fc.integer(),
+          replies: fc.array(replyArb([...cardNames, ...stackNames]), { maxLength: 4 }),
+          globals: globalsArb,
+        })
+        .map(({ current, script, seed, replies, globals }): Session => ({
+          host: { stacks, currentStack, current, replies },
+          globals,
+          source: renderScript(script, seed),
+        })),
+    );
+  });
+
+/** Single-stack and multi-stack sessions, for P3 and P5. */
+export const anySessionArb: fc.Arbitrary<Session> = fc.oneof(sessionArb, stackSessionArb);

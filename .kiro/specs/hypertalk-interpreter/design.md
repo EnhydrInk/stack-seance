@@ -57,7 +57,8 @@ export type Stmt =
 
 export type GoTarget =
   | { k: 'next' | 'prev' | 'first' | 'last' }
-  | { k: 'card'; expr: Expr };
+  | { k: 'card'; expr: Expr }
+  | { k: 'stack'; expr: Expr };                     // a stack name, never a number: `go to stack 3` looks for the stack named "3"
 
 export type Effect = 'dissolve' | 'wipeLeft' | 'wipeRight' | 'irisOpen' | 'irisClose';
 
@@ -130,7 +131,7 @@ script     := { NL | handler }
 handler    := 'on' NAME NL { stmt } 'end' NAME NL
 stmt       := go | effect | answer | ask | put | show | hide | wait | global | haunt | if
 go         := 'go' ['to'] ( 'next' 'card' | 'prev' 'card' | 'first' 'card' | 'last' 'card'
-                          | 'card' primaryExpr )
+                          | 'card' primaryExpr | 'stack' primaryExpr )
 effect     := 'visual' 'effect' ( 'dissolve' | 'wipe' 'left' | 'wipe' 'right' | 'iris' 'open' | 'iris' 'close' )
 answer     := 'answer' expr [ 'with' STRING { 'or' STRING } ]      -- at most 3 labels
 ask        := 'ask' expr
@@ -149,6 +150,7 @@ primary    := STRING | NUMBER | 'true' | 'false' | 'it' | NAME | 'field' STRING 
 Notes:
 
 - `go to card <primaryExpr>`: the card target is a primary expression (literal, variable, field, or parenthesised expression), so `go to card n + 1` needs parentheses. This avoids ambiguity with the next statement.
+- `go to stack <primaryExpr>` (R2.7): the stack target is a primary expression too, read by the same branch of the parser. A calculation operator after it, as in `go to stack n & "x"`, gets its own parentheses hint, whose example starts with `go to stack (`. `stack` is a keyword, so it is reserved (R8.4): `put 1 into stack` and `global stack` are syntax errors on their line. `go to card 1 of stack "A"` is an error at `of`, because `of` cannot continue the command.
 - `answer expr with …`: the expression is parsed below the `with` keyword, so `with` is not in the expression grammar. In `answer`, the label list's `or` belongs to the label list, not the `or` operator, because labels are string literals after `with`, and the prompt expression ends at `with`.
 - A single-line `if`'s `else` is the same line. In the single-line form `else` on the next line is a syntax error (the `else` then has no `if`). A nested single-line `if` in a single-line `if` is a syntax error to avoid dangling-else (message: "use end if for nested if"). Inside a block `if`, an `else` or `else if` line right after a single-line `if` without its own `else` is a syntax error on that `else` (after one with its own `else`, the line belongs to the enclosing `if`). An `end if` right after a single-line `if` closes the enclosing block `if`, and when a later `else` or `end if` in the same handler is then unmatched, the error is on the last such `end if` (unless the unmatched line itself comes right after a single-line `if`).
 - After `then`, a newline selects the block form, anything else selects the single-line form.
@@ -161,12 +163,12 @@ Notes:
 - When the lexer fails, the parser still runs over the tokens read before the error. Reading past them means reading the text at the lexer error, so the parser reports the lexer error there. A parse error found before that point wins (R12.3). An `on` or `if` still open at that point is not reported, because finding it would need the end of the script.
 - An `on` inside a handler body is reported on the line of that `on` ("add end mouseUp before it"), because that is where the `end` is missing. R1.5's "line of its `on`" applies when the script ends with the handler still open.
 - When several constructs are open at the end of the script, the innermost one is reported: an unclosed `if` inside an unclosed handler gives the `if` line (R9.5).
-- `go to card n + 1` gets a hint to use parentheses. `-5` gets a hint to write `0 - 5`, since unary minus is not in the subset.
+- `go to card n + 1` and `go to stack n & "x"` get a hint to use parentheses. `-5` gets a hint to write `0 - 5`, since unary minus is not in the subset.
 - Haunts (R15.1): `statement()` looks up the first word in a map built once from `HAUNTS`, then expects the entry's remaining words in order and returns `{ t: 'haunt', kind }`. A missing or wrong word is a syntax error on that line, for example `release` alone or `summon cat` gives `expected "witch" after "summon"`. Because haunts are ordinary statements, they work in both `if` forms (`if done then howl`).
 
 ## Printer
 
-`print(script): string` emits the canonical form: one statement per line, two-space indentation per level, block `if`, `\n` line endings, final newline. An `if` whose `else` list is exactly one `if` is printed as `else if …` and shares the outer `end if`, so chains print as chains. Comments are not in the tree and are lost on printing, which is why the printer is never used to show a card's script. `answer … with "A" or "B"`, `visual effect wipe left`, `go to next card`, `go to card <expr>`. A haunt prints as the words of its `HAUNTS` entry in lowercase, joined by one space (`summon witch`). Strings are printed in double quotes (they contain no quote). Handlers are separated by one blank line. An empty script prints as `''`. `wait` prints `second` when the duration is the literal `1` and `seconds` otherwise.
+`print(script): string` emits the canonical form: one statement per line, two-space indentation per level, block `if`, `\n` line endings, final newline. An `if` whose `else` list is exactly one `if` is printed as `else if …` and shares the outer `end if`, so chains print as chains. Comments are not in the tree and are lost on printing, which is why the printer is never used to show a card's script. `answer … with "A" or "B"`, `visual effect wipe left`, `go to next card`, `go to card <expr>`, `go to stack <expr>`. A haunt prints as the words of its `HAUNTS` entry in lowercase, joined by one space (`summon witch`). Strings are printed in double quotes (they contain no quote). Handlers are separated by one blank line. An empty script prints as `''`. `wait` prints `second` when the duration is the literal `1` and `seconds` otherwise.
 
 `print` accepts trees with or without positions (`WithoutPos<Script>`), so the generators in the tests build trees without inventing positions. Parentheses: a bin's left operand gets them when its level is lower than the operator's (or equal, for comparisons, which do not chain), the right operand when its level is lower or equal (left associativity), and the operand of `not` when it is `and` or `or`.
 
@@ -187,14 +189,18 @@ export type Value = string | number;
 ## Host interface
 
 ```ts
-export type CardRef = { index: number /* 1-based */; id: string; name: string | null };
+export type CardRef = { index: number /* 1-based, in the current stack */; id: string /* unique across all stacks */; name: string | null };
+export type StackRef = { id: string; name: string };      // a stack as the host reports it
 
 export interface Host {
-  cardCount(): number;
+  cardCount(): number;                                     // these five card calls and getCardScript refer to the current stack
   currentCard(): CardRef;
   findCardByName(name: string): CardRef | undefined;       // case-insensitive
   cardAt(index: number): CardRef | undefined;
   goToCard(card: CardRef, effect?: Effect): void;          // changes current card, plays effect
+
+  findStackByName(name: string): StackRef | undefined;     // case-insensitive; undefined when no stack has this name
+  goToStack(stack: StackRef, effect?: Effect): CardRef;    // makes `stack` current, shows its first card with `effect`, returns that card
 
   getField(name: string): string | undefined;               // current card; undefined = no such field
   setField(name: string, text: string): boolean;            // false = no such field
@@ -222,12 +228,15 @@ The host is asynchronous only where a person or a timer is involved (dialogs, wa
 
 The runtime never caches the current card. Every `field`, `show`, `hide`, `put` and `go` asks the host at the moment it runs, and the host resolves names on its current card. So after a successful `go` the rest of the handler keeps running and names resolve on the new card (R2.6). If the nested `openCard` handler moves on again, the outer handler continues on wherever the host says the current card is.
 
+The host holds one or more stacks. `cardCount`, `currentCard`, `findCardByName`, `cardAt`, `goToCard` and `getCardScript` refer to the current stack, the one that holds the current card, and `CardRef.index` is the 1-based position in that stack. Card ids are unique across all stacks, so an id names a card's script on its own (R12.5). `findStackByName` and `goToStack` are the only stack calls. They are synchronous like the other navigation calls. The runtime passes the `StackRef` it gets from `findStackByName` to `goToStack` and never builds one, and it keeps no stack state either: after a `goToStack`, the card calls answer from the new current stack because the host says so.
+
 ## Runtime
 
 `runHandler` parses `source` (a syntax error becomes the result, R12), finds the handler (none means `{ ok: true }`, R1.7), creates a frame `{ locals: Map, globalNames: Set, pendingEffect?: Effect }`, and executes the body.
 
 - **Frame variables**: lookup key is `name.toLowerCase()`. If the key is in `globalNames`, read and write go to `ctx.globals`; otherwise to `locals`. Unset reads give `''`.
 - **go**: resolve the target. `next`: `index % count + 1`. `prev`: `index === 1 ? count : index - 1`. `card`: evaluate the expression; if the value is a number or `looksNumeric` (R2.3, same helper as R11.5), convert with `toNumber`, check `Number.isInteger` and range, then use `host.cardAt`. Any other string goes through `findCardByName`. So `go to card it` after `ask` with reply `3` goes to card 3, and `2.5` is a number that is not an integer, so it is an error. Failure raises a runtime error at the `go` line, before anything changes. Success calls `host.goToCard(card, frame.pendingEffect)` and clears the effect (R3.2). Then the new card's `openCard` runs (R2.5, R14.2) in a nested `runHandler` with `depth + 1` and `scriptId` set to the new card's id. A failure there, runtime or syntax, is returned as the error of the outer run with its own `scriptId` and line, and the move is kept: the card is not moved back (P2, third outcome). The outer handler stops, because an error stops the run (R12.3). Depth above 16 raises an error at the `go` line (R14.4). Going to the current card still runs `openCard`.
+- **go to stack**: evaluate the expression and convert the value with `toStr`, so a number is a name too and `cardAt` is never called (R2.8). An empty name is an error before the host is asked. Otherwise `findStackByName` gets the text unchanged, case and spaces kept, and `undefined` is an error (`there is no stack named "…"`). Both errors are on the `go` line, come before the depth check, drop the pending effect and change nothing (R2.9). Then `host.goToStack(stack, pendingEffect)` returns the first card, also when the stack is already the current one, and the same `openCard` run follows as for a card target (R2.10). Both kinds of `go` share the depth check and the nested `openCard` run (`checkDepth` and `openCard` in `runtime.ts`), so a chain that mixes them counts one depth and the innermost failing card names itself.
 - **visual effect**: sets `frame.pendingEffect`. `pendingEffect` is cleared when the frame ends (R3.5). A failing `go` clears it too (R3.3).
 - **answer**: `toStr(eval(prompt))`, labels or `['OK']`, awaits the host, sets local/global `it`.
 - **ask**: awaits the host, `null` becomes `''`.
@@ -247,7 +256,8 @@ The runtime has no clock, no randomness, no `Date`, no `Math.random`, no iterati
 ## Testing strategy
 
 - Example tests per requirement (one `describe` per R-number), with the fake host.
-- `fakeHost.ts`: in-memory stack (cards with names, fields, buttons, visibility, scripts), a queue of scripted dialog replies, a call log, and a `clone()` for P3. `haunt(kind)` adds `{ call: 'haunt', kind }` to the call log, changes nothing else and resolves at once, so P3's compared call logs include haunts.
+- `fakeHost.ts`: in-memory stacks (each with an id, a name, and cards with names, fields, buttons, visibility, scripts), a queue of scripted dialog replies, a call log, and a `clone()` for P3. A host built from `cards` alone holds one stack, `DEFAULT_STACK`, and its cards keep the ids `card-<n>`; a host built from `stacks` gives `stack-<n>` and `<stack id>/card-<n>` by default. `state` is the current stack's `{ cards, current }`, so single-stack tests read it as before; `stacks` lists every stack, every stack but the current one is on card 1, and `stack()` reads the current stack's id and name without logging. `findStackByName` and `goToStack` are logged like every other call. `haunt(kind)` adds `{ call: 'haunt', kind }` to the call log, changes nothing else and resolves at once, so P3's compared call logs include haunts.
+- Stacks in the properties: the card P2 stays on one stack. The stack P2 has its own generator of 1 to 5 stacks and `go to stack` targets, and P3 and P5 run on single-stack sessions and on sessions of 1 to 3 stacks whose scripts mix `go to stack` with every other command.
 - `arbitraries.ts` also has `renderScript(tree, seed, options)`, a seeded source renderer that writes a tree with random keyword case, spacing, indentation, comments, blank lines, CRLF, optional `to`, `second`/`seconds`, one-line or block `if`, `else if` chains or nested `else` blocks, and optional redundant parentheses. It has its own copy of the precedence table, so it does not share code with the printer.
 - `arbitraries.ts`: fast-check arbitraries for expressions, statements (with a depth limit, and haunts drawn with `fc.constantFrom(...HAUNTS.map(h => h.kind))`), handlers and scripts, plus a stack arbitrary and a mutation arbitrary for P4. The stack arbitrary gives each card a script that is empty, valid, has a runtime error in `openCard`, or has a syntax error, so P2's third outcome is exercised. The `go` target arbitrary includes numeric strings. The script generator can be told which names exist in the stack so most runs do not stop at the first error, and sometimes picks missing names to exercise errors.
 - Properties P1–P6 from the requirements, each in `*.property.test.ts`.

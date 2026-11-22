@@ -4,7 +4,7 @@
 
 import type { BinOp, Effect, Expr, GoTarget, HandlerName, Pos, Stmt } from './ast';
 import { clampLine, lineCount, RuntimeAbort, runtimeError, type ScriptError } from './errors';
-import type { CardRef, RunContext, RunResult } from './host';
+import type { CardRef, RunContext, RunResult, StackRef } from './host';
 import { parseUnguarded } from './parser';
 import { asBool, compare, quoteValue, toNumber, toStr, type Value } from './values';
 
@@ -149,21 +149,59 @@ export async function execute(stmt: Stmt, frame: Frame, ctx: RunContext): Promis
   }
 }
 
+type GoStmt = Extract<Stmt, { t: 'go' }>;
+/** The targets that name a card of the current stack. */
+type CardTarget = Exclude<GoTarget, { k: 'stack' }>;
+
 /**
- * Moves to the target card with the pending effect, then runs that card's openCard (R2, R3, R14).
- * A target that does not exist is an error on the go line before anything changes (R2.4).
- * An error in the openCard ends this run too, and the move is kept (R12.3, R12.5).
+ * Moves to the target with the pending effect, then runs the new card's openCard (R2, R3, R14).
+ * A target that does not exist is an error on the go line before anything changes, and it is
+ * reported before the depth limit (R2.4, go-to-stack-command Requirement 3.6, 3.8). An error in
+ * the openCard ends this run too, and the move is kept (R12.3, R12.5).
  */
-async function go(stmt: Extract<Stmt, { t: 'go' }>, frame: Frame, ctx: RunContext): Promise<void> {
+async function go(stmt: GoStmt, frame: Frame, ctx: RunContext): Promise<void> {
   // The effect belongs to this go: played when it moves, dropped when it fails (R3.2, R3.3).
   const effect = frame.pendingEffect;
   frame.pendingEffect = undefined;
-  const card = targetCard(stmt.target, stmt.pos, frame, ctx);
-  if (frame.depth >= MAX_OPEN_CARD_DEPTH) {
-    fail(stmt.pos, `cannot go on: openCard handlers can chain at most ${MAX_OPEN_CARD_DEPTH} levels deep`);
+  const { target } = stmt;
+  let card: CardRef;
+  if (target.k === 'stack') {
+    const stack = targetStack(target.expr, stmt.pos, frame, ctx);
+    checkDepth(stmt.pos, frame);
+    // Also when `stack` is the current stack: it opens at its first card (Requirement 4.2).
+    card = ctx.host.goToStack(stack, effect);
+  } else {
+    card = targetCard(target, stmt.pos, frame, ctx);
+    checkDepth(stmt.pos, frame);
+    ctx.host.goToCard(card, effect);
   }
-  ctx.host.goToCard(card, effect);
-  // Going to the current card still opens it (R2.5). Fresh locals, the same globals (R14.2).
+  await openCard(card, frame, ctx);
+}
+
+/**
+ * The stack a `go to stack` names. The value is always a name, also when it is a number
+ * (Requirement 3.2). The name goes to the host as it is, case and spaces kept (Requirement 3.3).
+ */
+function targetStack(expr: Expr, at: Pos, frame: Frame, ctx: RunContext): StackRef {
+  const name = toStr(evaluate(expr, frame, ctx));
+  if (name === '') fail(at, 'expected a stack name, but got an empty value');
+  const stack = ctx.host.findStackByName(name);
+  if (!stack) fail(at, `there is no stack named ${quoteValue(name)}`);
+  return stack;
+}
+
+/** A go at depth 16 would start a 17th openCard, whichever kind of go it is (R14.4, Requirement 4.5, 4.6). */
+function checkDepth(at: Pos, frame: Frame): void {
+  if (frame.depth >= MAX_OPEN_CARD_DEPTH) {
+    fail(at, `cannot go on: openCard handlers can chain at most ${MAX_OPEN_CARD_DEPTH} levels deep`);
+  }
+}
+
+/**
+ * Runs the openCard of the card a go just showed. Going to the current card or the current
+ * stack still opens it (R2.5, Requirement 4.2). Fresh locals, the same globals (R14.2, Requirement 5.4).
+ */
+async function openCard(card: CardRef, frame: Frame, ctx: RunContext): Promise<void> {
   const opened = await run(
     ctx.host.getCardScript(card),
     'openCard',
@@ -177,7 +215,7 @@ async function go(stmt: Extract<Stmt, { t: 'go' }>, frame: Frame, ctx: RunContex
 }
 
 /** The card a go target names. The host is asked each time; the runtime keeps no card state. */
-function targetCard(target: GoTarget, at: Pos, frame: Frame, ctx: RunContext): CardRef {
+function targetCard(target: CardTarget, at: Pos, frame: Frame, ctx: RunContext): CardRef {
   if (target.k === 'card') {
     const v = evaluate(target.expr, frame, ctx);
     // A number, or a string that looks like one, is a card number; any other string is a name (R2.3).

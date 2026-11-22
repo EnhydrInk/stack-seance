@@ -45,6 +45,12 @@ const NAV_TARGETS: ReadonlySet<string> = new Set<NavTarget>(['next', 'prev', 'fi
 
 const CALCULATION_OPS: ReadonlySet<string> = new Set(['+', '-', '*', '/', '&', '&&']);
 
+/** What to write instead of a calculation after the target of `go to card` or `go to stack`. */
+const PAREN_HINTS = {
+  card: 'put a calculated card number in parentheses, for example go to card (n + 1)',
+  stack: 'put a calculated stack name in parentheses, for example go to stack ("Haunted" && "House")',
+} as const;
+
 /** Haunt entries by their first word (R15.1). */
 const HAUNT_BY_FIRST_WORD: ReadonlyMap<string, Haunt> = new Map(HAUNTS.map((h) => [h.words[0], h]));
 
@@ -251,7 +257,8 @@ class Parser {
     return { t: 'haunt', kind: entry.kind, pos: pos(first) };
   }
 
-  // go [to] next|prev|first|last card | go [to] card <primary>   (R2.1)
+  // go [to] next|prev|first|last card | go [to] card <primary> | go [to] stack <primary>
+  // (R2.1, go-to-stack-command Requirement 1)
   private go(): Stmt {
     const go = this.advance();
     if (this.atWord('to')) this.advance();
@@ -262,16 +269,14 @@ class Parser {
       this.expectWord('card', `expected "card" after "${t.text}"`);
       return { t: 'go', target: { k: word as NavTarget }, pos: pos(go) };
     }
-    if (word === 'card') {
+    if (word === 'card' || word === 'stack') {
       this.advance();
       const expr = this.primary();
       const after = this.current();
-      if (after.kind === 'op' && CALCULATION_OPS.has(after.text)) {
-        this.fail(after, 'put a calculated card number in parentheses, for example go to card (n + 1)');
-      }
-      return { t: 'go', target: { k: 'card', expr }, pos: pos(go) };
+      if (after.kind === 'op' && CALCULATION_OPS.has(after.text)) this.fail(after, PAREN_HINTS[word]);
+      return { t: 'go', target: { k: word, expr }, pos: pos(go) };
     }
-    this.fail(t, 'expected next card, prev card, first card, last card or card … after "go"');
+    this.fail(t, 'expected next card, prev card, first card, last card, card … or stack … after "go"');
   }
 
   // visual effect dissolve | wipe left | wipe right | iris open | iris close   (R3.1)

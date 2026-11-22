@@ -21,6 +21,6 @@ export type {
   WithoutPos,
 } from './ast';
 export type { RuntimeError, ScriptError, SyntaxError } from './errors';
-export type { CardRef, Host, RunContext, RunResult } from './host';
+export type { CardRef, Host, RunContext, RunResult, StackRef } from './host';
 export type { HauntKind } from './tokens';
 export type { Value } from './values';

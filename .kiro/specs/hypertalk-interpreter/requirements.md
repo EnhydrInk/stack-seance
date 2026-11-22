@@ -29,11 +29,13 @@ The runtime reaches the stack and the user only through a host interface (R10), 
 5. WHEN a handler is not closed before the end of the script, the parser SHALL report a syntax error on the line of its `on`.
 6. WHEN a script defines the same handler twice, the parser SHALL report a syntax error on the line of the second `on`.
 7. WHEN the runtime is asked to run a handler the script does not define, it SHALL do nothing and report no error.
-8. Keywords and handler names SHALL be case-insensitive. Variable names, field names, button names and card names SHALL also be case-insensitive when compared.
+8. Keywords and handler names SHALL be case-insensitive. Variable names, field names, button names, card names and stack names SHALL also be case-insensitive when compared.
 
 ### R2. Navigation
 
 **User story:** As a user, I want buttons to move me between cards.
+
+Card targets (next, prev, first, last, card numbers and card names) refer to the current stack: the stack that holds the current card.
 
 1. The parser SHALL accept `go [to] next card`, `prev card`, `first card`, `last card` (the word `card` is required, `to` is optional), and `go [to] card <expression>`.
 2. WHEN `next card` runs on the last card, the current card SHALL become the first card. WHEN `prev card` runs on the first card, it SHALL become the last card.
@@ -41,6 +43,10 @@ The runtime reaches the stack and the user only through a host interface (R10), 
 4. IF the card number is not an integer in 1..cardCount, or no card has that name, THEN the runtime SHALL report a runtime error naming the line of the `go` statement, stop the handler, and leave the current card unchanged.
 5. WHEN a `go` succeeds, including when the target is the current card, the runtime SHALL run the `openCard` handler of the new card (see R14).
 6. After a successful `go`, the rest of the handler SHALL keep running. Later `field`, `button`, `show` and `hide` names SHALL resolve on the new current card, as in HyperCard.
+7. The parser SHALL accept `go [to] stack <expression>`, with the expression rule of `go [to] card <expression>`: a calculated name needs parentheses.
+8. The target's value, converted to a string (R11.8), SHALL be a stack name, compared ignoring case. There are no stack numbers: `go to stack 3` looks for the stack named "3".
+9. IF the name is empty or no stack has it, THEN the runtime SHALL report a runtime error naming the line of the `go`, stop the handler, drop the pending effect (R3.3), and leave the current stack and card unchanged.
+10. WHEN the stack exists, also when it is the current stack, the host SHALL make it the current stack and show its first card with the pending effect (R3.2). The runtime SHALL then run that card's `openCard` as in R2.5 and R14, with the same depth limit and error reporting (R12.3, R12.5). The rest of the handler keeps running in the new current stack (R2.6), and globals stay shared (R8.2).
 
 ### R3. Visual effects
 
@@ -84,7 +90,7 @@ The runtime reaches the stack and the user only through a host interface (R10), 
 1. Variables SHALL be local to one handler run by default. A variable that was never set SHALL evaluate to the empty string.
 2. `global <name>[, <name>…]` SHALL declare names as global for the rest of the handler. Global variables SHALL be shared by all handlers of all cards in the same session, through a global store that the caller passes in.
 3. `it` SHALL be an ordinary local variable that `answer` and `ask` set.
-4. The parser SHALL report a syntax error naming the line WHEN a variable name (in `put … into`, or in `global`) is a reserved word of the subset. The reserved words are the keywords of the grammar, `true` and `false`.
+4. The parser SHALL report a syntax error naming the line WHEN a variable name (in `put … into`, or in `global`) is a reserved word of the subset. The reserved words are the keywords of the grammar (`stack` among them), `true` and `false`.
 
 ### R9. Control flow
 
@@ -97,7 +103,7 @@ The runtime reaches the stack and the user only through a host interface (R10), 
 
 ### R10. Host interface
 
-1. The runtime SHALL use only the `Host` interface (see design) for: current card, card count, card lookup by name, going to a card, field text, visibility, dialogs, visual effects, waiting, haunts, and card scripts.
+1. The runtime SHALL use only the `Host` interface (see design) for: current card, card count, card lookup by name, going to a card, stack lookup by name, going to a stack, field text, visibility, dialogs, visual effects, waiting, haunts, and card scripts. The card calls refer to the current stack.
 2. The runtime SHALL NOT import DOM, `window`, `document`, `fetch`, `XMLHttpRequest`, `WebSocket`, or timers.
 3. A fake host for tests SHALL exist in the test helpers and SHALL record every call.
 
@@ -145,19 +151,26 @@ The runtime reaches the stack and the user only through a host interface (R10), 
 
 Each property is a vitest test using fast-check, at least 200 runs, tagged with its name.
 
-**P1. Round trip.** For any generated valid script, `parse(print(parse(s)))` equals `parse(s)`, ignoring line and column positions. Also `print(parse(print(ast)))` equals `print(ast)`. Generators produce every statement and expression form, both `if` forms, any nesting depth up to 4, mixed case keywords, and extra spaces and blank lines.
+**P1. Round trip.** For any generated valid script, `parse(print(parse(s)))` equals `parse(s)`, ignoring line and column positions. Also `print(parse(print(ast)))` equals `print(ast)`. Generators produce every statement and expression form, including `go to stack` with every expression form as its target, both `if` forms, any nesting depth up to 4, mixed case keywords, and extra spaces and blank lines.
 
 **P2. Navigation.** For any stack of 1..20 cards with unique names and any `go` target (the four named targets, any integer from -5 to 30, existing and missing names), after running the script one of these holds:
 - the current card index is in 1..cardCount and the result has no error; or
 - the result has a runtime error whose line is the `go` line, and the current card equals the one before; or
 - the `go` moved to a new card and that card's `openCard` handler raised an error (runtime, or a syntax error in its script). The error carries that card's script id and a line inside that script (1..its lineCount), and the current card is the new card (R12.3 keeps the move).
 
-Also, the named targets and valid numbers reach the expected cards, including both wraps. Numeric strings (for example `"3"` from `ask`) reach the same card as the number, and a non-numeric string reaches the card of that name.
+Also, the named targets and valid numbers reach the expected cards, including both wraps. Numeric strings (for example `"3"` from `ask`) reach the same card as the number, and a non-numeric string reaches the card of that name. This card P2 stays on a single stack.
 
-**P3. Determinism.** For any stack state, any valid script (any statement mix, including dialogs, fields, visibility, `go`, globals, and haunts), and a fixed list of dialog replies, running it twice from identical copies of the state gives equal resulting state, equal results, and equal host call logs.
+**P2, stack navigation.** For any 1 to 5 stacks with names unique ignoring case, each with 1 to 4 cards whose ids are unique across all stacks and whose first card's script is empty, valid, has a runtime error in `openCard`, or has a syntax error; any starting stack and card in it; an optional `visual effect`; and any target text that is a stack name as written, a stack name in other case, or no stack's name (the empty string included), passed as a string literal, through `ask` and `it`, or as a number literal; running a `mouseUp` handler with one `go to stack` gives exactly one of these outcomes:
+- no error, and the current card is the first card of the stack whose name matches the text ignoring case; or
+- a runtime error on the `go` line, the current stack and card are the ones before the run, and nothing moved; or
+- the `go` opened the matching stack and its first card's `openCard` raised an error (runtime, or a syntax error in its script). The error carries that card's script id and a line inside that script (1..its lineCount), and the current card is that first card (R12.3 keeps the move).
+
+The outcome is the one a model of the generated stacks expects: the second when the text is empty or matches no stack, the third when the matching stack's first card has an error, and the first otherwise. The host's call log holds one `findStackByName` call with the text unchanged (none for the empty text), and one `goToStack` call with the matching stack and the pending effect (none when no stack matches).
+
+**P3. Determinism.** For any stack state (one stack, or 1 to 3 stacks for scripts with `go to stack`), any valid script (any statement mix, including dialogs, fields, visibility, `go`, `go to stack`, globals, and haunts), and a fixed list of dialog replies, running it twice from identical copies of the state gives equal resulting state (every stack with its cards and current card, and the current stack), equal results, and equal host call logs, the `findStackByName` and `goToStack` calls included.
 
 **P4. Error lines.** For any script with a syntax error, the reported line is an integer in 1..lineCount. Generator: take a valid script and delete, duplicate, swap, or replace random tokens, truncate it at a random point, or insert junk lines. The test keeps the cases where `parse` fails. A separate example test makes sure the generator produces failures often enough (at least 30% of runs).
 
-**P5. Runtime error lines.** For any generated script and stack where `run` returns an error, the error line is in 1..lineCount of the script that raised it.
+**P5. Runtime error lines.** For any generated script and stack state, from the same sessions as P3 (one stack, or 1 to 3 stacks), where `run` returns an error, the error line is in 1..lineCount of the script that raised it: the script that was run, or the card script whose id the error carries, found in any stack.
 
 **P6. Global sharing.** A value stored in a `global` variable by one handler is read by another handler on another card in the same session, and a local with the same name is not shared.

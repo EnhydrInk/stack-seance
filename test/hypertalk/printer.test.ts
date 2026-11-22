@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parse } from '../../src/hypertalk/parser';
 import { print } from '../../src/hypertalk/printer';
-import { stripPositions, type Script } from '../../src/hypertalk/ast';
+import { stripPositions, type Expr, type Script, type Stmt, type WithoutPos } from '../../src/hypertalk/ast';
 
 const src = (...lines: string[]) => lines.join('\n');
 
@@ -132,6 +132,34 @@ describe('R15 printing haunts', () => {
       '    summon witch',
       '  end if',
     ]);
+  });
+});
+
+describe('printing go to stack (go-to-stack-command Requirement 2)', () => {
+  type E = WithoutPos<Expr>;
+  const goStack = (expr: E): WithoutPos<Stmt> => ({ t: 'go', target: { k: 'stack', expr } });
+  const printOne = (stmt: WithoutPos<Stmt>) => print({ handlers: [{ name: 'mouseUp', body: [stmt] }] });
+
+  // [what, target, printed line, whether the printer adds parentheses]
+  const cases: [string, E, string, boolean][] = [
+    ['a string', { t: 'str', value: 'Haunted House' }, 'go to stack "Haunted House"', false],
+    ['a variable', { t: 'var', name: 'dest' }, 'go to stack dest', false],
+    [
+      'a calculation with no paren node',
+      { t: 'bin', op: '&&', left: { t: 'str', value: 'Haunted' }, right: { t: 'str', value: 'House' } },
+      'go to stack ("Haunted" && "House")',
+      true,
+    ],
+    ['a not', { t: 'not', operand: { t: 'var', name: 'x' } }, 'go to stack (not x)', true],
+  ];
+
+  it.each(cases)('prints %s target as go to stack …, and the line parses back to the same node (2.1, 2.2)', (_, expr, line, parens) => {
+    const printed = printOne(goStack(expr));
+    expect(printed).toBe(`on mouseUp\n  ${line}\nend mouseUp\n`);
+    // Parentheses the printer adds come back as a paren node around the same expression.
+    const expected = goStack(parens ? { t: 'paren', inner: expr } : expr);
+    expect(stripPositions(ok(printed).handlers[0]!.body)).toEqual([expected]);
+    expect(reprint(printed)).toBe(printed);
   });
 });
 

@@ -9,16 +9,27 @@ import type { Value } from './values';
 
 /** A card as the host reports it. */
 export interface CardRef {
-  /** 1-based position in the stack. */
+  /** 1-based position in the current stack. */
   index: number;
+  /** Unique across all stacks, so it names the card's script on its own (R12.5). */
   id: string;
   name: string | null;
+}
+
+/** A stack as the host reports it. */
+export interface StackRef {
+  id: string;
+  name: string;
 }
 
 /**
  * Asynchronous only where a person or a timer is involved (dialogs, wait, haunts).
  * Every name lookup is case-insensitive (R1.8) and, for fields and buttons, happens on
  * the card that is current at the moment of the call (R2.6).
+ *
+ * The host holds one or more stacks. cardCount, currentCard, findCardByName, cardAt, goToCard
+ * and getCardScript refer to the current stack: the one that holds the current card. Card ids
+ * are unique across all stacks.
  */
 export interface Host {
   cardCount(): number;
@@ -28,6 +39,11 @@ export interface Host {
   cardAt(index: number): CardRef | undefined;
   /** Makes `card` the current card and plays `effect` with the change (R3.2). */
   goToCard(card: CardRef, effect?: Effect): void;
+
+  /** Case-insensitive; undefined when no stack has this name. */
+  findStackByName(name: string): StackRef | undefined;
+  /** Makes `stack` the current stack, shows its first card with `effect`, and returns that card. */
+  goToStack(stack: StackRef, effect?: Effect): CardRef;
 
   /** Text of a field on the current card; undefined when there is no such field. */
   getField(name: string): string | undefined;
