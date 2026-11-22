@@ -21,7 +21,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - Done when the full suite and the type check pass with no test edits.
     - _Requirements: 1.1, 1.9, 1.10_
 
-  - [ ] 1.2 Parse `go [to] stack <primary>` in `src/hypertalk/parser.ts`
+  - [x] 1.2 Parse `go [to] stack <primary>` in `src/hypertalk/parser.ts`
     - Add `PAREN_HINTS` with the card hint as it is today and the stack hint `put a calculated stack name in parentheses, for example go to stack ("Haunted" && "House")`.
     - In `go()`, handle `card` and `stack` in one branch: advance, read `primary()`, fail at a following calculation operator with `PAREN_HINTS[word]`, and return `{ t: 'go', target: { k: word, expr }, pos }`.
     - Do not change the fallback message yet (task 8 changes it).
