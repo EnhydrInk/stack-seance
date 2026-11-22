@@ -7,7 +7,7 @@ Pure TypeScript, no dependencies other than the test libraries. The pipeline is 
 ```
 src/hypertalk/
   tokens.ts      Token types, keyword table, haunt table
-  lexer.ts       tokenize(source): LexResult  ({ ok: true, tokens } | { ok: false, error })
+  lexer.ts       tokenize(source): LexResult  ({ ok: true, tokens } | { ok: false, error }); internal: tokenizeUntilError(source)
   ast.ts         AST types, stripPositions()
   parser.ts      parse(source): ParseResult
   printer.ts     print(script): string
@@ -158,6 +158,7 @@ Notes:
 - `not` is a prefix operator at its own level, so `not a is b` means `not (a is b)`.
 - Expression parsing stops at tokens that cannot continue it, then the statement parser expects NL or a closer, which gives "unexpected <token>" errors on that line.
 - `parse(source)` returns `{ ok: true, script } | { ok: false, error: SyntaxError }`.
+- When the lexer fails, the parser still runs over the tokens read before the error. Reading past them means reading the text at the lexer error, so the parser reports the lexer error there. A parse error found before that point wins (R12.3). An `on` or `if` still open at that point is not reported, because finding it would need the end of the script.
 - An `on` inside a handler body is reported on the line of that `on` ("add end mouseUp before it"), because that is where the `end` is missing. R1.5's "line of its `on`" applies when the script ends with the handler still open.
 - When several constructs are open at the end of the script, the innermost one is reported: an unclosed `if` inside an unclosed handler gives the `if` line (R9.5).
 - `go to card n + 1` gets a hint to use parentheses. `-5` gets a hint to write `0 - 5`, since unary minus is not in the subset.

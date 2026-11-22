@@ -19,3 +19,8 @@
 - Done: `src/hypertalk/parser.ts` (30 lines, no grammar rule touched) drops the early return in `parseUnguarded`, passes the lexer error into `Parser`, and `peek` throws that error when a rule reads past the tokens before it. A new `position()` keeps the internal-error catch from throwing. No message text changed. The `.fails` markers on task 1's 18 tests were removed by reverse-applying commit 02826fb. Suite: 338 passed, 0 failed, with all 18 task 1 tests passing as normal tests; typecheck passes.
 - Kiro: Property 1 (Bug Condition) now holds and Property 2 (Preservation) still holds, covering requirements 2.1–2.4 and 3.1–3.6, 3.10; root causes 1 and 3 from the bugfix design; the tests-green gate, which is green again without markers.
 - Why it matters: `put 1 into` above an unclosed string now reports line 2, the line the back of the card should point at.
+
+## lexer-error-masks-parse-error-fix, task 3.3: Describe the new rule in the interpreter design
+- Done: 2 edits to `.kiro/specs/hypertalk-interpreter/design.md`: the `lexer.ts` module line names the internal `tokenizeUntilError(source)`, and a new Parser bullet explains that the parser runs over the tokens before a lexer error, a parse error found before it wins (R12.3), and an `on` or `if` still open there is not reported. No code changed; suite still 338 passed.
+- Kiro: requirements 2.1–2.3 and 3.4; the interpreter spec's design document, kept in step with the code; `validate_spec_format`, which reported the same 5 pre-existing issues before and after.
+- Why it matters: the interpreter spec now states the rule the code follows, so a later change to the parser starts from the right description.

@@ -98,7 +98,7 @@
     - _Preservation: lexer-clean scripts take the same path (`lexError` is `undefined`); reading past before(s) reports exactly L, and the "never closed" checks cannot fire without an eof (3.1 to 3.6, 3.10)_
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.10_
 
-  - [~] 3.3 Describe the new rule in the interpreter design
+  - [x] 3.3 Describe the new rule in the interpreter design
     - In `.kiro/specs/hypertalk-interpreter/design.md`, module list (line 10): the `lexer.ts` line also names `tokenizeUntilError(source)` as internal
     - In the "Parser" notes, after the bullet on `parse(source)` (line 160), add a bullet: when the lexer fails, the parser still runs over the tokens read before the error. Reading past them means reading the text at the lexer error, so the parser reports the lexer error there. A parse error found before that point wins. An `on` or `if` still open at that point is not reported, because finding it would need the end of the script
     - _Bug_Condition: `isBugCondition(s)` from design_
