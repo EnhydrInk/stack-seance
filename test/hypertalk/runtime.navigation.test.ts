@@ -344,7 +344,8 @@ describe('R2.5, R14 / 9.4 openCard', () => {
     expect(host.log.some((c) => c.call === 'haunt' || c.call === 'answer')).toBe(false);
   });
 
-  it('reports a parse error found before a lexer error in the new card’s openCard, with that card’s id (2.4, R12.5)', async () => {
+  // Expected to fail until the fix (task 3.2 removes .fails).
+  it.fails('reports a parse error found before a lexer error in the new card’s openCard, with that card’s id (2.4, R12.5)', async () => {
     const host = stack(2, {}, (i) => ({ script: i === 2 ? handlerSource('openCard', REPRO_1.body) : '' }));
     const { result } = await run(inHandler('go to next card', 'answer "after"'), host);
     expect(result).toEqual({

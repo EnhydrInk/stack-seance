@@ -91,8 +91,9 @@ describe('12.1 public API (R14.1)', () => {
   });
 });
 
+// Expected to fail until the fix (task 3.2 removes .fails).
 describe('R12.3 / 2.1–2.3 public parse with a parse error before a lexer error', () => {
-  it.each(REPROS)('$name returns the parser’s error, unchanged by the line guard', ({ body, error }) => {
+  it.fails.each(REPROS)('$name returns the parser’s error, unchanged by the line guard', ({ body, error }) => {
     expect(api.parse(handlerSource('mouseUp', body))).toEqual({ ok: false, error });
   });
 });

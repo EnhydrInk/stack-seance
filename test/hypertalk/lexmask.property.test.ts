@@ -26,8 +26,9 @@ function checkShape({ source, twin, targetLine }: MaskedParseError): { lexError:
   return { lexError: lexed.error, expected: parsed.error };
 }
 
+// Expected to fail until the fix (task 3.2 removes .fails).
 describe('Property 1: a parse error found before the first lexer error is reported (2.1, 2.2, 2.3)', () => {
-  it('parse and parseUnguarded report the twin’s parse error, with either line break', () => {
+  it.fails('parse and parseUnguarded report the twin’s parse error, with either line break', () => {
     fc.assert(
       fc.property(maskedParseErrorArb, (shape) => {
         const { lexError, expected } = checkShape(shape);
@@ -44,10 +45,11 @@ describe('Property 1: a parse error found before the first lexer error is report
   });
 });
 
+// Expected to fail until the fix (task 3.2 removes .fails).
 describe('Property 1: running a script with a parse error found before a lexer error (2.4)', () => {
   const GO_NEXT = 'on mouseUp\n  go to next card\nend mouseUp';
 
-  it('runHandler returns the parse error and calls the host for nothing', async () => {
+  it.fails('runHandler returns the parse error and calls the host for nothing', async () => {
     await fc.assert(
       fc.asyncProperty(maskedParseErrorArb, async (shape) => {
         const { expected } = checkShape(shape);
@@ -60,7 +62,7 @@ describe('Property 1: running a script with a parse error found before a lexer e
     );
   });
 
-  it('another card’s openCard returns the parse error with that card’s id, and runs nothing of its script', async () => {
+  it.fails('another card’s openCard returns the parse error with that card’s id, and runs nothing of its script', async () => {
     const openCardArb = maskedParseErrorArb.filter((s) => s.handler === 'openCard');
     await fc.assert(
       fc.asyncProperty(openCardArb, async (shape) => {
