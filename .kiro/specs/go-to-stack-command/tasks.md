@@ -33,7 +33,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - _Requirements: 2.1, 2.2_
 
 - [ ] 2. Host interface for stacks, and the fake host that implements it
-  - [ ] 2.1 Add `StackRef`, `findStackByName` and `goToStack` to `src/hypertalk/host.ts`, and export `StackRef` from `src/hypertalk/index.ts`
+  - [x] 2.1 Add `StackRef`, `findStackByName` and `goToStack` to `src/hypertalk/host.ts`, and export `StackRef` from `src/hypertalk/index.ts`
     - `StackRef { id: string; name: string }`, documented as "A stack as the host reports it."
     - `findStackByName(name: string): StackRef | undefined` and `goToStack(stack: StackRef, effect?: Effect): CardRef`, with the doc strings of Requirement 6.2 and 6.3.
     - Document `CardRef.index` as the 1-based position in the current stack and `CardRef.id` as unique across all stacks. Add the paragraph saying that `cardCount`, `currentCard`, `findCardByName`, `cardAt`, `goToCard` and `getCardScript` refer to the current stack. Leave every other method unchanged.
