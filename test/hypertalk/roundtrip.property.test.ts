@@ -114,8 +114,7 @@ describe('generator coverage', () => {
     .map(([ast, seed]) => renderScript(ast, seed));
   const runScripts = fc.sample(sessionArb, { numRuns: 1000, seed: 11 }).map((s) => s.source);
 
-  // Expected to fail until the renderer change (task 3.1 removes .fails).
-  it.fails('never writes a one-line if without else directly before an else or else if line (2.1, 2.3)', () => {
+  it('never writes a one-line if without else directly before an else or else if line (2.1, 2.3)', () => {
     const rejected = (sources: string[]) => sources.filter((s) => oneLineIfFollowers(s).elseAfterNoElse > 0);
     const badRenderings = rejected(renderings);
     const badRunScripts = rejected(runScripts);

@@ -62,7 +62,7 @@
 
 - [ ] 3. Fix the attachment of `else` and `end if` after a one-line `if` inside a block `if`
 
-  - [~] 3.1 Stop the test renderer from writing the rejected shape
+  - [x] 3.1 Stop the test renderer from writing the rejected shape
     - Do this before the parser change, so P1 and P5 stay green at every step
     - In `test/hypertalk/helpers/arbitraries.ts` (`Renderer.block` and `Renderer.ifStmt`, lines 238 to 277), change `block(stmts, depth)` to `block(stmts, depth, beforeElse = false)` and pass `beforeElse` to `ifStmt` for the last statement only
     - In `ifStmt(s, depth, beforeElse = false)`, allow the one-line form only when `fits && !(beforeElse && s.else.length === 0)`. A one-line `if` with its own `else` before an `else` line, and a one-line `if` before `end if`, are still written

@@ -132,7 +132,11 @@ export const scriptArb: fc.Arbitrary<Sc> = fc
 // ---- source renderer ----------------------------------------------------------
 
 export interface RenderOptions {
-  /** Force every `if` that fits on one line into one form. Default: random. */
+  /**
+   * Force every `if` that fits on one line into one form. Default: random.
+   * `'oneLine'` still writes the block form for an `if` without `else` that is the last
+   * command before an `else` or `else if` line, because the parser rejects the one-line form there.
+   */
   ifForm?: 'random' | 'oneLine' | 'block';
   /** Add parentheses that are not needed (they become `paren` nodes). Default: true. */
   redundantParens?: boolean;
@@ -235,39 +239,47 @@ class Renderer {
     return this.lines.join(eol) + (this.chance(0.5) ? eol : '');
   }
 
-  private block(stmts: S[], depth: number): void {
-    for (const s of stmts) {
-      if (s.t === 'if') this.ifStmt(s, depth);
+  /** `beforeElse`: an `else` or `else if` line comes right after this block. */
+  private block(stmts: S[], depth: number, beforeElse = false): void {
+    stmts.forEach((s, i) => {
+      if (s.t === 'if') this.ifStmt(s, depth, beforeElse && i === stmts.length - 1);
       else this.emit(depth, this.simple(s));
-    }
+    });
   }
 
-  private ifStmt(s: I, depth: number): void {
+  private ifStmt(s: I, depth: number, beforeElse = false): void {
     const [first] = s.then;
     const [elseFirst] = s.else;
     const fits =
       s.then.length === 1 && first!.t !== 'if' &&
       (s.else.length === 0 || (s.else.length === 1 && elseFirst!.t !== 'if'));
+    // The parser rejects a one-line if without else right before an else or else if line.
+    const oneLineAllowed = fits && !(beforeElse && s.else.length === 0);
     const form = this.options.ifForm ?? 'random';
-    if (fits && (form === 'oneLine' || (form === 'random' && this.chance(0.5)))) {
+    if (oneLineAllowed && (form === 'oneLine' || (form === 'random' && this.chance(0.5)))) {
       const toks = [this.kw('if'), ...this.expr(s.cond), this.kw('then'), ...this.simple(first as Exclude<S, I>)];
       if (elseFirst) toks.push(this.kw('else'), ...this.simple(elseFirst as Exclude<S, I>));
       this.emit(depth, toks);
       return;
     }
     this.emit(depth, [this.kw('if'), ...this.expr(s.cond), this.kw('then')]);
-    this.block(s.then, depth + 1);
+    // Each continuation is chosen before the block in front of it is written, so that
+    // block knows whether an else line follows it.
+    let body = s.then;
     let tail = s;
     for (;;) {
       const only = tail.else.length === 1 ? tail.else[0] : undefined;
-      if (only?.t === 'if' && this.chance(0.6)) {
+      const isElseIf = only?.t === 'if' && this.chance(0.6);
+      // An explicit empty else gives the same tree as no else.
+      const isElse = !isElseIf && (tail.else.length > 0 || this.chance(0.15));
+      this.block(body, depth + 1, isElseIf || isElse);
+      if (isElseIf) {
         this.emit(depth, [this.kw('else'), this.kw('if'), ...this.expr(only.cond), this.kw('then')]);
-        this.block(only.then, depth + 1);
+        body = only.then;
         tail = only;
         continue;
       }
-      // An explicit empty else gives the same tree as no else.
-      if (tail.else.length > 0 || this.chance(0.15)) {
+      if (isElse) {
         this.emit(depth, [this.kw('else')]);
         this.block(tail.else, depth + 1);
       }
