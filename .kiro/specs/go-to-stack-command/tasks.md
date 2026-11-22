@@ -32,7 +32,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - `card` and `stack` share one case: `go to ${k} ${printExpr(expr, PRIMARY)}`, so a non-primary target is printed in parentheses.
     - _Requirements: 2.1, 2.2_
 
-- [ ] 2. Host interface for stacks, and the fake host that implements it
+- [x] 2. Host interface for stacks, and the fake host that implements it
   - [x] 2.1 Add `StackRef`, `findStackByName` and `goToStack` to `src/hypertalk/host.ts`, and export `StackRef` from `src/hypertalk/index.ts`
     - `StackRef { id: string; name: string }`, documented as "A stack as the host reports it."
     - `findStackByName(name: string): StackRef | undefined` and `goToStack(stack: StackRef, effect?: Effect): CardRef`, with the doc strings of Requirement 6.2 and 6.3.
@@ -62,7 +62,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - New `describe` blocks for: building from stacks (default ids, given ids, `currentStack` and `current`, `state` being the current entry's object); the cards form holding one stack equal to `DEFAULT_STACK`; each constructor error of Requirement 7.5; `findStackByName` (case, stored name, `undefined` for a missing name and for `''`, logged); `goToStack` (return value, log with and without effect, left stack reset to card 1, current stack as target, both throws leaving the current stack, the current card and `stacks` unchanged, with the call still logged); card calls after `goToStack`, and old refs throwing; `stack()` not logged; `clone()` with several stacks after a `goToStack`, equal and independent.
     - _Requirements: 8.9, 7.1, 7.2, 7.3, 7.4, 7.5, 7.7, 7.8, 7.9, 7.10, 7.11, 7.12_
 
-  - [ ] 2.5 Write the public API type test in `test/hypertalk/index.test.ts`
+  - [x] 2.5 Write the public API type test in `test/hypertalk/index.test.ts`
     - A new `it`: `StackRef` from the public API equals `host.StackRef` and `{ id: string; name: string }`; `Host['findStackByName']` is `(name: string) => StackRef | undefined`; `Host['goToStack']` is `(stack: StackRef, effect?: Effect) => CardRef`.
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.7_
 

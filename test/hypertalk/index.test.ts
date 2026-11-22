@@ -21,6 +21,7 @@ import type {
   RuntimeError,
   Script,
   ScriptError,
+  StackRef,
   Stmt,
   SyntaxError as ScriptSyntaxError,
   Value,
@@ -64,6 +65,13 @@ describe('12.1 public API (R14.1)', () => {
     expectTypeOf<RunResult>().toEqualTypeOf<host.RunResult>();
     expectTypeOf(api.parse).returns.toEqualTypeOf<ParseResult>();
     expectTypeOf(api.runHandler).returns.resolves.toEqualTypeOf<RunResult>();
+  });
+
+  it('exports StackRef, and Host has exactly the two stack calls of go-to-stack-command Requirement 6', () => {
+    expectTypeOf<StackRef>().toEqualTypeOf<host.StackRef>();
+    expectTypeOf<StackRef>().toEqualTypeOf<{ id: string; name: string }>();
+    expectTypeOf<Host['findStackByName']>().toEqualTypeOf<(name: string) => StackRef | undefined>();
+    expectTypeOf<Host['goToStack']>().toEqualTypeOf<(stack: StackRef, effect?: Effect) => CardRef>();
   });
 
   it('parse, print and runHandler work together through the public API', async () => {
