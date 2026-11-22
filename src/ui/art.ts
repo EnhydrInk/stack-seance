@@ -249,6 +249,15 @@ export const GHOST: Sprite = [
   'kk.kk..kk.kk',
 ];
 
+/** A sparkle that grows from a dot to a star, the frames of the spinner while the spirits write. */
+export const SPARKLE: readonly Sprite[] = [
+  ['.......', '.......', '.......', '...o...', '.......', '.......', '.......'],
+  ['.......', '.......', '...p...', '..pop..', '...p...', '.......', '.......'],
+  ['.......', '...p...', '...p...', '.ppopp.', '...p...', '...p...', '.......'],
+  ['...p...', '.p.p.p.', '..ppp..', 'pppoppp', '..ppp..', '.p.p.p.', '...p...'],
+  ['p..p..p', '.p.p.p.', '..ppp..', 'pppoppp', '..ppp..', '.p.p.p.', 'p..p..p'],
+];
+
 export const MOON: Sprite = [
   '....yyyy....',
   '..yyyyyy....',

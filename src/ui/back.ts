@@ -5,6 +5,7 @@
 
 import { parse } from '../hypertalk/index';
 import type { CardDoc } from './types';
+import { spiritsWriting } from './writing';
 
 export interface BackHandle {
   /** Marks a line of a script (from an error notice) and scrolls it into view. */
@@ -52,9 +53,11 @@ export function renderBack(
       go.disabled = input.value.trim() === '' || input.value === sentence;
     });
     go.addEventListener('click', async () => {
-      go.disabled = true;
-      go.textContent = 'The spirits are writing…';
+      const writing = spiritsWriting();
+      go.replaceWith(writing.el);
+      input.readOnly = true;
       await onRecompile(buttonId, input.value.trim());
+      writing.stop();
     });
     box.append(input, go);
     return box;

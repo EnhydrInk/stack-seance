@@ -903,6 +903,29 @@ body.busy .viewport {
   gap: 10px;
 }
 
+.writing {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.writing .spark {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+}
+
+.writing-time {
+  color: var(--ghost);
+  font-variant-numeric: tabular-nums;
+}
+
+.sentence-edit .writing {
+  align-self: center;
+  font-size: 13px;
+}
+
 .boo {
   position: absolute;
   left: 50%;

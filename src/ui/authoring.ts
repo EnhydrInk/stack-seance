@@ -2,12 +2,12 @@
 // what is there (drag, delete, edit text), recompile a button from its edited sentence, and
 // make a new stack.
 
-import { GHOST, pixelSvg } from './art';
 import { compileSentence, requestFor, type CompileResponse } from './compile';
 import type { Model } from './model';
 import type { Runner } from './runner';
 import { CARD_H, CARD_W, type Screen } from './screen';
 import type { Rect } from './types';
+import { spiritsWriting } from './writing';
 
 const BUTTON_SIZE: [number, number] = [132, 24];
 const TEXT_SIZE: [number, number] = [200, 40];
@@ -119,9 +119,11 @@ export class Authoring {
       const sentence = input.value.trim();
       if (!sentence) return;
       this.cancelPlace = undefined;
-      box.replaceChildren(pixelSvg(GHOST, 2, 'bob'), el('span', 'grow-wait', 'The spirits are writing…'));
+      const writing = spiritsWriting();
+      box.replaceChildren(writing.el);
       box.classList.add('waiting');
       const reply = await compileSentence(requestFor(this.model, sentence));
+      writing.stop();
       close();
       if (reply.ok) {
         this.model.addCards(reply.newCards);
