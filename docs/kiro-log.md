@@ -24,3 +24,8 @@
 - Done: 2 edits to `.kiro/specs/hypertalk-interpreter/design.md`: the `lexer.ts` module line names the internal `tokenizeUntilError(source)`, and a new Parser bullet explains that the parser runs over the tokens before a lexer error, a parse error found before it wins (R12.3), and an `on` or `if` still open there is not reported. No code changed; suite still 338 passed.
 - Kiro: requirements 2.1–2.3 and 3.4; the interpreter spec's design document, kept in step with the code; `validate_spec_format`, which reported the same 5 pre-existing issues before and after.
 - Why it matters: the interpreter spec now states the rule the code follows, so a later change to the parser starts from the right description.
+
+## lexer-error-masks-parse-error-fix, task 3.4: Verify the bug condition exploration tests now pass
+- Done: re-ran task 1's 18 tests unchanged; all 18 pass (6 files, 173 tests passed). No `.fails` marker is left. The mutant count went from 0 to 74 of 135 lexer-error mutants (54.8%) reporting a parse error found before the lexer error, as the design predicted. No file changed except the PBT status in `tasks.meta.json`.
+- Kiro: Property 1 (Expected Behavior), requirements 2.1–2.4; the same property-based tests that failed in task 1 now pass, with their PBT status set to passed; the `x = 1` decision from design review is pinned by one of them.
+- Why it matters: the tests that proved the bug now prove the fix, with no edits between the two runs other than removing the temporary markers.

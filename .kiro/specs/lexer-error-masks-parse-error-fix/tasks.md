@@ -106,7 +106,7 @@
     - _Preservation: Preservation Requirements from design_
     - _Requirements: 2.1, 2.2, 2.3, 3.4_
 
-  - [~] 3.4 Verify the bug condition exploration tests now pass
+  - [x] 3.4 Verify the bug condition exploration tests now pass
     - **Property 1: Expected Behavior** - A parse error found before the first lexer error is reported
     - **IMPORTANT**: Re-run the SAME tests from task 1. Do NOT write new tests
     - The tests from task 1 encode the expected behavior. When they pass, the expected behavior is satisfied, including the `x = 1` decision (line 2, column 3, `unknown command "x"`)

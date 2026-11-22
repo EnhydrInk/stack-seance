@@ -2,12 +2,15 @@
   "pbtResults": {
     "1. Write bug condition exploration tests": {
       "status": "passed",
-      "failingExample": "Bug confirmed on unfixed code (generator self-checks pass; only the bug assertions fail). Shrunk counterexamples:\n- parse property: {\"source\":\"on mouseup\\nput into \\\"x\",\"twin\":\"on mouseup\\nput into \\\"x\\\"\",\"handler\":\"mouseUp\",\"targetLine\":2} -> got line 2, column 10, `this string has no closing quote (\") on this line`; expected the twin's line 2, column 1, `expected a value but found \"into\", which is a reserved word`.\n- runHandler property: {\"source\":\"on mouseup\\ngo to nxt card\\nanswer \\\"unclosed\",\"handler\":\"mouseUp\",\"targetLine\":2} -> got line 3, column 8 missing-quote; expected line 2, column 7 go message.\n- openCard property: same script as openCard of card 2 -> got line 3, column 8 missing-quote with scriptId card-2; log already ends with getCardScript card-2.\nUnit repros: Repro 1 (and \\r\\n) line 3 col 10 missing-quote; Repro 2 line 42 col 8 `=` hint; Repro 3 line 2 col 12 missing-quote; x = 1 line 2 col 5 `=` hint; column-1 edge line 3 col 1 `unexpected character \"#\"`; two-handler edge line 5 col 10 missing-quote. Mutant count: 0 of 135 lexer-error mutants report a parse error.",
-      "lastRunTimestamp": 1795313433244
+      "lastRunTimestamp": 1795318287836
     },
     "2. Write preservation property tests (BEFORE implementing the fix)": {
       "status": "passed",
       "lastRunTimestamp": 1795318054624
+    },
+    "3.4 Verify the bug condition exploration tests now pass": {
+      "status": "passed",
+      "lastRunTimestamp": 1795318288260
     }
   },
   "executionHistory": {
@@ -101,6 +104,16 @@
         "executionId": "1c74d14a-a79d-44df-b764-3df99ce67ae0",
         "chatSessionId": "sess_c0386f16-b956-4079-8142-4694cdce14d3",
         "timestamp": 1795312923686
+      },
+      {
+        "executionId": "1c74d14a-a79d-44df-b764-3df99ce67ae0",
+        "chatSessionId": "sess_c0386f16-b956-4079-8142-4694cdce14d3",
+        "timestamp": 1795318195747
+      },
+      {
+        "executionId": "1c74d14a-a79d-44df-b764-3df99ce67ae0",
+        "chatSessionId": "sess_c0386f16-b956-4079-8142-4694cdce14d3",
+        "timestamp": 1795318308205
       }
     ],
     "3.5 Verify the preservation tests still pass": [
