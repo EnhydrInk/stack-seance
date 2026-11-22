@@ -177,7 +177,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - Host interface: `StackRef`, `findStackByName`, `goToStack`, the rule that card calls and `CardRef.index` refer to the current stack, and card ids unique across stacks. Runtime `go` bullet: the stack branch. Testing strategy: the fake host holds stacks, and `state` is the current stack's `{ cards, current }`.
     - _Requirements: 10.6, 10.7_
 
-- [ ] 10. Final checkpoint - Ensure all tests pass
+- [x] 10. Final checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
   - The post-task hook commits after every task, so `git status` alone shows little. Check with `git diff --name-only <commit before task 1>..HEAD` plus `git status` that code changes are only under `src/hypertalk` and `test/hypertalk`, and document changes only under `.kiro/specs/hypertalk-interpreter` and `.kiro/specs/go-to-stack-command`, apart from the hook's entries in `docs/kiro-log.md`.
   - _Requirements: 9.11, 9.12, 10.8_
