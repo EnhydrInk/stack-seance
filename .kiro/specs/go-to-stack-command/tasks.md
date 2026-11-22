@@ -66,7 +66,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - A new `it`: `StackRef` from the public API equals `host.StackRef` and `{ id: string; name: string }`; `Host['findStackByName']` is `(name: string) => StackRef | undefined`; `Host['goToStack']` is `(stack: StackRef, effect?: Effect) => CardRef`.
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.7_
 
-- [ ] 3. Run `go to stack` in `src/hypertalk/runtime.ts`
+- [x] 3. Run `go to stack` in `src/hypertalk/runtime.ts`
   - Replace the placeholder from 1.1. `go()` takes the pending effect out of the frame first, then splits on the target kind: the stack branch calls `targetStack`, then `checkDepth`, then `host.goToStack(stack, effect)`; the card branch keeps its order of `targetCard`, `checkDepth`, `host.goToCard(card, effect)`. Both end with `await openCard(card, frame, ctx)`.
   - `targetStack`: `toStr(evaluate(expr))`, the empty-name error, `findStackByName` with the text unchanged, and `there is no stack named ${quoteValue(name)}`. It never calls `toNumber` or `cardAt`.
   - Move the depth check and the nested `openCard` run out of `go()` into `checkDepth` and `openCard`, with the existing messages and the existing `scriptId` rule (the innermost failing card names itself).
