@@ -1,0 +1,486 @@
+{
+  "stacks": [
+    {
+      "id": "home",
+      "name": "Home",
+      "cards": [
+        {
+          "id": "home-1",
+          "name": "Home",
+          "script": "",
+          "art": "home",
+          "fields": [
+            {
+              "id": "f-home-title",
+              "name": "title",
+              "text": "Stack Séance",
+              "rect": [
+                0,
+                26,
+                512,
+                44
+              ],
+              "visible": true,
+              "style": "title",
+              "align": "center"
+            },
+            {
+              "id": "f-home-sub",
+              "name": "subtitle",
+              "text": "Choose a stack. Flip any card to see what makes it work.",
+              "rect": [
+                0,
+                76,
+                512,
+                22
+              ],
+              "visible": true,
+              "style": "plain",
+              "align": "center"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-home-haunted",
+              "name": "Haunted House",
+              "rect": [
+                18,
+                122,
+                84,
+                84
+              ],
+              "visible": true,
+              "sentence": "Clicking this opens the Haunted House stack.",
+              "script": "on mouseUp\n  go to stack \"Haunted House\"\nend mouseUp",
+              "style": "icon",
+              "icon": "house"
+            },
+            {
+              "id": "b-home-graveyard",
+              "name": "Graveyard",
+              "rect": [
+                114,
+                122,
+                84,
+                84
+              ],
+              "visible": true,
+              "sentence": "Clicking this says the Graveyard is not ready yet.",
+              "script": "on mouseUp\n  answer \"The Graveyard is still being summoned...\"\nend mouseUp",
+              "style": "icon",
+              "icon": "grave"
+            },
+            {
+              "id": "b-home-kitchen",
+              "name": "Witch's Kitchen",
+              "rect": [
+                210,
+                122,
+                84,
+                84
+              ],
+              "visible": true,
+              "sentence": "Clicking this says the Witch's Kitchen is not ready yet.",
+              "script": "on mouseUp\n  answer \"The Witch's Kitchen is still being summoned...\"\nend mouseUp",
+              "style": "icon",
+              "icon": "cauldron"
+            },
+            {
+              "id": "b-home-patch",
+              "name": "Pumpkin Patch",
+              "rect": [
+                306,
+                122,
+                84,
+                84
+              ],
+              "visible": true,
+              "sentence": "Clicking this says the Pumpkin Patch is not ready yet.",
+              "script": "on mouseUp\n  answer \"The Pumpkin Patch is still being summoned...\"\nend mouseUp",
+              "style": "icon",
+              "icon": "patch"
+            },
+            {
+              "id": "b-home-new",
+              "name": "New Stack",
+              "rect": [
+                402,
+                122,
+                84,
+                84
+              ],
+              "visible": true,
+              "sentence": "Clicking this tells you what is coming.",
+              "script": "on mouseUp\n  answer \"Soon you will describe a card in one sentence, and it will grow here.\"\nend mouseUp",
+              "style": "icon",
+              "icon": "sparkle"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "haunted",
+      "name": "Haunted House",
+      "cards": [
+        {
+          "id": "hh-gate",
+          "name": "Gate",
+          "art": "gate",
+          "script": "on openCard\n  put \"The old gate creaks in the wind.\" into field \"sign\"\nend openCard",
+          "fields": [
+            {
+              "id": "f-gate-sign",
+              "name": "sign",
+              "text": "The old gate creaks in the wind.",
+              "rect": [
+                24,
+                24,
+                330,
+                50
+              ],
+              "visible": true,
+              "style": "plain"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-gate-bell",
+              "name": "Ring the bell",
+              "rect": [
+                360,
+                200,
+                132,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this rings the bell and asks who is there. If it is a ghost, a werewolf howls back.",
+              "script": "on mouseUp\n  answer \"Ding dong! Who's there?\" with \"A ghost\" or \"Nobody\"\n  if it is \"A ghost\" then\n    howl\n    put \"Something howled back.\" into field \"sign\"\n  else\n    put \"Nobody answered.\" into field \"sign\"\n    put \" Or did they?\" after field \"sign\"\n  end if\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-gate-enter",
+              "name": "Enter",
+              "rect": [
+                360,
+                232,
+                132,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this opens the gate and goes to the next card.",
+              "script": "on mouseUp\n  visual effect iris open\n  go to next card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-gate-home",
+              "name": "Home",
+              "rect": [
+                16,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes back to the Home stack.",
+              "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        },
+        {
+          "id": "hh-hall",
+          "name": "Hall",
+          "art": "hall",
+          "script": "",
+          "fields": [
+            {
+              "id": "f-hall-greeting",
+              "name": "greeting",
+              "text": "A candle flickers in the hall.",
+              "rect": [
+                24,
+                24,
+                330,
+                50
+              ],
+              "visible": true,
+              "style": "plain"
+            },
+            {
+              "id": "f-hall-note",
+              "name": "note",
+              "text": "Something fluttered out of the closet!",
+              "rect": [
+                200,
+                200,
+                200,
+                56
+              ],
+              "visible": false,
+              "style": "box"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-hall-candle",
+              "name": "Light a candle",
+              "rect": [
+                24,
+                100,
+                150,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this asks your name and writes a welcome for you.",
+              "script": "on mouseUp\n  global visitor\n  ask \"What is your name, visitor?\"\n  put it into visitor\n  put \"Welcome,\" && visitor & \".\" into field \"greeting\"\n  if visitor contains \"Kiro\" then answer \"Oh! A friend of the house.\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-hall-closet",
+              "name": "Open the closet",
+              "rect": [
+                24,
+                132,
+                150,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this lets a bat out of the closet and shows a note for two seconds.",
+              "script": "on mouseUp\n  release bat\n  show field \"note\"\n  wait 2 seconds\n  hide field \"note\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-hall-up",
+              "name": "Upstairs",
+              "rect": [
+                24,
+                164,
+                150,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this wipes to the card named Attic.",
+              "script": "on mouseUp\n  visual effect wipe left\n  go to card \"Attic\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-hall-deeper",
+              "name": "Go deeper",
+              "rect": [
+                360,
+                270,
+                132,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the next card.",
+              "script": "on mouseUp\n  go to card 1\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-hall-back",
+              "name": "Back",
+              "rect": [
+                360,
+                302,
+                132,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this wipes back to the previous card.",
+              "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        },
+        {
+          "id": "hh-attic",
+          "name": "Attic",
+          "art": "attic",
+          "script": "",
+          "fields": [
+            {
+              "id": "f-attic-label",
+              "name": "label",
+              "text": "Candles counted:",
+              "rect": [
+                24,
+                24,
+                330,
+                50
+              ],
+              "visible": true,
+              "style": "plain"
+            },
+            {
+              "id": "f-attic-count",
+              "name": "count",
+              "text": "0",
+              "rect": [
+                24,
+                80,
+                60,
+                30
+              ],
+              "visible": true,
+              "style": "box",
+              "align": "center"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-attic-count",
+              "name": "Count a candle",
+              "rect": [
+                24,
+                130,
+                150,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this counts one more candle. On the fourth and fifth, a witch flies by.",
+              "script": "on mouseUp\n  put field \"count\" + 1 into field \"count\"\n  if field \"count\" > 3 and field \"count\" < 6 then summon witch\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-attic-look",
+              "name": "Look up",
+              "rect": [
+                24,
+                162,
+                150,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this drops a spider and makes the label shriek.",
+              "script": "on mouseUp\n  drop spider\n  put \"Eek! \" before field \"label\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-attic-down",
+              "name": "Down",
+              "rect": [
+                360,
+                270,
+                132,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this wipes back to the previous card.",
+              "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-attic-garden",
+              "name": "To the garden",
+              "rect": [
+                360,
+                302,
+                132,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this dissolves to the last card.",
+              "script": "on mouseUp\n  visual effect dissolve\n  go to last card\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        },
+        {
+          "id": "hh-garden",
+          "name": "Garden",
+          "art": "garden",
+          "script": "on openCard\n  hide button \"Dig\"\n  wait 1 second\n  put \"The moon is out. Something is watching.\" into field \"msg\"\nend openCard",
+          "fields": [
+            {
+              "id": "f-garden-msg",
+              "name": "msg",
+              "text": "The moon is out. The garden is quiet.",
+              "rect": [
+                24,
+                24,
+                360,
+                50
+              ],
+              "visible": true,
+              "style": "plain"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-garden-moon",
+              "name": "Look at the moon",
+              "rect": [
+                24,
+                100,
+                150,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this makes something glint in the soil and shows the Dig button.",
+              "script": "on mouseUp\n  if not (field \"msg\" contains \"glint\") then\n    put \"Something glints in the soil.\" into field \"msg\"\n    show button \"Dig\"\n  end if\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-garden-dig",
+              "name": "Dig",
+              "rect": [
+                24,
+                132,
+                150,
+                24
+              ],
+              "visible": false,
+              "sentence": "Clicking this digs up a seed and asks what to do with it.",
+              "script": "on mouseUp\n  answer \"You found a pumpkin seed!\" with \"Keep it\" or \"Plant it\"\n  put \"You chose: \" & it into field \"msg\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-garden-back",
+              "name": "Back",
+              "rect": [
+                360,
+                238,
+                132,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the previous card.",
+              "script": "on mouseUp\n  go to prev card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-garden-again",
+              "name": "Start over",
+              "rect": [
+                360,
+                270,
+                132,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this closes with an iris and goes to the first card.",
+              "script": "on mouseUp\n  visual effect iris close\n  go to first card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-garden-home",
+              "name": "Home",
+              "rect": [
+                360,
+                302,
+                132,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes back to the Home stack.",
+              "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

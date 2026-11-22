@@ -1,0 +1,115 @@
+// The back of a card: the card script and every button's script, each under its button's
+// name and the sentence it came from. The text is the stored source, exactly as written.
+// Every edit is parsed; a syntax error marks its line. The text is stored either way, so the
+// back always shows what runs.
+
+import { parse } from '../hypertalk/index';
+import type { CardDoc } from './types';
+
+export interface BackHandle {
+  /** Marks a line of a script (from an error notice) and scrolls it into view. */
+  mark(scriptId: string, line: number, message: string): void;
+}
+
+interface Block {
+  section: HTMLElement;
+  textarea: HTMLTextAreaElement;
+  gutter: HTMLElement;
+  hl: HTMLElement;
+  problem: HTMLElement;
+}
+
+export function renderBack(
+  card: CardDoc,
+  stackName: string,
+  el: HTMLElement,
+  onEdit: (scriptId: string, source: string) => void,
+): BackHandle {
+  el.replaceChildren();
+  const blocks = new Map<string, Block>();
+
+  const head = document.createElement('header');
+  head.className = 'back-head';
+  head.textContent = `Back of card “${card.name}” · ${stackName}`;
+  el.appendChild(head);
+
+  const add = (id: string, who: string, sentence: string | undefined, source: string, hidden: boolean) => {
+    const section = document.createElement('section');
+    section.className = 'script';
+    const title = document.createElement('div');
+    title.className = 'who';
+    title.textContent = who + (hidden ? ' (hidden)' : '');
+    section.appendChild(title);
+    if (sentence) {
+      const s = document.createElement('p');
+      s.className = 'sentence';
+      s.textContent = `“${sentence}”`;
+      section.appendChild(s);
+    }
+    const editor = document.createElement('div');
+    editor.className = 'editor';
+    const gutter = document.createElement('pre');
+    gutter.className = 'gutter';
+    const code = document.createElement('div');
+    code.className = 'code';
+    const hl = document.createElement('div');
+    hl.className = 'hl';
+    hl.hidden = true;
+    const textarea = document.createElement('textarea');
+    textarea.spellcheck = false;
+    textarea.wrap = 'off';
+    textarea.autocapitalize = 'off';
+    textarea.setAttribute('autocorrect', 'off');
+    textarea.value = source;
+    textarea.setAttribute('aria-label', `Script of ${who}`);
+    code.append(hl, textarea);
+    editor.append(gutter, code);
+    section.appendChild(editor);
+    const problem = document.createElement('p');
+    problem.className = 'problem';
+    problem.hidden = true;
+    section.appendChild(problem);
+    el.appendChild(section);
+
+    const block: Block = { section, textarea, gutter, hl, problem };
+    blocks.set(id, block);
+    const refresh = () => {
+      const lines = textarea.value.split('\n').length;
+      textarea.rows = Math.max(lines, 2);
+      gutter.textContent = Array.from({ length: Math.max(lines, 2) }, (_, i) => String(i + 1)).join('\n');
+      const parsed = parse(textarea.value);
+      if (parsed.ok) show(block, undefined);
+      else show(block, { line: parsed.error.line, message: parsed.error.message, kind: 'syntax' });
+    };
+    textarea.addEventListener('input', () => {
+      refresh();
+      onEdit(id, textarea.value);
+    });
+    refresh();
+  };
+
+  add(card.id, 'Card script', undefined, card.script, false);
+  for (const b of card.buttons) add(b.id, `Button “${b.name}”`, b.sentence, b.script, !b.visible);
+
+  return {
+    mark(scriptId, line, message) {
+      const block = blocks.get(scriptId);
+      if (!block) return;
+      show(block, { line, message, kind: 'runtime' });
+      block.section.scrollIntoView({ block: 'center' });
+    },
+  };
+}
+
+function show(block: Block, problem: { line: number; message: string; kind: 'syntax' | 'runtime' } | undefined): void {
+  if (!problem) {
+    block.hl.hidden = true;
+    block.problem.hidden = true;
+    return;
+  }
+  block.hl.hidden = false;
+  block.hl.style.top = `calc(${problem.line - 1} * var(--code-lh))`;
+  block.problem.hidden = false;
+  block.problem.textContent = `Line ${problem.line}: ${problem.message}`;
+  block.problem.dataset.kind = problem.kind;
+}

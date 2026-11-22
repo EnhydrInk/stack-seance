@@ -1,0 +1,299 @@
+// The HyperCard window: title bar, card area, flip corner, dialogs, haunts, card changes
+// with their visual effect, and the error notice. Implements the host's Stage.
+
+import type { Effect, HauntKind, ScriptError } from '../hypertalk/index';
+import { BAT_DOWN, BAT_UP, SPIDER, WITCH, WOLF, pixelSvg } from './art';
+import { renderBack, type BackHandle } from './back';
+import { renderFront } from './front';
+import type { Stage } from './host';
+import type { Model, ScriptOwner } from './model';
+import type { ButtonDoc } from './types';
+
+export const CARD_W = 512;
+export const CARD_H = 342;
+
+const EFFECT_MS = 520;
+
+export class Screen implements Stage {
+  readonly win: HTMLElement;
+  private readonly title: HTMLElement;
+  private readonly viewport: HTMLElement;
+  private readonly front: HTMLElement;
+  private readonly back: HTMLElement;
+  private readonly fx: HTMLElement;
+  private readonly dialogs: HTMLElement;
+  private readonly notice: HTMLElement;
+  private pending: Promise<void> = Promise.resolve();
+  private backHandle: BackHandle | undefined;
+  flipped = false;
+
+  /** Set by main: what a click on a button does. */
+  onClick: (b: ButtonDoc) => void = () => {};
+  /** Set by main: whether a script is running (flips and clicks wait). */
+  isBusy: () => boolean = () => false;
+
+  constructor(private readonly model: Model) {
+    this.win = el('div', 'window');
+    const bar = el('div', 'titlebar');
+    this.title = el('span', 'title');
+    bar.append(el('span', 'stripes'), this.title, el('span', 'stripes'));
+    this.viewport = el('div', 'viewport');
+    this.front = el('div', 'card front');
+    this.back = el('div', 'card back');
+    this.back.hidden = true;
+    this.fx = el('div', 'fx');
+    this.dialogs = el('div', 'dialogs');
+    this.notice = el('button', 'notice');
+    this.notice.hidden = true;
+    const corner = el('button', 'corner');
+    corner.setAttribute('aria-label', 'Flip the card');
+    corner.title = 'Flip the card';
+    corner.addEventListener('click', () => void this.flip());
+    this.viewport.append(this.front, this.back, this.fx, corner, this.notice, this.dialogs);
+    this.win.append(bar, this.viewport);
+
+    model.onChange((change) => {
+      if (change === 'place' || !this.flipped) this.renderFront();
+    });
+  }
+
+  renderFront(): void {
+    this.title.textContent = this.model.stack.name;
+    renderFront(this.model.card, this.front, (b) => this.onClick(b));
+  }
+
+  // ---- card changes
+
+  changeCard(change: () => void, effect?: Effect): void {
+    if (this.flipped) this.showSide(false);
+    const old = this.front.cloneNode(true) as HTMLElement;
+    old.classList.add('snapshot');
+    change();
+    if (!effect) return;
+    const opts: KeyframeAnimationOptions = { duration: EFFECT_MS, easing: 'steps(10, end)' };
+    let anim: Animation;
+    if (effect === 'irisOpen') {
+      this.viewport.insertBefore(old, this.front);
+      anim = this.front.animate({ clipPath: ['circle(0% at 50% 50%)', 'circle(75% at 50% 50%)'] }, opts);
+    } else {
+      this.front.after(old);
+      const frames: Record<Exclude<Effect, 'irisOpen'>, Keyframe[] | PropertyIndexedKeyframes> = {
+        dissolve: { opacity: [1, 0] },
+        wipeLeft: { clipPath: ['inset(0 0% 0 0)', 'inset(0 100% 0 0)'] },
+        wipeRight: { clipPath: ['inset(0 0 0 0%)', 'inset(0 0 0 100%)'] },
+        irisClose: { clipPath: ['circle(75% at 50% 50%)', 'circle(0% at 50% 50%)'] },
+      };
+      anim = old.animate(frames[effect], { ...opts, fill: 'forwards' });
+    }
+    this.pending = anim.finished.then(() => old.remove());
+  }
+
+  settled(): Promise<void> {
+    return this.pending;
+  }
+
+  // ---- dialogs
+
+  answer(message: string, labels: string[]): Promise<string> {
+    return new Promise((resolve) => {
+      const box = el('div', 'dialog');
+      box.setAttribute('role', 'alertdialog');
+      const msg = el('p', 'message');
+      msg.textContent = message;
+      const row = el('div', 'buttons');
+      labels.forEach((label, i) => {
+        const b = el('button', i === labels.length - 1 ? 'dbtn default' : 'dbtn');
+        b.textContent = label;
+        b.addEventListener('click', () => {
+          box.remove();
+          resolve(label);
+        });
+        row.appendChild(b);
+      });
+      box.append(msg, row);
+      this.dialogs.appendChild(box);
+      (row.lastElementChild as HTMLElement).focus();
+    });
+  }
+
+  ask(message: string): Promise<string | null> {
+    return new Promise((resolve) => {
+      const box = el('form', 'dialog');
+      box.setAttribute('role', 'dialog');
+      const msg = el('p', 'message');
+      msg.textContent = message;
+      const input = el('input', 'answer-input') as HTMLInputElement;
+      input.type = 'text';
+      input.setAttribute('aria-label', message);
+      const row = el('div', 'buttons');
+      const cancel = el('button', 'dbtn') as HTMLButtonElement;
+      cancel.type = 'button';
+      cancel.textContent = 'Cancel';
+      const ok = el('button', 'dbtn default') as HTMLButtonElement;
+      ok.type = 'submit';
+      ok.textContent = 'OK';
+      row.append(cancel, ok);
+      box.append(msg, input, row);
+      const done = (value: string | null) => {
+        box.remove();
+        resolve(value);
+      };
+      cancel.addEventListener('click', () => done(null));
+      box.addEventListener('submit', (e) => {
+        e.preventDefault();
+        done(input.value);
+      });
+      this.dialogs.appendChild(box);
+      input.focus();
+    });
+  }
+
+  // ---- haunts
+
+  haunt(kind: HauntKind, from: ButtonDoc | undefined): Promise<void> {
+    switch (kind) {
+      case 'bat':
+        return this.bat(from);
+      case 'howl':
+        return this.howl();
+      case 'witch':
+        return this.witch();
+      case 'spider':
+        return this.spider();
+    }
+  }
+
+  private bat(from: ButtonDoc | undefined): Promise<void> {
+    const onCard = from && this.model.card.buttons.includes(from) && from.visible;
+    const [x, y, w, h] = onCard ? from.rect : [CARD_W / 2 - 15, CARD_H / 2, 30, 0];
+    const sx = x + w / 2 - 15;
+    const sy = y + h / 2 - 5;
+    const sprite = el('div', 'sprite');
+    const up = pixelSvg(BAT_UP, 2);
+    const down = pixelSvg(BAT_DOWN, 2);
+    down.style.visibility = 'hidden';
+    sprite.append(up, down);
+    this.fx.appendChild(sprite);
+    const flap = setInterval(() => {
+      const upShown = up.style.visibility !== 'hidden';
+      up.style.visibility = upShown ? 'hidden' : '';
+      down.style.visibility = upShown ? '' : 'hidden';
+    }, 110);
+    const anim = sprite.animate(
+      [
+        { transform: `translate(${sx}px, ${sy}px)` },
+        { transform: `translate(${sx + 40}px, ${sy - 60}px)` },
+        { transform: `translate(${sx - 20}px, ${sy - 120}px)` },
+        { transform: `translate(${sx + 90}px, ${Math.min(sy - 180, -40)}px)` },
+      ],
+      { duration: 1400, easing: 'steps(14, end)' },
+    );
+    return anim.finished.then(() => {
+      clearInterval(flap);
+      sprite.remove();
+    });
+  }
+
+  private howl(): Promise<void> {
+    const sprite = el('div', 'sprite wolf');
+    sprite.appendChild(pixelSvg(WOLF, 4));
+    const bubble = el('div', 'bubble');
+    bubble.textContent = 'Awoooooo!';
+    sprite.appendChild(bubble);
+    this.fx.appendChild(sprite);
+    const anim = sprite.animate(
+      [
+        { transform: `translate(420px, ${CARD_H}px)` },
+        { transform: `translate(420px, ${CARD_H - 70}px)`, offset: 0.2 },
+        { transform: `translate(420px, ${CARD_H - 70}px)`, offset: 0.8 },
+        { transform: `translate(420px, ${CARD_H}px)` },
+      ],
+      { duration: 2000, easing: 'steps(20, end)' },
+    );
+    return anim.finished.then(() => sprite.remove());
+  }
+
+  private witch(): Promise<void> {
+    const sprite = el('div', 'sprite');
+    sprite.appendChild(pixelSvg(WITCH, 3));
+    this.fx.appendChild(sprite);
+    const frames: Keyframe[] = [];
+    for (let i = 0; i <= 10; i++) {
+      const x = -80 + i * 62;
+      const y = 50 + (i % 2 === 0 ? 0 : 10);
+      frames.push({ transform: `translate(${x}px, ${y}px)` });
+    }
+    const anim = sprite.animate(frames, { duration: 2200, easing: 'steps(22, end)' });
+    return anim.finished.then(() => sprite.remove());
+  }
+
+  private spider(): Promise<void> {
+    const sprite = el('div', 'sprite spider');
+    sprite.style.left = '300px';
+    sprite.appendChild(pixelSvg(SPIDER, 2));
+    this.fx.appendChild(sprite);
+    const anim = sprite.animate(
+      [{ height: '0px' }, { height: '150px', offset: 0.4 }, { height: '150px', offset: 0.6 }, { height: '0px' }],
+      { duration: 2400, easing: 'steps(24, end)' },
+    );
+    return anim.finished.then(() => sprite.remove());
+  }
+
+  // ---- flip and the error notice
+
+  async flip(toBack = !this.flipped): Promise<void> {
+    if (this.isBusy() || toBack === this.flipped) return;
+    const half = { duration: 140, easing: 'steps(4, end)' };
+    await this.viewport.animate({ transform: ['scaleX(1)', 'scaleX(0)'] }, half).finished;
+    this.showSide(toBack);
+    await this.viewport.animate({ transform: ['scaleX(0)', 'scaleX(1)'] }, half).finished;
+  }
+
+  private showSide(back: boolean): void {
+    this.flipped = back;
+    this.back.hidden = !back;
+    this.front.hidden = back;
+    this.win.classList.toggle('flipped', back);
+    if (back) {
+      this.backHandle = renderBack(this.model.card, this.model.stack.name, this.back, (id, source) => {
+        const owner = this.model.owner(id);
+        if (!owner) return;
+        if (owner.kind === 'card') owner.card.script = source;
+        else owner.button.script = source;
+        this.model.changed('content');
+      });
+      this.back.scrollTop = 0;
+    } else {
+      this.backHandle = undefined;
+      this.renderFront();
+    }
+  }
+
+  showError(error: ScriptError, owner: ScriptOwner): void {
+    const who = owner.kind === 'card' ? `Card “${owner.card.name}”` : `Button “${owner.button.name}”`;
+    this.notice.replaceChildren();
+    const text = el('span', 'notice-text');
+    text.textContent = `${who}, line ${error.line}: ${error.message}`;
+    const hint = el('span', 'notice-hint');
+    hint.textContent = 'Flip to see it';
+    this.notice.append(text, hint);
+    this.notice.hidden = false;
+    this.notice.onclick = async () => {
+      this.notice.hidden = true;
+      const id = owner.kind === 'card' ? owner.card.id : owner.button.id;
+      if (this.model.card !== owner.card) this.model.goToOwner(owner);
+      await this.flip(true);
+      this.backHandle?.mark(id, error.line, error.message);
+    };
+  }
+
+  hideError(): void {
+    this.notice.hidden = true;
+  }
+}
+
+function el(tag: string, className: string): HTMLElement {
+  const e = document.createElement(tag);
+  e.className = className;
+  return e;
+}
