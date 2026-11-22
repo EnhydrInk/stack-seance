@@ -141,7 +141,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - A coverage test on 500 fixed-seed samples of `stackSessionArb`: runs reach `findStackByName` and `goToStack`, some end in a stack other than the starting one, and some fail on a stack go of the run script. The existing `sessionArb` coverage test stays as written.
     - **Validates: Requirements 6.8, 7.11, 9.7, 9.8**
 
-  - [ ] 6.6 Extend the P5 property in `test/hypertalk/runtimeerror.property.test.ts`
+  - [x] 6.6 Extend the P5 property in `test/hypertalk/runtimeerror.property.test.ts`
     - **Property 5: Runtime error lines across stacks (P5)**
     - Run P5 on `anySessionArb`. `scriptOf` finds the error's `scriptId` in every stack: `host.stacks.flatMap((s) => s.state.cards).find((c) => c.id === error.scriptId)`.
     - A coverage test on 1000 fixed-seed samples of `stackSessionArb`: the errors include run-script runtime errors, card-script runtime and syntax errors, and the depth limit.
