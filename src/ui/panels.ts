@@ -1,6 +1,6 @@
 // The Settings and Saves windows, opened from the File menu.
 
-import { copy, withMissingStacks, type Model } from './model';
+import { copy, upgrade, type Model } from './model';
 import { fileName, makeSave, readSaveFile, readSlots, saveFile, writeSlot, type Save } from './saves';
 import type { Screen } from './screen';
 import { SCALES, fontSettings, setFontSettings } from './settings';
@@ -145,7 +145,7 @@ export function openSaves(d: PanelDeps): void {
         const pick = await d.screen.answer(`Load slot ${i + 1}? What is on screen now will be replaced.`, ['Load', 'Cancel']);
         if (pick !== 'Load' || !save) return;
         close();
-        d.model.replace(withMissingStacks(copy(save.doc), d.defaults));
+        d.model.replace(upgrade(copy(save.doc), d.defaults));
         await d.afterReplace();
       });
       add('Export', !!save, () => {

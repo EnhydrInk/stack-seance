@@ -24,6 +24,7 @@ export function renderBack(
   stackName: string,
   el: HTMLElement,
   onEdit: (scriptId: string, source: string) => void,
+  onRecompile: (buttonId: string, sentence: string) => Promise<void>,
 ): BackHandle {
   el.replaceChildren();
   const blocks = new Map<string, Block>();
@@ -33,6 +34,32 @@ export function renderBack(
   head.textContent = `Back of card “${card.name}” · ${stackName}`;
   el.appendChild(head);
 
+  /** A button's sentence: edit it and recompile, and the button's script is written again. */
+  const sentenceBox = (buttonId: string, sentence: string): HTMLElement => {
+    const box = document.createElement('div');
+    box.className = 'sentence-edit';
+    const input = document.createElement('textarea');
+    input.className = 'sentence';
+    input.rows = 2;
+    input.value = sentence;
+    input.setAttribute('aria-label', 'The sentence this script came from');
+    const go = document.createElement('button');
+    go.type = 'button';
+    go.className = 'dbtn small';
+    go.textContent = 'Recompile';
+    go.disabled = true;
+    input.addEventListener('input', () => {
+      go.disabled = input.value.trim() === '' || input.value === sentence;
+    });
+    go.addEventListener('click', async () => {
+      go.disabled = true;
+      go.textContent = 'The spirits are writing…';
+      await onRecompile(buttonId, input.value.trim());
+    });
+    box.append(input, go);
+    return box;
+  };
+
   const add = (id: string, who: string, sentence: string | undefined, source: string, hidden: boolean) => {
     const section = document.createElement('section');
     section.className = 'script';
@@ -40,12 +67,7 @@ export function renderBack(
     title.className = 'who';
     title.textContent = who + (hidden ? ' (hidden)' : '');
     section.appendChild(title);
-    if (sentence) {
-      const s = document.createElement('p');
-      s.className = 'sentence';
-      s.textContent = `“${sentence}”`;
-      section.appendChild(s);
-    }
+    if (sentence !== undefined) section.appendChild(sentenceBox(id, sentence));
     const editor = document.createElement('div');
     editor.className = 'editor';
     const gutter = document.createElement('pre');
@@ -89,7 +111,22 @@ export function renderBack(
   };
 
   add(card.id, 'Card script', undefined, card.script, false);
-  for (const b of card.buttons) add(b.id, `Button “${b.name}”`, b.sentence, b.script, !b.visible);
+  for (const b of card.buttons) {
+    if (b.builtin) {
+      const section = document.createElement('section');
+      section.className = 'script';
+      const title = document.createElement('div');
+      title.className = 'who';
+      title.textContent = `Button “${b.name}”`;
+      const note = document.createElement('p');
+      note.className = 'sentence';
+      note.textContent = 'Built in, with no script: it asks for a name and makes a new stack.';
+      section.append(title, note);
+      el.appendChild(section);
+      continue;
+    }
+    add(b.id, `Button “${b.name}”`, b.sentence, b.script, !b.visible);
+  }
 
   return {
     mark(scriptId, line, message) {

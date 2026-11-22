@@ -10,7 +10,8 @@ export interface MenuItem {
 
 export interface Menu {
   title: string;
-  items: MenuItem[];
+  /** A function when the items change (the list of stacks). */
+  items: MenuItem[] | (() => MenuItem[]);
 }
 
 export function renderMenubar(menus: Menu[]): HTMLElement {
@@ -44,7 +45,7 @@ export function renderMenubar(menus: Menu[]): HTMLElement {
       close();
       if (wasOpen) return;
       list.replaceChildren(
-        ...menu.items.map((item) => {
+        ...(typeof menu.items === 'function' ? menu.items() : menu.items).map((item) => {
           const b = document.createElement('button');
           b.type = 'button';
           b.className = 'menu-item';

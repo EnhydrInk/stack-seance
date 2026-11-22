@@ -27,6 +27,8 @@ export interface ButtonDoc {
   style: 'roundrect' | 'icon';
   /** Pixel art drawn on an icon button. */
   icon?: string;
+  /** A button the UI runs itself instead of a script (it has no script). */
+  builtin?: 'new-stack';
 }
 
 export interface CardDoc {

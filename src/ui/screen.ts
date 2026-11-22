@@ -2,7 +2,7 @@
 // with their visual effect, and the error notice. Implements the host's Stage.
 
 import type { Effect, HauntKind, ScriptError } from '../hypertalk/index';
-import { BAT_DOWN, BAT_UP, SPIDER, WITCH, WOLF, pixelSvg } from './art';
+import { BAT_DOWN, BAT_UP, GHOST, SPIDER, WITCH, WOLF, pixelSvg } from './art';
 import { renderBack, type BackHandle } from './back';
 import { renderFront } from './front';
 import type { Stage } from './host';
@@ -17,8 +17,12 @@ const EFFECT_MS = 520;
 export class Screen implements Stage {
   readonly win: HTMLElement;
   private readonly title: HTMLElement;
-  private readonly viewport: HTMLElement;
-  private readonly front: HTMLElement;
+  readonly viewport: HTMLElement;
+  readonly front: HTMLElement;
+  /** Title bar buttons for making things (filled by main). */
+  readonly tools: HTMLElement;
+  /** Above the card and below the dialogs: placing, arranging, the ghost's sign. */
+  readonly layer: HTMLElement;
   private readonly back: HTMLElement;
   private readonly fx: HTMLElement;
   private readonly dialogs: HTMLElement;
@@ -31,17 +35,21 @@ export class Screen implements Stage {
   onClick: (b: ButtonDoc) => void = () => {};
   /** Set by main: whether a script is running (flips and clicks wait). */
   isBusy: () => boolean = () => false;
+  /** Set by main: recompiles a button from its edited sentence. */
+  onRecompile: (buttonId: string, sentence: string) => Promise<void> = async () => {};
 
   constructor(private readonly model: Model) {
     this.win = el('div', 'window');
     const bar = el('div', 'titlebar');
     this.title = el('span', 'title');
-    bar.append(el('span', 'stripes'), this.title, el('span', 'stripes'));
+    this.tools = el('span', 'tools');
+    bar.append(el('span', 'stripes'), this.title, el('span', 'stripes'), this.tools);
     this.viewport = el('div', 'viewport');
     this.front = el('div', 'card front');
     this.back = el('div', 'card back');
     this.back.hidden = true;
     this.fx = el('div', 'fx');
+    this.layer = el('div', 'layer');
     this.dialogs = el('div', 'dialogs');
     this.notice = el('div', 'notice');
     this.notice.hidden = true;
@@ -49,12 +57,40 @@ export class Screen implements Stage {
     corner.setAttribute('aria-label', 'Flip the card');
     corner.title = 'Flip the card';
     corner.addEventListener('click', () => void this.flip());
-    this.viewport.append(this.front, this.back, this.fx, corner, this.notice, this.dialogs);
+    this.viewport.append(this.front, this.back, this.fx, this.layer, corner, this.notice, this.dialogs);
     this.win.append(bar, this.viewport);
 
     model.onChange((change) => {
       if (change === 'place' || !this.flipped) this.renderFront();
     });
+  }
+
+  /** A pointer position in card pixels, whatever the zoom. */
+  toCard(e: { clientX: number; clientY: number }): [number, number] {
+    const r = this.viewport.getBoundingClientRect();
+    const scale = r.width / CARD_W;
+    return [Math.round((e.clientX - r.left) / scale), Math.round((e.clientY - r.top) / scale)];
+  }
+
+  /** Draws the back again after its scripts changed from outside (a recompile). */
+  refreshBack(): void {
+    if (this.flipped) this.showSide(true);
+  }
+
+  /**
+   * A ghost holding a sign at the top of the card, for the compiler's news. It goes away on a
+   * click or after a while.
+   */
+  boo(text: string): void {
+    this.layer.querySelector('.boo')?.remove();
+    const box = el('button', 'boo');
+    box.appendChild(pixelSvg(GHOST, 2, 'bob'));
+    const sign = el('span', 'sign');
+    sign.textContent = text;
+    box.appendChild(sign);
+    box.addEventListener('click', () => box.remove());
+    this.layer.appendChild(box);
+    setTimeout(() => box.remove(), 7000);
   }
 
   renderFront(): void {
@@ -286,13 +322,19 @@ export class Screen implements Stage {
     this.front.hidden = back;
     this.win.classList.toggle('flipped', back);
     if (back) {
-      this.backHandle = renderBack(this.model.card, this.model.stack.name, this.back, (id, source) => {
-        const owner = this.model.owner(id);
-        if (!owner) return;
-        if (owner.kind === 'card') owner.card.script = source;
-        else owner.button.script = source;
-        this.model.changed('content');
-      });
+      this.backHandle = renderBack(
+        this.model.card,
+        this.model.stack.name,
+        this.back,
+        (id, source) => {
+          const owner = this.model.owner(id);
+          if (!owner) return;
+          if (owner.kind === 'card') owner.card.script = source;
+          else owner.button.script = source;
+          this.model.changed('content');
+        },
+        (id, sentence) => this.onRecompile(id, sentence),
+      );
       this.back.scrollTop = 0;
     } else {
       this.backHandle = undefined;

@@ -23,6 +23,7 @@ export function renderFront(card: CardDoc, el: HTMLElement, onClick: (b: ButtonD
     div.className = `field field-${f.style}${f.align === 'center' ? ' center' : ''}`;
     div.hidden = !f.visible;
     div.textContent = f.text;
+    div.dataset.id = f.id;
     place(div, f.rect);
     el.appendChild(div);
   }

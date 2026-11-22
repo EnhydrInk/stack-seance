@@ -110,10 +110,11 @@
                 84
               ],
               "visible": true,
-              "sentence": "Clicking this tells you what is coming.",
-              "script": "on mouseUp\n  answer \"Soon you will describe a card in one sentence, and it will grow here.\"\nend mouseUp",
+              "sentence": "Clicking this asks for a name and makes a new stack.",
+              "script": "",
               "style": "icon",
-              "icon": "sparkle"
+              "icon": "sparkle",
+              "builtin": "new-stack"
             }
           ]
         }

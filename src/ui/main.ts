@@ -6,7 +6,8 @@ import './styles.css';
 import type { Effect } from '../hypertalk/index';
 import { BrowserHost } from './host';
 import { renderMenubar } from './menubar';
-import { Model, copy, withMissingStacks } from './model';
+import { Authoring } from './authoring';
+import { Model, copy, upgrade } from './model';
 import { Runner } from './runner';
 import { CARD_H, CARD_W, Screen } from './screen';
 import defaults from './stacks.json';
@@ -22,7 +23,7 @@ startTheme();
 applyFontSettings();
 
 const saved = localStorage.getItem(AUTOSAVE);
-const model = new Model(saved ? withMissingStacks(JSON.parse(saved) as StacksDoc, defaults as StacksDoc) : copy(defaults as StacksDoc));
+const model = new Model(saved ? upgrade(JSON.parse(saved) as StacksDoc, defaults as StacksDoc) : copy(defaults as StacksDoc));
 model.stackIndex = Math.max(0, model.doc.stacks.findIndex((s) => s.id === 'home'));
 
 const screen = new Screen(model);
@@ -34,9 +35,10 @@ const runner = new Runner(
   (busy) => document.body.classList.toggle('busy', busy),
 );
 screen.onClick = (b) => {
-  if (runner.running) return;
+  if (runner.running || authoring.arranging) return;
   screen.hideError();
-  void runner.click(b);
+  if (b.builtin === 'new-stack') void authoring.newStack();
+  else void runner.click(b);
 };
 screen.isBusy = () => runner.running;
 
@@ -67,11 +69,34 @@ const whenIdle = (open: () => void) => () => {
   if (!runner.running) open();
 };
 
+const authoring = new Authoring(model, screen, runner, (move) => navigate(move, 'dissolve'));
+screen.onRecompile = (id, sentence) => authoring.recompile(id, sentence);
+
+/** The title bar's tools for making things. */
+const tool = (label: string, title: string, run: () => void) => {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'tool';
+  b.textContent = label;
+  b.title = title;
+  b.addEventListener('click', run);
+  screen.tools.appendChild(b);
+  return b;
+};
+tool('+ Button', 'Grow a button from one sentence', () => authoring.place('button'));
+tool('+ Text', 'Add text to this card', () => authoring.place('text'));
+const arrangeTool = tool('Arrange', 'Move, delete and edit what is on this card', () => toggleArrange());
+function toggleArrange(): void {
+  authoring.setArranging(!authoring.arranging);
+  arrangeTool.classList.toggle('on', authoring.arranging);
+}
+
 const cards = () => model.stack.cards.length;
 const menubar = renderMenubar([
   {
     title: 'File',
     items: [
+      { label: 'New Stack…', run: whenIdle(() => void authoring.newStack()) },
       { label: 'Saves…', run: whenIdle(() => openSaves(panelDeps)) },
       { label: 'Settings…', run: whenIdle(() => openSettings(panelDeps)) },
     ],
@@ -86,6 +111,18 @@ const menubar = renderMenubar([
       { label: 'Next card', run: () => void navigate(() => model.goToCard((model.cardIndex + 1) % cards())) },
       { label: 'Last card', run: () => void navigate(() => model.goToCard(cards() - 1)) },
     ],
+  },
+  {
+    title: 'Objects',
+    items: [
+      { label: 'New Button…', run: () => authoring.place('button') },
+      { label: 'New Text', run: () => authoring.place('text') },
+      { label: () => (authoring.arranging ? 'Stop arranging' : 'Arrange'), run: () => toggleArrange() },
+    ],
+  },
+  {
+    title: 'Stacks',
+    items: () => model.doc.stacks.map((s) => ({ label: s.name, run: () => void navigate(() => model.goToStack(s.id), 'dissolve') })),
   },
   {
     title: 'View',
