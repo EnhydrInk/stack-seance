@@ -74,7 +74,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
   - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6, 3.7, 3.8, 4.1, 4.2, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.1, 5.2, 5.3, 5.4, 6.8_
 
 - [ ] 4. Example tests for parsing, printing and running `go to stack`
-  - [ ] 4.1 Write parser and lexer example tests
+  - [x] 4.1 Write parser and lexer example tests
     - `test/hypertalk/parser.test.ts`, new `describe('go to stack (go-to-stack-command Requirement 1)')`: with and without `to` and in mixed case giving the same tree; each primary kind as target (`"Home"`, `3`, `true`, `it`, `dest`, `field "Where"`, `("Haunted" && "House")`); inside a block `if`, a one-line `if` with `else`, and an `else if` chain.
     - Syntax errors from the design's table, with line, column and full message: one parentheses-hint case per operator `+ - * / & &&`, the missing target (also as the last line with no `end mouseUp`), `go to stack "A" "B"`, `go to card 1 of stack "A"`, `put 1 into stack` and `global stack`, plus the variants `put 1 into STACK` and `global a, stack`. The `go home` case waits for task 8.
     - `test/hypertalk/lexer.test.ts`: `isReserved` is true for `stack`, `STACK` and `Stack`.

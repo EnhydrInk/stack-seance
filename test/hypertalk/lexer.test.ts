@@ -69,6 +69,10 @@ describe('R8.4 / R11.10 reserved words', () => {
     for (const w of ['if', 'THEN', 'field', 'next', 'true', 'False']) expect(isReserved(w), w).toBe(true);
   });
 
+  it('reserves stack in any case (go-to-stack-command Requirement 1.9)', () => {
+    for (const w of ['stack', 'STACK', 'Stack']) expect(isReserved(w), w).toBe(true);
+  });
+
   it('does not reserve it or ordinary names', () => {
     for (const w of ['it', 'IT', 'correct', 'room', 'mouseUp']) expect(isReserved(w), w).toBe(false);
   });

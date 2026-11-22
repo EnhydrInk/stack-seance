@@ -161,6 +161,80 @@ describe('R2.1 go', () => {
   });
 });
 
+// Line 1 is `on mouseUp`, and each command is indented by two spaces.
+describe('go to stack (go-to-stack-command Requirement 1)', () => {
+  /** parse and parseUnguarded both return exactly this error. */
+  function expectError(source: string, error: SyntaxError) {
+    expect(parse(source)).toEqual({ ok: false, error });
+    expect(parseUnguarded(source)).toEqual({ ok: false, error });
+  }
+
+  const syntax = (line: number, column: number, message: string): SyntaxError => ({ kind: 'syntax', line, column, message });
+  const STACK_HINT = 'put a calculated stack name in parentheses, for example go to stack ("Haunted" && "House")';
+  const toStack = (value: string) => ({ t: 'go', target: { k: 'stack', expr: { t: 'str', value } } });
+
+  it('accepts go to stack with and without to, with the keywords in any case, as one tree (1.1, 1.2)', () => {
+    expect(body('go to stack "Haunted House"', 'go stack "Haunted House"', 'GO To STACK "Haunted House"')).toEqual([
+      toStack('Haunted House'),
+      toStack('Haunted House'),
+      toStack('Haunted House'),
+    ]);
+    expect(stmts('go to stack "Haunted House"')[0]!.pos).toEqual({ line: 2, column: 3 });
+  });
+
+  it('accepts every kind of primary expression as the target (1.1)', () => {
+    const targets = stmts(
+      'go to stack "Home"',
+      'go to stack 3',
+      'go to stack true',
+      'go to stack it',
+      'go to stack dest',
+      'go to stack field "Where"',
+      'go to stack ("Haunted" && "House")',
+    ).map((s) => (s.t === 'go' && s.target.k === 'stack' ? sx(s.target.expr) : '?'));
+    expect(targets).toEqual(['"Home"', '3', '#true', 'it', 'dest', 'field("Where")', '[(&& "Haunted" "House")]']);
+  });
+
+  it('accepts go to stack in a block if, in both parts of a one-line if, and in an else if chain (1.3)', () => {
+    const x = { t: 'var', name: 'x' };
+    const y = { t: 'var', name: 'y' };
+    expect(body('if x then', '  go to stack "A"', 'end if')).toEqual([{ t: 'if', cond: x, then: [toStack('A')], else: [] }]);
+    expect(body('if x then go to stack "A" else go stack "B"')).toEqual([
+      { t: 'if', cond: x, then: [toStack('A')], else: [toStack('B')] },
+    ]);
+    expect(body('if x then', '  go to stack "A"', 'else if y then', '  go to stack "B"', 'else', '  go stack "C"', 'end if')).toEqual([
+      { t: 'if', cond: x, then: [toStack('A')], else: [{ t: 'if', cond: y, then: [toStack('B')], else: [toStack('C')] }] },
+    ]);
+  });
+
+  it.each(['+', '-', '*', '/', '&', '&&'])('asks for parentheses around a calculated stack name with %s, at the operator (1.4)', (op) => {
+    const source = inHandler(`go to stack "A" ${op} "B"`);
+    expectError(source, syntax(2, 19, STACK_HINT));
+    expect(err(source).message).toMatch(/^put a calculated stack name in parentheses/);
+    expect(err(source).message).toContain('go to stack (');
+  });
+
+  it('reports a missing target on the go line, also when it is the last line of the script (1.5)', () => {
+    expectError(inHandler('go to stack'), syntax(2, 14, 'expected a value after "stack"'));
+    expectError(src('on mouseUp', '  go to stack'), syntax(2, 14, 'expected a value after "stack"'));
+  });
+
+  it('reports a token after the target that cannot continue the command (1.6)', () => {
+    expectError(inHandler('go to stack "A" "B"'), syntax(2, 19, 'unexpected "B" after the command'));
+  });
+
+  it('reports go to card … of stack … at the "of" (1.8)', () => {
+    expectError(inHandler('go to card 1 of stack "A"'), syntax(2, 16, 'unexpected "of" after the command'));
+  });
+
+  it('reports stack as a variable name in put … into and in global, in any case (1.9, 1.10)', () => {
+    expectError(inHandler('put 1 into stack'), syntax(2, 14, '"stack" is a reserved word and cannot be a variable name'));
+    expectError(inHandler('global stack'), syntax(2, 10, '"stack" is a reserved word and cannot be a variable name'));
+    expectError(inHandler('put 1 into STACK'), syntax(2, 14, '"STACK" is a reserved word and cannot be a variable name'));
+    expectError(inHandler('global a, stack'), syntax(2, 13, '"stack" is a reserved word and cannot be a variable name'));
+  });
+});
+
 describe('R3.1 visual effect', () => {
   it('accepts the five effects', () => {
     const effects = body(
