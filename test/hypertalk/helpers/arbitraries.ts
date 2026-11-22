@@ -665,6 +665,135 @@ export function goScript(target: GoCase): GoScript {
   }
 }
 
+// ---- stacks and go to stack targets (stack P2) ------------------------------------
+// go-to-stack-command Requirement 9.2, 9.3: 1 to 5 stacks with names unique ignoring case,
+// each with 1 to 4 cards whose ids are unique across all stacks. Only the first card of the
+// target stack is ever opened, so its script kind decides between outcomes (a) and (c).
+// The card P2 above keeps its single stack (Requirement 9.6).
+
+export interface GenStackOfCards {
+  /** `st<n>`, n the 1-based position in the set. Given to the fake host explicitly. */
+  id: string;
+  name: string;
+  /** 1 to 4. Ids are `st<n>-c<m>`; scripts come from cardScriptArb. */
+  cards: (GenCard & { id: string })[];
+}
+
+export interface GenStackSet {
+  /** 1 to 5, names unique ignoring case. */
+  stacks: GenStackOfCards[];
+  /** 1-based position in `stacks` of the starting stack. */
+  currentStack: number;
+  /** 1-based index of the starting card, in that stack. */
+  current: number;
+}
+
+export interface StackTarget {
+  /** What the generator meant the text to be: a stack's name as written or in other case, or no stack's name. */
+  rel: 'asWritten' | 'otherCase' | 'missing';
+  /** The text the runtime must pass to findStackByName. */
+  text: string;
+  /** A string literal, the reply to `ask` read through `it`, or a number literal whose String(n) is `text`. */
+  via: 'literal' | 'ask' | 'number';
+}
+
+export interface StackNavCase {
+  set: GenStackSet;
+  target: StackTarget;
+  /** The `visual effect` before the go, if any. */
+  effect: Effect | null;
+}
+
+const DIGIT_NAMES: readonly string[] = ['0', '1', '2', '3', '4', '5'];
+
+/**
+ * Lettered names, or one time in five a digit name, so a name never looks like a missing name
+ * from missingNameArb (those have a space and a digit, or are empty).
+ */
+const stackNameArb = fc.oneof(
+  { weight: 4, arbitrary: fc.stringMatching(/^[A-Z][a-z]{0,6}( [A-Z][a-z]{0,6})?$/) },
+  { weight: 1, arbitrary: fc.constantFrom(...DIGIT_NAMES) },
+);
+
+const isDigitName = (name: string) => /^[0-9]$/.test(name);
+
+/** Swaps the case of every letter. A lettered name always changes, and still matches only its own stack. */
+const swapCase = (text: string) =>
+  [...text].map((c) => (c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase())).join('');
+
+/** A target and, when it names a stack, that stack's 0-based position. */
+function stackTargetArb(stacks: readonly GenStackOfCards[]): fc.Arbitrary<[StackTarget, number | undefined]> {
+  const textVia = fc.constantFrom<StackTarget['via']>('literal', 'ask');
+  const named = stacks.map((s, i) => [s, i] as const);
+  const lettered = named.filter(([s]) => !isDigitName(s.name));
+  const used = new Set(stacks.map((s) => s.name));
+  const unusedDigits = Array.from({ length: 10 }, (_, d) => String(d)).filter((d) => !used.has(d));
+  const asWritten = fc.constantFrom(...named).chain(([s, i]) =>
+    // A number literal can only write a digit name.
+    (isDigitName(s.name) ? fc.constantFrom<StackTarget['via']>('literal', 'ask', 'number') : textVia).map(
+      (via): [StackTarget, number] => [{ rel: 'asWritten', text: s.name, via }, i],
+    ),
+  );
+  const otherCase = lettered.length
+    ? [
+        fc
+          .tuple(fc.constantFrom(...lettered), textVia)
+          .map(([[s, i], via]): [StackTarget, number] => [{ rel: 'otherCase', text: swapCase(s.name), via }, i]),
+      ]
+    : [];
+  const missing = fc.oneof(
+    { weight: 3, arbitrary: fc.tuple(missingNameArb, textVia).map(([text, via]): StackTarget => ({ rel: 'missing', text, via })) },
+    // 6 to 9 are never stack names, so there is always an unused digit.
+    { weight: 1, arbitrary: fc.constantFrom(...unusedDigits).map((text): StackTarget => ({ rel: 'missing', text, via: 'number' })) },
+  );
+  return fc.oneof(
+    asWritten,
+    ...otherCase,
+    missing.map((t): [StackTarget, undefined] => [t, undefined]),
+  );
+}
+
+export const stackNavCaseArb: fc.Arbitrary<StackNavCase> = fc
+  .uniqueArray(fc.tuple(stackNameArb, fc.array(fc.tuple(cardNameArb, cardScriptArb), { minLength: 1, maxLength: 4 })), {
+    minLength: 1,
+    maxLength: 5,
+    selector: ([name]) => name.toLowerCase(),
+  })
+  .chain((entries) => {
+    const stacks = entries.map(
+      ([name, cards], i): GenStackOfCards => ({
+        id: `st${i + 1}`,
+        name,
+        cards: cards.map(([cardName, script], j) => ({ id: `st${i + 1}-c${j + 1}`, name: cardName, ...script })),
+      }),
+    );
+    return stackTargetArb(stacks).chain(([target, index]) => {
+      const anyStack = fc.integer({ min: 1, max: stacks.length });
+      // Often the target stack itself, so a go to the current stack from a card other than 1 comes up.
+      const start = index === undefined ? anyStack : fc.oneof(fc.constant(index + 1), anyStack);
+      return start.chain((currentStack) => {
+        const count = stacks[currentStack - 1]!.cards.length;
+        return fc
+          .tuple(fc.oneof(fc.constant(count), fc.integer({ min: 1, max: count })), fc.option(fc.constantFrom(...EFFECTS), { nil: null }))
+          .map(([current, effect]): StackNavCase => ({ set: { stacks, currentStack, current }, target, effect }));
+      });
+    });
+  });
+
+/** `on mouseUp`, [`visual effect …`], [`ask "Which stack?"`], `go to stack …`, `end mouseUp`. */
+export function stackGoScript(c: StackNavCase): GoScript {
+  const { text, via } = c.target;
+  const lines: string[] = [];
+  if (c.effect) lines.push(`visual effect ${EFFECT_WORDS[c.effect].join(' ')}`);
+  if (via === 'ask') lines.push('ask "Which stack?"');
+  lines.push(via === 'ask' ? 'go to stack it' : via === 'number' ? `go to stack ${text}` : `go to stack "${text}"`);
+  return {
+    source: ['on mouseUp', ...lines.map((l) => `  ${l}`), 'end mouseUp'].join('\n'),
+    replies: via === 'ask' ? [text] : [],
+    goLine: lines.length + 1,
+  };
+}
+
 // ---- runnable sessions (P3, P5) ---------------------------------------------------
 // A session is a stack whose cards have fields, buttons and scripts, the globals so far,
 // a list of dialog replies, and a mouseUp script to run. The script mostly names fields,

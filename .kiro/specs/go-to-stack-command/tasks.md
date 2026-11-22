@@ -114,7 +114,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - The new `simpleStmtArb` alternative also changes what `mutantArb` draws for the P4 ratio tests (`seed: 5`), and the workspace's pre-task hook blocks the next task while the suite is red. So run `npx vitest --run test/hypertalk/syntaxerror.property.test.ts` before finishing this task. If a ratio test fails, apply the rule of task 7 now: leave the test as written, report the measured ratios and ask the user.
     - **Validates: Requirements 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, 9.1**
 
-  - [ ] 6.2 Add the stack P2 generators to `test/hypertalk/helpers/arbitraries.ts`
+  - [x] 6.2 Add the stack P2 generators to `test/hypertalk/helpers/arbitraries.ts`
     - Export `GenStackOfCards`, `GenStackSet`, `StackTarget`, `StackNavCase`, `stackNavCaseArb` and `stackGoScript`, as the design describes them.
     - 1 to 5 stacks with ids `st<n>`, names unique ignoring case (lettered names, or one time in five a digit name `"0"` to `"5"`), 1 to 4 cards per stack with ids `st<n>-c<m>` and scripts from `cardScriptArb`. A random starting stack and card, an optional effect, and a target that is a name as written, in swapped case, or missing (`missingNameArb`, the empty string, or an unused digit), passed as a literal, through `ask`, or as a number.
     - Leave `GenStack`, `stackArb`, `navCaseArb` and `goScript` unchanged, so the card P2 stays on one stack.
