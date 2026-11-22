@@ -114,7 +114,7 @@
     - **EXPECTED OUTCOME**: The task 1 tests PASS (confirms the bug is fixed)
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-  - [~] 3.5 Verify the preservation tests still pass
+  - [x] 3.5 Verify the preservation tests still pass
     - **Property 2: Preservation** - Every other script lexes, parses and runs as before
     - **IMPORTANT**: Re-run the SAME tests from task 2. Do NOT write new tests
     - Run the preservation unit tests, the `lexerErrorFirstArb` property and the mutant invariant from task 2, the lexer tests from task 3.1, and the existing P4, P5 and navigation properties (`SYNTAX_ERROR_LINES` still contains `x = 1`, and its users check only the line, which does not change)
