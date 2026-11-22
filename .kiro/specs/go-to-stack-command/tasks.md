@@ -159,7 +159,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
   - If either fails, do not edit the test, its threshold or its seed (Requirement 9.12). Report the measured ratios and ask the user before changing the generators.
   - _Requirements: 9.10, 9.11, 9.12_
 
-- [ ] 8. Change the `go` fallback message and its three expected copies
+- [x] 8. Change the `go` fallback message and its three expected copies
   - `src/hypertalk/parser.ts`: the fallback in `go()` becomes `expected next card, prev card, first card, last card, card … or stack … after "go"`.
   - In the same change, update the expected text and nothing else in `GO_MESSAGE` in `test/hypertalk/parser.test.ts`, the R14.3 syntax error test in `test/hypertalk/runtime.navigation.test.ts`, and `GO_MESSAGE` in `test/hypertalk/helpers/lexMask.ts`.
   - Add the `go home` case (line 2, column 6, full message) to the `go to stack` describe in `test/hypertalk/parser.test.ts`.

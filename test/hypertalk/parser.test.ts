@@ -227,6 +227,13 @@ describe('go to stack (go-to-stack-command Requirement 1)', () => {
     expectError(inHandler('go to card 1 of stack "A"'), syntax(2, 16, 'unexpected "of" after the command'));
   });
 
+  it('lists stack … among the targets when the word after go is none of them (1.7)', () => {
+    expectError(
+      inHandler('go home'),
+      syntax(2, 6, 'expected next card, prev card, first card, last card, card … or stack … after "go"'),
+    );
+  });
+
   it('reports stack as a variable name in put … into and in global, in any case (1.9, 1.10)', () => {
     expectError(inHandler('put 1 into stack'), syntax(2, 14, '"stack" is a reserved word and cannot be a variable name'));
     expectError(inHandler('global stack'), syntax(2, 10, '"stack" is a reserved word and cannot be a variable name'));
@@ -821,7 +828,7 @@ describe('R12.3 the first syntax error from the top, from the lexer or the parse
     expect(parseUnguarded(source)).toEqual({ ok: false, error });
   }
 
-  const GO_MESSAGE = 'expected next card, prev card, first card, last card or card … after "go"';
+  const GO_MESSAGE = 'expected next card, prev card, first card, last card, card … or stack … after "go"';
 
   it.each(REPROS)('$name reports the parse error found before the lexer error (2.1, 2.2, 2.3)', ({ body, error }) => {
     expectError(handlerSource('mouseUp', body), error);

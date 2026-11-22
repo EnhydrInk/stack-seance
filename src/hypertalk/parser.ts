@@ -276,7 +276,7 @@ class Parser {
       if (after.kind === 'op' && CALCULATION_OPS.has(after.text)) this.fail(after, PAREN_HINTS[word]);
       return { t: 'go', target: { k: word, expr }, pos: pos(go) };
     }
-    this.fail(t, 'expected next card, prev card, first card, last card or card … after "go"');
+    this.fail(t, 'expected next card, prev card, first card, last card, card … or stack … after "go"');
   }
 
   // visual effect dissolve | wipe left | wipe right | iris open | iris close   (R3.1)

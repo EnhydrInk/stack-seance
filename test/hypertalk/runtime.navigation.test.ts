@@ -336,7 +336,7 @@ describe('R2.5, R14 / 9.4 openCard', () => {
         kind: 'syntax',
         line: 2,
         column: 6,
-        message: 'expected next card, prev card, first card, last card or card … after "go"',
+        message: 'expected next card, prev card, first card, last card, card … or stack … after "go"',
         scriptId: 'card-2',
       },
     });

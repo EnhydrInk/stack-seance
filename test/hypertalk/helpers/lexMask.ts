@@ -69,7 +69,7 @@ export function handlerSource(name: HandlerName, body: readonly string[], eol = 
   return [`on ${name}`, ...body.map((l) => `  ${l}`), `end ${name}`].join(eol);
 }
 
-const GO_MESSAGE = 'expected next card, prev card, first card, last card or card … after "go"';
+const GO_MESSAGE = 'expected next card, prev card, first card, last card, card … or stack … after "go"';
 
 /** The incomplete `put 1 into` on line 2; the lexer error is on line 3, column 10. */
 export const REPRO_1: Repro = {
