@@ -135,7 +135,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - Widen `Session.host` to `FakeHostInit | FakeStacksInit`. Export `anySessionArb = fc.oneof(sessionArb, stackSessionArb)`.
     - _Requirements: 9.7_
 
-  - [ ] 6.5 Extend the P3 property in `test/hypertalk/determinism.property.test.ts`
+  - [x] 6.5 Extend the P3 property in `test/hypertalk/determinism.property.test.ts`
     - **Property 3: Determinism across stacks (P3)**
     - Run P3 on `anySessionArb`. `runOn` also returns `host.stacks` and `host.stack()`. Before running, check that the clone's `stacks` and `stack()` equal the original's. Compare results, `state`, `stacks`, current stack, replies, globals and logs, including `findStackByName` and `goToStack` calls.
     - A coverage test on 500 fixed-seed samples of `stackSessionArb`: runs reach `findStackByName` and `goToStack`, some end in a stack other than the starting one, and some fail on a stack go of the run script. The existing `sessionArb` coverage test stays as written.
