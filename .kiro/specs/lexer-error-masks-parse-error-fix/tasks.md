@@ -84,7 +84,7 @@
     - _Preservation: `tokenize` returns the same tokens or the same first error for every input (3.7); `\r\n` and comment handling are unchanged (3.8, 3.9)_
     - _Requirements: 3.5, 3.7, 3.8, 3.9_
 
-  - [~] 3.2 Run the parser over the tokens before the lexer error
+  - [x] 3.2 Run the parser over the tokens before the lexer error
     - In `src/hypertalk/parser.ts`, import `tokenizeUntilError` instead of `tokenize` (line 6)
     - In `parseUnguarded` (line 22), drop the early return `if (!lexed.ok) return lexed;` (line 24) and build the parser with `new Parser(lexed.tokens, lexed.error)` from `tokenizeUntilError(source)`
     - Give the `Parser` constructor (line 67) the second field `private readonly lexError: SyntaxError | undefined`, with the doc comment from design

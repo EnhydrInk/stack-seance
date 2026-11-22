@@ -446,9 +446,8 @@ describe('R15 / 8.7 haunts', () => {
   });
 });
 
-// Expected to fail until the fix (task 3.2 removes .fails).
 describe('R12.3 / 2.4 a parse error found before a lexer error', () => {
-  it.fails.each(REPROS)('$name returns the parse error, calls the host for nothing and changes nothing', async ({ body, error }) => {
+  it.each(REPROS)('$name returns the parse error, calls the host for nothing and changes nothing', async ({ body, error }) => {
     const init: Partial<FakeHostInit> = {
       cards: [{ fields: [{ name: 'note', text: 'quiet' }], buttons: [{ name: 'door' }] }, { name: 'Crypt' }],
     };

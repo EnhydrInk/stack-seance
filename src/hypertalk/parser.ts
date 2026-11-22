@@ -1,9 +1,9 @@
 // Recursive-descent parser for the v1 HyperTalk subset (see design.md, "Parser").
-// Reports the first syntax error only and never throws (R12.3).
+// Reports the first syntax error met reading from the top, from the lexer or the parser, and never throws (R12.3).
 
 import type { BinOp, Effect, Expr, Handler, HandlerName, IfStmt, NavTarget, Pos, Script, Stmt } from './ast';
 import { clampLine, lineCount, syntaxError, type SyntaxError } from './errors';
-import { tokenize } from './lexer';
+import { tokenizeUntilError } from './lexer';
 import { HAUNTS, isReserved, type Haunt, type Token } from './tokens';
 
 export type ParseResult = { ok: true; script: Script } | { ok: false; error: SyntaxError };
@@ -20,14 +20,13 @@ export function parse(source: string): ParseResult {
  * runs against it so that the guard cannot hide a wrong line.
  */
 export function parseUnguarded(source: string): ParseResult {
-  const lexed = tokenize(source);
-  if (!lexed.ok) return lexed;
-  const parser = new Parser(lexed.tokens);
+  const lexed = tokenizeUntilError(source);
+  const parser = new Parser(lexed.tokens, lexed.error);
   try {
     return { ok: true, script: parser.script() };
   } catch (e) {
     if (e instanceof ParseAbort) return { ok: false, error: e.error };
-    const at = parser.current();
+    const at = parser.position();
     const detail = e instanceof Error ? e.message : String(e);
     return { ok: false, error: syntaxError(at.line, at.column, `internal parser error: ${detail}`) };
   }
@@ -64,7 +63,11 @@ class Parser {
   private i = 0;
   private handlerName: HandlerName = 'mouseUp';
 
-  constructor(private readonly tokens: Token[]) {}
+  constructor(
+    private readonly tokens: Token[],
+    /** Set when the lexer stopped early. The tokens then end just before it, with no eof. */
+    private readonly lexError: SyntaxError | undefined,
+  ) {}
 
   // ---- token helpers ------------------------------------------------------
 
@@ -72,9 +75,18 @@ class Parser {
     return this.peek(0);
   }
 
+  /** Where the cursor is, for an internal parser error. Unlike current(), it never aborts. */
+  position(): Pos {
+    const at = this.tokens[this.i] ?? this.lexError ?? { line: 1, column: 1 };
+    return { line: at.line, column: at.column };
+  }
+
   private peek(offset: number): Token {
-    // The lexer always ends the list with eof, so this never runs past it.
-    return this.tokens[Math.min(this.i + offset, this.tokens.length - 1)]!;
+    const k = this.i + offset;
+    // Past the tokens read before a lexer error is the text at that error, so report it (R12.3).
+    if (this.lexError && k >= this.tokens.length) throw new ParseAbort(this.lexError);
+    // Otherwise the list ends with eof, so this never runs past it.
+    return this.tokens[Math.min(k, this.tokens.length - 1)]!;
   }
 
   private previous(): Token | undefined {

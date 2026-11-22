@@ -43,8 +43,7 @@ describe('mutation generator (P4)', () => {
     expect(failed / sample.length).toBeGreaterThanOrEqual(0.3);
   });
 
-  // Expected to fail until the fix (task 3.2 removes .fails).
-  it.fails('at least a quarter of the mutants with a lexer error report a parse error found before it (2.1–2.3)', () => {
+  it('at least a quarter of the mutants with a lexer error report a parse error found before it (2.1–2.3)', () => {
     const lexerFailed = sample.flatMap((m) => {
       const lexed = tokenize(m.source);
       return lexed.ok ? [] : [{ source: m.source, error: lexed.error }];
