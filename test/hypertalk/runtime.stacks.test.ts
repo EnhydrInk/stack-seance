@@ -207,3 +207,137 @@ describe('go-to-stack-command Requirement 4.1, 4.2 / 8.5 the current stack and t
     expect(moves(host)).toEqual([{ call: 'goToStack', id: 'house' }]);
   });
 });
+
+describe('go-to-stack-command Requirement 4.4, 4.7, 4.8, 4.9 / 8.6 the first card’s openCard', () => {
+  it('runs the first card’s openCard with fresh locals and an empty it (4.4)', async () => {
+    const host = haunted({ scripts: { 'house/card-1': onOpen('put "[" & x & it & "]" into field "note"') } });
+    const { result } = await run(inHandler('put 5 into x', 'put "yes" into it', 'go to stack "Haunted House"'), host);
+    expect(result).toEqual({ ok: true });
+    expect(host.fieldText('note')).toBe('[]');
+    expect(host.log.slice(-3)).toEqual([
+      { call: 'goToStack', id: 'house' },
+      { call: 'getCardScript', id: 'house/card-1' },
+      { call: 'setField', name: 'note', text: '[]' },
+    ]);
+  });
+
+  it('reports a runtime error in the first card’s openCard with that card’s id and line, keeps the move and stops (4.7, 4.9)', async () => {
+    const hall = src('-- the hall', 'on openCard', '  put 1 into x', '  put x / 0 into y', 'end openCard');
+    const host = haunted({ scripts: { 'house/card-1': hall } });
+    const { result } = await run(inHandler('go to stack "Haunted House"', 'answer "after"'), host);
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: 'runtime', line: 4, message: 'cannot divide by zero', scriptId: 'house/card-1' },
+    });
+    expect(where(host)).toEqual({ stack: 'house', card: 1 });
+    expect(host.log.some((c) => c.call === 'answer')).toBe(false);
+  });
+
+  it('reports a syntax error anywhere in the first card’s script the same way (4.7, 4.9, R14.3)', async () => {
+    const hall = src('on openCard', '  howl', 'end openCard', 'on mouseUp', '  go to stack "Crypt" & 1', 'end mouseUp');
+    const host = haunted({ scripts: { 'house/card-1': hall } });
+    const { result } = await run(inHandler('go to stack "Haunted House"', 'answer "after"'), host);
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        kind: 'syntax',
+        line: 5,
+        column: 23,
+        message: 'put a calculated stack name in parentheses, for example go to stack ("Haunted" && "House")',
+        scriptId: 'house/card-1',
+      },
+    });
+    expect(where(host)).toEqual({ stack: 'house', card: 1 });
+    // Nothing of the hall's script runs, and nothing after the go.
+    expect(host.log.some((c) => c.call === 'haunt' || c.call === 'answer')).toBe(false);
+  });
+
+  it('names the innermost card that failed when the first card’s openCard goes on (4.8)', async () => {
+    const host = haunted({
+      scripts: { 'house/card-1': onOpen('go to next card'), 'house/card-2': onOpen('hide button "ghost"') },
+    });
+    const { result } = await run(inHandler('go to stack "Haunted House"'), host);
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: 'runtime', line: 2, message: 'there is no button "ghost" on this card', scriptId: 'house/card-2' },
+    });
+    expect(where(host)).toEqual({ stack: 'house', card: 2 });
+  });
+});
+
+describe('go-to-stack-command Requirement 4.5, 4.6 / 8.7 the openCard depth limit', () => {
+  const DEPTH_MESSAGE = 'cannot go on: openCard handlers can chain at most 16 levels deep';
+
+  it('stops a chain of stack gos at level 16 with an error on that go line, after 16 goToStack calls (4.5)', async () => {
+    // Level n opens the house when n is odd and Home when n is even, so level 16 is Home.
+    const host = haunted({
+      scripts: {
+        'home/card-1': onOpen('put 1 into x', 'go to stack "Haunted House"'),
+        'house/card-1': onOpen('go to stack "Home"'),
+      },
+    });
+    const { result } = await run(inHandler('go to stack "Haunted House"', 'answer "after"'), host);
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: 'runtime', line: 3, message: DEPTH_MESSAGE, scriptId: 'home/card-1' },
+    });
+    expect(moves(host)).toHaveLength(16);
+    expect(moves(host).every((c) => c.call === 'goToStack')).toBe(true);
+    // The go at level 16 still finds its stack: a missing target is reported before the depth limit.
+    expect(looked(host)).toHaveLength(17);
+    expect(opened(host)).toHaveLength(16);
+    expect(where(host)).toEqual({ stack: 'home', card: 1 });
+    expect(host.log.some((c) => c.call === 'answer')).toBe(false);
+  });
+
+  it('counts stack gos and card gos in one depth, so a mixed chain stops after 16 moves in total (4.6)', async () => {
+    // Home's card goes to the house; the hall goes to the next card; the crypt goes back to Home.
+    // Levels cycle hall, crypt, Home, so level 16 is the hall, and its go to the next card fails.
+    const host = haunted({
+      scripts: {
+        'home/card-1': onOpen('go to stack "Haunted House"'),
+        'house/card-1': onOpen('go to next card'),
+        'house/card-2': onOpen('go to stack "Home"'),
+      },
+    });
+    const { result } = await run(inHandler('go to stack "Haunted House"'), host);
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: 'runtime', line: 2, message: DEPTH_MESSAGE, scriptId: 'house/card-1' },
+    });
+    expect(moves(host)).toHaveLength(16);
+    expect(moves(host).filter((c) => c.call === 'goToStack')).toHaveLength(11);
+    expect(moves(host).filter((c) => c.call === 'goToCard')).toHaveLength(5);
+    expect(where(host)).toEqual({ stack: 'house', card: 1 });
+  });
+});
+
+describe('go-to-stack-command Requirement 5.1, 5.4 / 8.7 after a stack go', () => {
+  it('runs the rest of the handler on the new stack’s card, and leaves the old card alone (5.1)', async () => {
+    const host = haunted();
+    const { result } = await run(inHandler('go to stack "Haunted House"', 'put "here" into field "note"'), host);
+    expect(result).toEqual({ ok: true });
+    expect(where(host)).toEqual({ stack: 'house', card: 1 });
+    expect(host.fieldText('note')).toBe('here');
+    expect(host.stacks[0]!.state.cards[0]!.fields).toEqual([{ name: 'note', text: '', visible: true }]);
+  });
+
+  it('shares globals between a button on Home and the first card’s openCard of the house, but not locals (5.4)', async () => {
+    const hall = onOpen('global visits', 'put visits & "2" into visits', 'put "[" & x & "]" into field "note"');
+    const host = haunted({ scripts: { 'house/card-1': hall } });
+    const { result, globals } = await run(
+      inHandler(
+        'global visits',
+        'put "1" into visits',
+        'put "local" into x',
+        'go to stack "Haunted House"',
+        'put visits after field "note"',
+      ),
+      host,
+    );
+    expect(result).toEqual({ ok: true });
+    expect([...globals]).toEqual([['visits', '12']]);
+    // The hall read x as '' and the handler then read the global the hall had changed.
+    expect(host.fieldText('note')).toBe('[]12');
+  });
+});

@@ -91,7 +91,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - The current stack as target, started on card 3. The effect logged with `goToStack` and not with a later `go to next card`; the effect dropped for a missing stack.
     - _Requirements: 8.4, 8.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 4.1, 4.2_
 
-  - [ ] 4.4 Add `openCard`, depth, continuation and globals tests to `test/hypertalk/runtime.stacks.test.ts`
+  - [x] 4.4 Add `openCard`, depth, continuation and globals tests to `test/hypertalk/runtime.stacks.test.ts`
     - The first card's `openCard` runs with fresh locals and an empty `it`. A runtime error and a syntax error in its script come back with `scriptId: 'house/card-1'`, that script's line, the move kept and the rest of the button handler not run. A deeper error from card 2's `openCard` carries `house/card-2`.
     - The depth limit through two stacks whose first cards go to each other's stack: the depth message on the `go` line at level 16, with 16 `goToStack` calls. A mixed chain of stack and card gos stops after 16 moves in total.
     - The rest of the handler runs after a stack go and writes the new card's field only. A global set on Home is appended to by Hall's `openCard`, which reads the local `x` as `''`; the store ends with `visits = "12"`.
