@@ -13,7 +13,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
 
 ## Tasks
 
-- [ ] 1. Parse and print `go to stack`
+- [x] 1. Parse and print `go to stack`
   - [x] 1.1 Add the `stack` keyword and the `stack` go target
     - `src/hypertalk/tokens.ts`: add `'stack'` to the `go` line of `KEYWORDS`, so `RESERVED` and `isReserved` include it with no other change.
     - `src/hypertalk/ast.ts`: `GoTarget` gains `{ k: 'stack'; expr: Expr }`, with the doc comment from the design (a stack name, never a number).
@@ -28,7 +28,7 @@ Requirement numbers (1.1, 9.10) refer to this spec's requirements.md. R-numbers 
     - The missing target, a token after the target, and `go to card 1 of stack "A"` come out of `primary()` and `expectLineEnd` with no special case.
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8_
 
-  - [ ] 1.3 Print the stack target in `src/hypertalk/printer.ts`
+  - [x] 1.3 Print the stack target in `src/hypertalk/printer.ts`
     - `card` and `stack` share one case: `go to ${k} ${printExpr(expr, PRIMARY)}`, so a non-primary target is printed in parentheses.
     - _Requirements: 2.1, 2.2_
 

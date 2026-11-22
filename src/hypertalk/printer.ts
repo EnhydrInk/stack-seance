@@ -49,9 +49,14 @@ function printSimple(s: Exclude<P<Stmt>, P<IfStmt>>): string {
     case 'haunt':
       return HAUNT_TEXT.get(s.kind)!;
     case 'go':
-      return s.target.k === 'card'
-        ? `go to card ${printExpr(s.target.expr, PRIMARY)}`
-        : `go to ${s.target.k} card`;
+      switch (s.target.k) {
+        case 'card':
+        case 'stack':
+          // The target is a primary expression: anything else is printed in parentheses (go-to-stack-command Requirement 2.2).
+          return `go to ${s.target.k} ${printExpr(s.target.expr, PRIMARY)}`;
+        default:
+          return `go to ${s.target.k} card`;
+      }
     case 'effect':
       return `visual effect ${EFFECT_WORDS[s.effect]}`;
     case 'answer': {
