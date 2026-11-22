@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Write bug condition exploration tests
+- [x] 1. Write bug condition exploration tests
   - **Property 1: Bug Condition** - A parse error found before the first lexer error is reported
   - **CRITICAL**: These tests MUST FAIL on unfixed code. The failures confirm the bug exists
   - **DO NOT attempt to fix the tests or the code when they fail**
@@ -43,7 +43,7 @@
   - Mark the task complete when the tests are written, run, and the failures are documented
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 2. Write preservation property tests (BEFORE implementing the fix)
+- [~] 2. Write preservation property tests (BEFORE implementing the fix)
   - **Property 2: Preservation** - Every other script lexes, parses and runs as before
   - **IMPORTANT**: Follow observation-first methodology. Run the unfixed code on inputs where `isBugCondition` is false, record what it returns, and assert that
   - Non-bug condition: `NOT isBugCondition(s)`. The script has no lexer error, or the rules read past before(s) before they raise any error: the first lexer error comes before any parse error, a rule needs the token at L, or a handler or block `if` is still open at L
@@ -71,7 +71,7 @@
 
 - [ ] 3. Fix the lexer error that masks an earlier parse error
 
-  - [ ] 3.1 Keep the tokens the lexer read before its first error
+  - [~] 3.1 Keep the tokens the lexer read before its first error
     - In `src/hypertalk/lexer.ts`, add the exported interface `LexPrefix { tokens: Token[]; error: SyntaxError | undefined }` and move the body of `tokenize` (line 14) into a new exported function `tokenizeUntilError(source): LexPrefix`, with the doc comments from design
     - `fail` (lines 21 to 24) returns `{ tokens, error: syntaxError(line, column(at), message) }`. The success path pushes eof as now and returns `{ tokens, error: undefined }`. The three `return fail(…)` sites (lines 56, 73 and 95), every lexer rule and every message stay as they are
     - `tokenize` becomes the two-line wrapper from design: `error ? { ok: false, error } : { ok: true, tokens }`. `LexResult` does not change
@@ -84,7 +84,7 @@
     - _Preservation: `tokenize` returns the same tokens or the same first error for every input (3.7); `\r\n` and comment handling are unchanged (3.8, 3.9)_
     - _Requirements: 3.5, 3.7, 3.8, 3.9_
 
-  - [ ] 3.2 Run the parser over the tokens before the lexer error
+  - [~] 3.2 Run the parser over the tokens before the lexer error
     - In `src/hypertalk/parser.ts`, import `tokenizeUntilError` instead of `tokenize` (line 6)
     - In `parseUnguarded` (line 22), drop the early return `if (!lexed.ok) return lexed;` (line 24) and build the parser with `new Parser(lexed.tokens, lexed.error)` from `tokenizeUntilError(source)`
     - Give the `Parser` constructor (line 67) the second field `private readonly lexError: SyntaxError | undefined`, with the doc comment from design
@@ -98,7 +98,7 @@
     - _Preservation: lexer-clean scripts take the same path (`lexError` is `undefined`); reading past before(s) reports exactly L, and the "never closed" checks cannot fire without an eof (3.1 to 3.6, 3.10)_
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.10_
 
-  - [ ] 3.3 Describe the new rule in the interpreter design
+  - [~] 3.3 Describe the new rule in the interpreter design
     - In `.kiro/specs/hypertalk-interpreter/design.md`, module list (line 10): the `lexer.ts` line also names `tokenizeUntilError(source)` as internal
     - In the "Parser" notes, after the bullet on `parse(source)` (line 160), add a bullet: when the lexer fails, the parser still runs over the tokens read before the error. Reading past them means reading the text at the lexer error, so the parser reports the lexer error there. A parse error found before that point wins. An `on` or `if` still open at that point is not reported, because finding it would need the end of the script
     - _Bug_Condition: `isBugCondition(s)` from design_
@@ -106,7 +106,7 @@
     - _Preservation: Preservation Requirements from design_
     - _Requirements: 2.1, 2.2, 2.3, 3.4_
 
-  - [ ] 3.4 Verify the bug condition exploration tests now pass
+  - [~] 3.4 Verify the bug condition exploration tests now pass
     - **Property 1: Expected Behavior** - A parse error found before the first lexer error is reported
     - **IMPORTANT**: Re-run the SAME tests from task 1. Do NOT write new tests
     - The tests from task 1 encode the expected behavior. When they pass, the expected behavior is satisfied, including the `x = 1` decision (line 2, column 3, `unknown command "x"`)
@@ -114,21 +114,21 @@
     - **EXPECTED OUTCOME**: The task 1 tests PASS (confirms the bug is fixed)
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-  - [ ] 3.5 Verify the preservation tests still pass
+  - [~] 3.5 Verify the preservation tests still pass
     - **Property 2: Preservation** - Every other script lexes, parses and runs as before
     - **IMPORTANT**: Re-run the SAME tests from task 2. Do NOT write new tests
     - Run the preservation unit tests, the `lexerErrorFirstArb` property and the mutant invariant from task 2, the lexer tests from task 3.1, and the existing P4, P5 and navigation properties (`SYNTAX_ERROR_LINES` still contains `x = 1`, and its users check only the line, which does not change)
     - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11_
 
-  - [ ] 3.6 Run the one-off old-versus-new comparison (not committed)
+  - [~] 3.6 Run the one-off old-versus-new comparison (not committed)
     - Check out the commit the fix is built on (`edef939` unless another fix has landed since) in a separate git worktree outside the repo, for example `git worktree add ../stack-seance-base edef939`
     - With `vite-node`, compare the old and fixed `parseUnguarded` and `tokenize` on 20,000 `mutantArb` samples and 3,000 `renderScript` outputs of `scriptArb`
     - `tokenize` results must be identical for every input. `parseUnguarded` results must be identical for every lexer-clean input. For a lexer-error input, the fixed result either equals the old one (exactly L), or is a parse error before L that equals the old `parseUnguarded(textBefore(source, L))`. The scratch copy gave identical results for 17,213 lexer-clean mutants and all 3,000 rendered scripts
     - Remove the worktree afterwards with `git worktree remove`, and commit nothing from this step
     - _Requirements: 3.1, 3.7, 3.10_
 
-- [ ] 4. Checkpoint - Ensure all tests pass
+- [~] 4. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`, and make sure both pass
   - If the `nested-if-else-attachment-fix` has also landed, its tests are part of this run
   - Ask the user if questions arise

@@ -31,6 +31,7 @@ import type * as errors from '../../src/hypertalk/errors';
 import type * as host from '../../src/hypertalk/host';
 import { HAUNTS } from '../../src/hypertalk/tokens';
 import { FakeHost } from './helpers/fakeHost';
+import { handlerSource, REPROS } from './helpers/lexMask';
 import { at, insideConst, interpreterSources, parseSource, stringLiterals, wordsOf, type Source } from './helpers/sourceScan';
 
 const src = (...lines: string[]) => lines.join('\n');
@@ -87,6 +88,12 @@ describe('12.1 public API (R14.1)', () => {
     const ran = await api.runHandler(src('on mouseUp', '  go to card 9', 'end mouseUp'), 'mouseUp', ctx);
     const error: ScriptError | undefined = ran.ok ? undefined : ran.error;
     expect(error).toMatchObject({ kind: 'runtime', line: 2 } satisfies Partial<RuntimeError>);
+  });
+});
+
+describe('R12.3 / 2.1–2.3 public parse with a parse error before a lexer error', () => {
+  it.each(REPROS)('$name returns the parser’s error, unchanged by the line guard', ({ body, error }) => {
+    expect(api.parse(handlerSource('mouseUp', body))).toEqual({ ok: false, error });
   });
 });
 

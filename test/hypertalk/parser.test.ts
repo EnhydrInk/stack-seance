@@ -3,6 +3,7 @@ import { parse, parseUnguarded } from '../../src/hypertalk/parser';
 import { stripPositions, type Expr, type IfStmt, type Script, type Stmt } from '../../src/hypertalk/ast';
 import { lineCount, type SyntaxError } from '../../src/hypertalk/errors';
 import { HAUNTS, isReserved } from '../../src/hypertalk/tokens';
+import { handlerSource, REPRO_1, REPROS } from './helpers/lexMask';
 
 const src = (...lines: string[]) => lines.join('\n');
 
@@ -592,5 +593,47 @@ describe('R12 error reporting', () => {
         expect(parseUnguarded(source), source).toEqual(result);
       }
     }
+  });
+});
+
+// lexer-error-masks-parse-error-fix: the reported error is the first one met reading from
+// the top, whether the lexer or the parser finds it. Line 1 is `on mouseUp`.
+describe('R12.3 the first syntax error from the top, from the lexer or the parser', () => {
+  /** parse and parseUnguarded both return exactly this error. */
+  function expectError(source: string, error: SyntaxError) {
+    expect(parse(source)).toEqual({ ok: false, error });
+    expect(parseUnguarded(source)).toEqual({ ok: false, error });
+  }
+
+  const GO_MESSAGE = 'expected next card, prev card, first card, last card or card … after "go"';
+
+  it.each(REPROS)('$name reports the parse error found before the lexer error (2.1, 2.2, 2.3)', ({ body, error }) => {
+    expectError(handlerSource('mouseUp', body), error);
+  });
+
+  it('Repro 1 with \\r\\n line breaks reports the same line and column (2.1, 3.8)', () => {
+    expectError(handlerSource('mouseUp', REPRO_1.body, '\r\n'), REPRO_1.error);
+  });
+
+  it('reports x = 1 as an unknown command at x, not as the "=" hint (decided at design review)', () => {
+    expectError(inHandler('x = 1'), { kind: 'syntax', line: 2, column: 3, message: 'unknown command "x"' });
+  });
+
+  it('reports the parse error when the lexer error is at column 1 of the next line', () => {
+    expectError(src('on mouseUp', '  put 1 into', '#', 'end mouseUp'), {
+      kind: 'syntax',
+      line: 2,
+      column: 13,
+      message: 'expected a variable name after "into"',
+    });
+  });
+
+  it('reports a parse error in an earlier complete handler before a lexer error in a later one', () => {
+    expectError(src('on mouseUp', '  go nowhere', 'end mouseUp', 'on openCard', '  answer "x', 'end openCard'), {
+      kind: 'syntax',
+      line: 2,
+      column: 6,
+      message: GO_MESSAGE,
+    });
   });
 });

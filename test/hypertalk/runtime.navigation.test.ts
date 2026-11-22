@@ -8,6 +8,7 @@ import { runHandler } from '../../src/hypertalk/runtime';
 import { HAUNTS } from '../../src/hypertalk/tokens';
 import type { Value } from '../../src/hypertalk/values';
 import { FakeHost, type FakeCardInit, type FakeHostInit, type Reply } from './helpers/fakeHost';
+import { handlerSource, REPRO_1 } from './helpers/lexMask';
 
 const src = (...lines: string[]) => lines.join('\n');
 const indent = (lines: string[]) => lines.map((l) => `  ${l}`);
@@ -341,6 +342,19 @@ describe('R2.5, R14 / 9.4 openCard', () => {
     });
     expect(host.state.current).toBe(2);
     expect(host.log.some((c) => c.call === 'haunt' || c.call === 'answer')).toBe(false);
+  });
+
+  it('reports a parse error found before a lexer error in the new card’s openCard, with that card’s id (2.4, R12.5)', async () => {
+    const host = stack(2, {}, (i) => ({ script: i === 2 ? handlerSource('openCard', REPRO_1.body) : '' }));
+    const { result } = await run(inHandler('go to next card', 'answer "after"'), host);
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: 'syntax', line: 2, column: 13, message: 'expected a variable name after "into"', scriptId: 'card-2' },
+    });
+    // The move is kept, and nothing of card 2's script runs.
+    expect(host.state.current).toBe(2);
+    expect(host.log.at(-1)).toEqual({ call: 'getCardScript', id: 'card-2' });
+    expect(host.log.filter((c) => c.call === 'getCardScript')).toHaveLength(1);
   });
 
   it('names the card whose openCard failed when openCard handlers chain (R12.5)', async () => {

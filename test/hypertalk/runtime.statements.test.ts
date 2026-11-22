@@ -8,6 +8,7 @@ import { runHandler } from '../../src/hypertalk/runtime';
 import type { HauntKind } from '../../src/hypertalk/tokens';
 import type { Value } from '../../src/hypertalk/values';
 import { FakeHost, type FakeHostInit } from './helpers/fakeHost';
+import { handlerSource, REPROS } from './helpers/lexMask';
 
 const src = (...lines: string[]) => lines.join('\n');
 /** Wraps lines in `on mouseUp … end mouseUp`, so the first given line is line 2. */
@@ -442,5 +443,17 @@ describe('R15 / 8.7 haunts', () => {
       { call: 'haunt', kind: 'witch' },
       { call: 'setField', name: 'note', text: 'after' },
     ]);
+  });
+});
+
+describe('R12.3 / 2.4 a parse error found before a lexer error', () => {
+  it.each(REPROS)('$name returns the parse error, calls the host for nothing and changes nothing', async ({ body, error }) => {
+    const init: Partial<FakeHostInit> = {
+      cards: [{ fields: [{ name: 'note', text: 'quiet' }], buttons: [{ name: 'door' }] }, { name: 'Crypt' }],
+    };
+    const { result, host } = await run(handlerSource('mouseUp', body), makeHost(init));
+    expect(result).toEqual({ ok: false, error });
+    expect(host.log).toEqual([]);
+    expect(host.state).toEqual(makeHost(init).state);
   });
 });

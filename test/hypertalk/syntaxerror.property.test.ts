@@ -1,7 +1,9 @@
+import { isDeepStrictEqual } from 'node:util';
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import { parse, parseUnguarded } from '../../src/hypertalk/parser';
 import { lineCount } from '../../src/hypertalk/errors';
+import { tokenize } from '../../src/hypertalk/lexer';
 import { applyMutation, mutantArb, MUTATION_OPS, type Mutation } from './helpers/arbitraries';
 
 describe('P4 error lines (R12.1, R12.4)', () => {
@@ -39,6 +41,20 @@ describe('mutation generator (P4)', () => {
   it('at least 30% of generated mutants fail to parse', () => {
     const failed = sample.filter((m) => !parseUnguarded(m.source).ok).length;
     expect(failed / sample.length).toBeGreaterThanOrEqual(0.3);
+  });
+
+  it('at least a quarter of the mutants with a lexer error report a parse error found before it (2.1–2.3)', () => {
+    const lexerFailed = sample.flatMap((m) => {
+      const lexed = tokenize(m.source);
+      return lexed.ok ? [] : [{ source: m.source, error: lexed.error }];
+    });
+    expect(lexerFailed.length).toBeGreaterThan(0);
+    const switched = lexerFailed.filter(
+      ({ source, error }) => !isDeepStrictEqual(parseUnguarded(source), { ok: false, error }),
+    ).length;
+    expect(switched, `${switched} of ${lexerFailed.length} lexer-error mutants report a parse error`).toBeGreaterThanOrEqual(
+      lexerFailed.length / 4,
+    );
   });
 
   it('uses every kind of mutation', () => {
