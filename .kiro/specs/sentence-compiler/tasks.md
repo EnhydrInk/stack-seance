@@ -74,7 +74,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
       - The `system` and `schema` of every call identical, and each call's messages starting with the previous call's.
       - The `CallEvent`s of each case.
     - _Requirements: 14.2, 14.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9_
-  - [ ] 4.4 Write `test/compiler/prompt.test.ts`
+  - [x] 4.4 Write `test/compiler/prompt.test.ts`
     - `SYSTEM_PROMPT` is the same string after `userMessage` runs for two different requests, and contains neither request's sentence. It contains every `RULES` sentence and the words of every `HAUNTS` entry (imported from `src/hypertalk/tokens.ts`).
     - Every `EXAMPLES` reply passes `checkReply` against its own request, and every example script parses. The examples include CJK characters in a sentence, a non-empty skipped list, a non-empty newCards list, and a Nothing_Reply.
     - `userMessage` holds every field of a request, in contract order. `REPLY_SCHEMA` uses only `type`, `properties`, `items`, `required`, `additionalProperties` and `description`.
