@@ -1,10 +1,11 @@
 // Request bodies, requests and deps for the body-limit tests
 // (worker-body-limit-and-model-error-log-fix, design.md "Test helpers").
-import type { CompileRequest } from '../../../src/compiler/index';
+import { readCompileRequest, type CompileRequest } from '../../../src/compiler/index';
 import { verifyAccess } from '../../../worker/src/access';
-import { COMPILE_PATH, handle, type Deps, type WorkerVars } from '../../../worker/src/handle';
+import { COMPILE_PATH, MAX_BODY_BYTES, handle, type Deps, type WorkerVars } from '../../../worker/src/handle';
 import { readLimits, take } from '../../../worker/src/limits';
 import { scriptedAsk, type Step } from '../../compiler/helpers/fakeModel';
+import { VALID_BUTTON } from '../../compiler/helpers/fixtures';
 import { AUD, keys } from './accessKeys';
 import { MemoryStore } from './memoryStore';
 
@@ -211,4 +212,35 @@ export function crossingIndex(chunks: readonly Uint8Array[], limit: number): num
     if (received > limit) return k + 1;
   }
   return undefined;
+}
+
+const { hasButton: _hasButton, ...BUTTON } = VALID_BUTTON;
+
+/**
+ * The answer of Property 2 to a request that passes, with one reply step of `replyText()`:
+ * 200 with the button, the accepted log line, counted once and one Model_Call.
+ */
+export const ACCEPTED = {
+  status: 200,
+  body: { ok: true, ...BUTTON },
+  logs: [{ event: 'request', status: 200, error: null, calls: [{ call: 1, result: 'accepted' }] }],
+  takes: 1,
+  modelCalls: 1,
+} as const;
+
+/**
+ * The request check of the original `readRequest` after the media type, restated in the test
+ * (design.md, "Preservation Checking"). More than MAX_BODY_BYTES, a failed strict UTF-8 decode,
+ * a failed `JSON.parse` or a null from `readCompileRequest` is a bad request, and this returns
+ * null. Otherwise the request passes, and this returns the CompileRequest it carries.
+ */
+export function referenceAnswer(bytes: Uint8Array): CompileRequest | null {
+  if (bytes.byteLength > MAX_BODY_BYTES) return null;
+  let value: unknown;
+  try {
+    value = JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes));
+  } catch {
+    return null;
+  }
+  return readCompileRequest(value);
 }

@@ -49,7 +49,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
   - Mark the task complete when the tests are written and run, the failures are documented, and the suite is green with the markers
   - _Requirements: 1.1, 1.2, 2.1, 2.2_
 
-- [~] 2. Write preservation property tests for Bug 1 (BEFORE implementing the fix)
+- [x] 2. Write preservation property tests for Bug 1 (BEFORE implementing the fix)
   - **Property 2: Preservation** - Requests within the limit are read, decoded and answered as before
   - **IMPORTANT**: Follow observation-first methodology. Run the unfixed `handle` on requests where `isBodyBug` is false, record what it returns, and assert that
   - Non-bug condition: `NOT isBodyBug(R)`. Either the request fails the Access or route check, or its media type is not `application/json`, or its declared length is missing, not a declared length, or at most MAX and its body delivers at most MAX bytes, whether that body is valid, broken or erroring
