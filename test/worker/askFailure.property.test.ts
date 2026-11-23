@@ -3,10 +3,10 @@ import '../compiler/helpers/noNetwork';
 // here refer to that spec's bugfix.md.
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { APIError } from '@anthropic-ai/sdk';
+import { APIConnectionError, APIConnectionTimeoutError, APIError, AuthenticationError } from '@anthropic-ai/sdk';
 import type { BetaContentBlock } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import type { ModelInput } from '../../src/compiler/index';
-import { MODEL, makeAsk, toModelReply } from '../../worker/src/ask';
+import { MODEL, failureEntry, makeAsk, toModelReply } from '../../worker/src/ask';
 import {
   FAILURE_ROWS,
   INPUT,
@@ -111,6 +111,141 @@ function answer(c: Case): Response {
   return errorBody(c.status, c.type, c.message, c.code === undefined ? {} : { details: { error_code: c.code } }, c.requestId);
 }
 
+const FAILED = 'model-call-failed';
+/** The only fields a failure entry may hold (bugfix 2.5). */
+const ENTRY_KEYS = ['event', 'status', 'error_type', 'error_class'];
+
+/** Any status an SDK error can be built with: a number, or a value that is not one. */
+const anyStatusArb: fc.Arbitrary<unknown> = fc.oneof(
+  fc.integer({ min: 100, max: 599 }),
+  fc.integer(),
+  fc.constant(undefined),
+  fc.constant(null),
+  fc.constantFrom('401', '529'),
+);
+/** An error code from the SDK's table or a marked one, or any other JSON value as the details. */
+const detailsArb: fc.Arbitrary<unknown> = fc.oneof(
+  fc.record({ error_code: fc.oneof(fc.constantFrom(...KNOWN_CODES.map(([, code]) => code)), messageArb) }),
+  fc.jsonValue({ maxDepth: 2 }),
+);
+const headerTextArb = fc.stringMatching(/^[A-Za-z0-9]{1,24}$/).map((id) => `${LEAK}${id}`);
+const headersArb = fc.record({
+  requestId: headerTextArb,
+  workspaceId: headerTextArb,
+  extra: fc.dictionary(fc.stringMatching(/^x-[a-z0-9-]{1,12}$/), headerTextArb, { maxKeys: 3 }),
+});
+
+/** The built-in Error classes, each with the name its errors carry. */
+const ERROR_CLASSES = [
+  [Error, 'Error'],
+  [TypeError, 'TypeError'],
+  [RangeError, 'RangeError'],
+  [SyntaxError, 'SyntaxError'],
+  [ReferenceError, 'ReferenceError'],
+  [EvalError, 'EvalError'],
+  [URIError, 'URIError'],
+] as const;
+
+/** A rejection value, described as data so the expected entry can be worked out from it by hand. */
+type Thrown =
+  | { kind: 'anything'; value: unknown }
+  | { kind: 'error'; index: number; message: string }
+  | {
+      kind: 'api';
+      className: 'APIError' | 'AuthenticationError';
+      status: unknown;
+      type: unknown;
+      /** Where the type goes: the body's error.type, or the constructor's last argument. */
+      typeVia: 'body' | 'argument';
+      withBody: boolean;
+      message: string;
+      details: unknown;
+      headers: { requestId: string; workspaceId: string; extra: Record<string, string> } | undefined;
+    }
+  | { kind: 'connection'; message: string | undefined; cause: string | undefined }
+  | { kind: 'timeout'; message: string | undefined };
+
+const thrownArb: fc.Arbitrary<Thrown> = fc.oneof(
+  fc.record({
+    kind: fc.constant('anything' as const),
+    value: fc.anything({
+      withBigInt: true,
+      withBoxedValues: true,
+      withDate: true,
+      withMap: true,
+      withNullPrototype: true,
+      withObjectString: true,
+      withSet: true,
+      withSparseArray: true,
+      withTypedArray: true,
+    }),
+  }),
+  fc.record({ kind: fc.constant('error' as const), index: fc.nat({ max: ERROR_CLASSES.length - 1 }), message: messageArb }),
+  {
+    weight: 2,
+    arbitrary: fc.record({
+      kind: fc.constant('api' as const),
+      className: fc.constantFrom('APIError' as const, 'AuthenticationError' as const),
+      status: anyStatusArb,
+      type: typeArb,
+      typeVia: fc.constantFrom('body' as const, 'argument' as const),
+      withBody: fc.boolean(),
+      message: messageArb,
+      details: fc.option(detailsArb, { nil: undefined }),
+      headers: fc.option(headersArb, { nil: undefined }),
+    }),
+  },
+  fc.record({
+    kind: fc.constant('connection' as const),
+    message: fc.option(messageArb, { nil: undefined }),
+    cause: fc.option(messageArb, { nil: undefined }),
+  }),
+  fc.record({ kind: fc.constant('timeout' as const), message: fc.option(messageArb, { nil: undefined }) }),
+);
+
+/**
+ * The value `t` describes, built with the SDK's own constructors, and the failure entry that
+ * design.md's rules give for it, worked out here without calling failureEntry.
+ */
+function build(t: Thrown): { value: unknown; expected: Record<string, unknown> } {
+  switch (t.kind) {
+    case 'anything':
+      return { value: t.value, expected: { event: FAILED, error_class: typeof t.value } };
+    case 'error': {
+      const [make, name] = ERROR_CLASSES[t.index]!;
+      return { value: new make(t.message), expected: { event: FAILED, error_class: name } };
+    }
+    case 'api': {
+      const inner: Record<string, unknown> = { message: t.message };
+      if (t.typeVia === 'body') inner.type = t.type;
+      if (t.details !== undefined) inner.details = t.details;
+      const body = t.withBody ? { type: 'error', error: inner } : undefined;
+      const headers =
+        t.headers && new Headers({ ...t.headers.extra, 'request-id': t.headers.requestId, 'anthropic-workspace-id': t.headers.workspaceId });
+      const make = (t.className === 'APIError' ? APIError : AuthenticationError) as unknown as new (...args: unknown[]) => APIError;
+      const value = new make(t.status, body, t.message, headers, t.typeVia === 'argument' ? t.type : undefined);
+      // The SDK keeps the type argument, or else the body's error.type, or else null.
+      const type = (t.typeVia === 'argument' || t.withBody ? t.type : undefined) ?? null;
+      expect(value.type, 'the type the SDK keeps').toBe(type);
+      return {
+        value,
+        expected: {
+          event: FAILED,
+          ...(typeof t.status === 'number' ? { status: t.status } : {}),
+          ...(typeof type === 'string' && IDENTIFIER.test(type) ? { error_type: type } : {}),
+          error_class: t.className,
+        },
+      };
+    }
+    case 'connection': {
+      const cause = t.cause === undefined ? undefined : new TypeError(t.cause);
+      return { value: new APIConnectionError({ message: t.message, cause }), expected: { event: FAILED, error_class: 'APIConnectionError' } };
+    }
+    case 'timeout':
+      return { value: new APIConnectionTimeoutError({ message: t.message }), expected: { event: FAILED, error_class: 'APIConnectionTimeoutError' } };
+  }
+}
+
 describe('Property 3: A failed SDK call writes one failure entry and rejects with the same error', () => {
   // Feature: worker-body-limit-and-model-error-log-fix, Property 3: A failed SDK call writes one failure entry and rejects with the same error
   // **Validates: Requirements 2.3, 2.5, 3.14**
@@ -146,6 +281,24 @@ describe('Property 3: A failed SDK call writes one failure entry and rejects wit
     },
     30_000,
   );
+
+  // Feature: worker-body-limit-and-model-error-log-fix, Property 3: A failed SDK call writes one failure entry and rejects with the same error
+  // **Validates: Requirements 2.3, 2.4, 2.5**
+  it('P3 any rejection value: failureEntry never throws, keeps to its four fields, and holds the status, type and class the rules give', () => {
+    fc.assert(
+      fc.property(thrownArb, (t) => {
+        const { value, expected } = build(t);
+        const entry = failureEntry(value);
+
+        expect(ENTRY_KEYS).toEqual(expect.arrayContaining(Object.keys(entry)));
+        const text = JSON.stringify(entry);
+        expect(text).not.toContain(LEAK);
+        if (value instanceof Error && value.message !== '') expect(text).not.toContain(value.message);
+        expect(entry).toStrictEqual(expected);
+      }),
+      { numRuns: 1000 },
+    );
+  });
 });
 
 const textArb = fc.string({ unit: 'grapheme', maxLength: 40 });
@@ -183,6 +336,9 @@ const inputArb: fc.Arbitrary<ModelInput> = fc.oneof(
   })),
 );
 
+/** One to six calls on one Ask, each with its outcome and its input. */
+const stepsArb = fc.array(fc.tuple(outcomeArb, inputArb), { minLength: 1, maxLength: 6 });
+
 describe('Property 4: Ask calls that do not fail send, log and return as before', () => {
   // Feature: worker-body-limit-and-model-error-log-fix, Property 4: Ask calls that do not fail send, log and return as before
   // **Validates: Requirements 3.12, 3.14, 3.15**
@@ -190,7 +346,7 @@ describe('Property 4: Ask calls that do not fail send, log and return as before'
     'P4 mixed sequences: on one Ask, each success writes exactly its usage entry and returns its reply, and each failure rejects and writes no other entry',
     async () => {
       await fc.assert(
-        fc.asyncProperty(fc.array(fc.tuple(outcomeArb, inputArb), { minLength: 1, maxLength: 6 }), async (steps) => {
+        fc.asyncProperty(stepsArb, async (steps) => {
           let next = 0;
           const { fetch, calls } = apiFetch((init) => {
             const [outcome] = steps[next++]!;
@@ -227,6 +383,49 @@ describe('Property 4: Ask calls that do not fail send, log and return as before'
               expect(written.filter((entry) => entry.event !== 'model-call-failed')).toStrictEqual([]);
             }
           }
+        }),
+        { numRuns: 100 },
+      );
+    },
+    30_000,
+  );
+
+  // Feature: worker-body-limit-and-model-error-log-fix, Property 4: Ask calls that do not fail send, log and return as before
+  // **Validates: Requirements 2.3, 2.4, 3.12, 3.14**
+  it(
+    'P4 mixed sequences with failure entries: the whole log holds one entry per call, the usage entry for a success and failureEntry(rejection) for a failure',
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(stepsArb, async (steps) => {
+          let next = 0;
+          const { fetch, calls } = apiFetch((init) => {
+            const [outcome] = steps[next++]!;
+            return outcome.kind === 'success' ? messageBody(outcome.success) : outcome.row.respond(init);
+          });
+          const timeoutMs = steps.flatMap(([o]) => (o.kind === 'failure' && o.row.timeoutMs !== undefined ? [o.row.timeoutMs] : []))[0];
+          const logs: Record<string, unknown>[] = [];
+          const ask = makeAsk({ apiKey: KEY, fetch, timeoutMs, log: (entry) => logs.push(entry) });
+
+          const expected: Record<string, unknown>[] = [];
+          for (const [outcome, input] of steps) {
+            const result = await ask(input).then(
+              () => ({ ok: true as const }),
+              (error: unknown) => ({ ok: false as const, error }),
+            );
+            if (outcome.kind === 'success') {
+              expect(result.ok).toBe(true);
+              expected.push(usageEntryOf(outcome.success));
+            } else {
+              expect(result.ok).toBe(false);
+              const { error } = result as { error: unknown };
+              expect(error).toBeInstanceOf(outcome.row.rejects);
+              expect(failureEntry(error), outcome.row.name).toStrictEqual(outcome.row.entry);
+              expected.push(failureEntry(error));
+            }
+          }
+
+          expect(calls).toHaveLength(steps.length);
+          expect(logs).toStrictEqual(expected);
         }),
         { numRuns: 100 },
       );

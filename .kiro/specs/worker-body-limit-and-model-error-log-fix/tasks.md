@@ -204,7 +204,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
     - _Preservation: Preservation Requirements from design (3.12 to 3.15): the same request, the same usage entry on success, the missing-key rejection before any client with no entry, the same rejection object, and one fetch per call_
     - _Requirements: 2.3, 2.4, 2.5, 3.12, 3.13, 3.14, 3.15_
 
-  - [~] 6.2 Write the direct tests of `failureEntry` and the full mixed sequence
+  - [x] 6.2 Write the direct tests of `failureEntry` and the full mixed sequence
     - These tests call the new export, so they could not be written before 6.1
     - `test/worker/askFailure.test.ts`, `failureEntry`, the cases in design "Unit Tests":
       - `'boom'` gives `{ event, error_class: 'string' }`

@@ -6,7 +6,7 @@ import '../compiler/helpers/noNetwork';
 // `logs` check comes last, so the only thing the unfixed code can fail is the missing entry.
 import { describe, it, expect } from 'vitest';
 import { verifyAccess } from '../../worker/src/access';
-import { makeAsk, toModelReply } from '../../worker/src/ask';
+import { failureEntry, makeAsk, toModelReply } from '../../worker/src/ask';
 import { handle, type Deps } from '../../worker/src/handle';
 import { readLimits, take } from '../../worker/src/limits';
 import { keys, signToken } from './helpers/accessKeys';
@@ -201,5 +201,24 @@ describe('Property 4, bugfix 3.14 through handle, a failed call answers, counts 
     expect(store.snapshot()).toEqual({ day: '2026-12-05', [`ip:${IP}`]: 1, site: 1 });
     expect(calls).toHaveLength(1);
     expect(withoutFailures(logs)).toStrictEqual([REQUEST_LINE]);
+  });
+});
+
+describe('failureEntry, bugfix 2.5 reads fields only from an SDK APIError', () => {
+  it.each([
+    { name: "the string 'boom'", value: 'boom' as unknown, errorClass: 'string' },
+    { name: 'undefined', value: undefined as unknown, errorClass: 'undefined' },
+    { name: 'null', value: null as unknown, errorClass: 'object' },
+    {
+      name: 'a plain object shaped like an API error',
+      value: { status: 401, type: 'authentication_error', message: MARK } as unknown,
+      errorClass: 'object',
+    },
+    { name: 'an Error that is not from the SDK', value: new Error(MARK) as unknown, errorClass: 'Error' },
+  ])('$name gives only the event and error_class $errorClass', ({ value, errorClass }) => {
+    const entry = failureEntry(value);
+
+    expect(entry).toStrictEqual({ event: FAILED, error_class: errorClass });
+    expect(JSON.stringify(entry)).not.toContain(MARK);
   });
 });
