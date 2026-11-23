@@ -41,7 +41,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - Literal_Targets with `paren` removed: `str`, `num`, `bool`. Card targets become `cardNumber` (`num`, or `str` with `looksNumeric`, value `Number(value)`) or `cardName`. Stack text: the string, `String(n)`, or `true`/`false`.
     - Uses only the AST types and positions from the Public_API.
     - _Requirements: 4.3, 4.4, 4.5, 4.6, 4.8_
-  - [ ] 3.2 Write `src/compiler/rules.ts`
+  - [x] 3.2 Write `src/compiler/rules.ts`
     - `RuleNumber`, `RULES` with the ten sentences of the design's table, word for word, plus `RuleReport`, `Accepted`, `CheckResult` and `checkReply(request, text)`.
     - The five stages of "rules.ts". Stage 1: `null` from `readReplyObject` gives the one Rule 10 shape report. Stage 2: the Nothing_Reply checks give Rule 10 reports and stop, and otherwise Rule 9 runs. Stage 3: Rules 7 and 9, and the parts of Rule 4 that need no parse. Stage 4: `parse`, where a failure gives the Rule 1 report and stops. Stage 5: Rule 2, then Rules 3, 4 (used), 5, 6 and 8 over every handler.
     - Report details exactly as the design's table gives them. Rule 1: `Line <l>, column <c>: <message>. The line is <quote(line text)>.`, with line `l` of the script read with `\r\n` as `\n`. Rule 3's maximum is `cardNames.length + newCards.length`. Rule 8 names the line of the first `go` (or `go to stack`) on some path before the reference.
