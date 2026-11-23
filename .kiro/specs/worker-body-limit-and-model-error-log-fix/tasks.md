@@ -71,7 +71,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
   - Mark the task complete when the tests are written, run, and passing on unfixed code
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.16_
 
-- [~] 3. Write bug condition exploration tests for Bug 2 (model error log)
+- [x] 3. Write bug condition exploration tests for Bug 2 (model error log)
   - **Property 3: Bug Condition** - A failed SDK call writes one failure entry and rejects with the same error
   - **CRITICAL**: These tests MUST FAIL on unfixed code. The failures confirm the bug exists
   - **DO NOT attempt to fix the tests or the code when they fail**
