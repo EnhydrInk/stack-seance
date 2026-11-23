@@ -264,7 +264,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
   - This task changes no code and no test. `npx vitest --run` and `npm run typecheck` still pass
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.7, 3.10, 3.13_
 
-- [~] 8. Checkpoint - Ensure all tests pass
+- [x] 8. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`. The `typecheck` script in `package.json` runs `tsc --noEmit` for `tsconfig.json`, `tsconfig.test.json`, `tsconfig.ui.json` and `tsconfig.worker.json`. Both commands must pass
   - The 74 existing Worker tests pass, and `test/compiler/scan.test.ts` sees every new `*.test.ts` under `test/worker` import `../compiler/helpers/noNetwork` first (3.16)
   - No `it.fails` marker is left under `test/worker`
