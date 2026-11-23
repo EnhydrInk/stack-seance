@@ -127,19 +127,31 @@ describe('the compile request', () => {
     expect(r).toMatchObject({ sentence: 'go on', stackName: 'Haunted House', cardName: 'Gate', fieldNames: ['sign'] });
     expect(r.cardNames).toEqual(['Gate', 'Hall', 'Attic', 'Garden']);
     expect(r.buttonNames).toEqual(['Enter', 'Home']);
-    expect(r.stackNames).toEqual(['Home', 'Haunted House', 'Help']);
+    expect(r.stackNames).toEqual(['Home', 'Haunted House', 'Help', "Witch's Kitchen"]);
   });
 });
 
 describe('older saves', () => {
-  it('turn the Home New Stack icon into the built-in button', () => {
+  it("trade an older set of Home icons for this version's, and keep the icons of stacks the reader made", () => {
     const old = copy(stacks as StacksDoc);
-    const icon = old.stacks[0]!.cards[0]!.buttons.find((b) => b.id === 'b-home-new')!;
+    const m = new Model(old);
+    m.addStack('Pumpkin Party');
+    const home = old.stacks[0]!.cards[0]!;
+    // An older Home: a placeholder icon, and a New Stack icon that ran a script.
+    home.buttons = home.buttons.filter((b) => b.id !== 'b-home-help');
+    home.buttons.push({ id: 'b-home-graveyard', name: 'Graveyard', rect: [0, 0, 84, 84], visible: true, sentence: '', script: '', style: 'icon' });
+    const icon = home.buttons.find((b) => b.id === 'b-home-new')!;
     delete icon.builtin;
     icon.script = 'on mouseUp\n  answer "Soon"\nend mouseUp';
-    const up = upgrade(old, stacks as StacksDoc);
-    const now = up.stacks[0]!.cards[0]!.buttons.find((b) => b.id === 'b-home-new')!;
-    expect(now.builtin).toBe('new-stack');
-    expect(now.script).toBe('');
+    const now = upgrade(old, stacks as StacksDoc).stacks[0]!.cards[0]!.buttons;
+    expect(now.map((b) => b.name)).toEqual(['Haunted House', 'Help', "Witch's Kitchen", 'New Stack', 'Pumpkin Party']);
+    expect(now.find((b) => b.id === 'b-home-new')!.builtin).toBe('new-stack');
+  });
+
+  it("keep a Home icon the reader edited once they have this version's set", () => {
+    const old = copy(stacks as StacksDoc);
+    old.stacks[0]!.cards[0]!.buttons[0]!.script = 'on mouseUp\n  answer "Mine"\nend mouseUp';
+    const now = upgrade(old, stacks as StacksDoc).stacks[0]!.cards[0]!.buttons[0]!;
+    expect(now.script).toBe('on mouseUp\n  answer "Mine"\nend mouseUp');
   });
 });

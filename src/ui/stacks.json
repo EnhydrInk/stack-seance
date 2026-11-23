@@ -44,7 +44,7 @@
               "id": "b-home-haunted",
               "name": "Haunted House",
               "rect": [
-                18,
+                70,
                 122,
                 84,
                 84
@@ -56,55 +56,40 @@
               "icon": "house"
             },
             {
-              "id": "b-home-graveyard",
-              "name": "Graveyard",
+              "id": "b-home-help",
+              "name": "Help",
               "rect": [
-                114,
+                166,
                 122,
                 84,
                 84
               ],
               "visible": true,
-              "sentence": "Clicking this says the Graveyard is not ready yet.",
-              "script": "on mouseUp\n  answer \"The Graveyard is still being summoned...\"\nend mouseUp",
+              "sentence": "Clicking this opens the Help stack.",
+              "script": "on mouseUp\n  go to stack \"Help\"\nend mouseUp",
               "style": "icon",
-              "icon": "grave"
+              "icon": "help"
             },
             {
               "id": "b-home-kitchen",
               "name": "Witch's Kitchen",
               "rect": [
-                210,
+                262,
                 122,
                 84,
                 84
               ],
               "visible": true,
-              "sentence": "Clicking this says the Witch's Kitchen is not ready yet.",
-              "script": "on mouseUp\n  answer \"The Witch's Kitchen is still being summoned...\"\nend mouseUp",
+              "sentence": "Clicking this opens the Witch's Kitchen stack.",
+              "script": "on mouseUp\n  go to stack \"Witch's Kitchen\"\nend mouseUp",
               "style": "icon",
               "icon": "cauldron"
-            },
-            {
-              "id": "b-home-patch",
-              "name": "Pumpkin Patch",
-              "rect": [
-                306,
-                122,
-                84,
-                84
-              ],
-              "visible": true,
-              "sentence": "Clicking this says the Pumpkin Patch is not ready yet.",
-              "script": "on mouseUp\n  answer \"The Pumpkin Patch is still being summoned...\"\nend mouseUp",
-              "style": "icon",
-              "icon": "patch"
             },
             {
               "id": "b-home-new",
               "name": "New Stack",
               "rect": [
-                402,
+                358,
                 122,
                 84,
                 84
@@ -1316,6 +1301,250 @@
               "visible": true,
               "sentence": "Clicking this goes back to the Home stack.",
               "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kitchen",
+      "name": "Witch's Kitchen",
+      "cards": [
+        {
+          "id": "wk-cauldron",
+          "name": "Cauldron",
+          "art": "kitchen",
+          "script": "",
+          "fields": [
+            {
+              "id": "f-wk-cauldron-head",
+              "name": "heading",
+              "text": "Witch's Kitchen",
+              "rect": [
+                24,
+                18,
+                260,
+                30
+              ],
+              "visible": true,
+              "style": "heading"
+            },
+            {
+              "id": "f-wk-brew",
+              "name": "brew",
+              "text": "The cauldron is cold.",
+              "rect": [
+                24,
+                56,
+                260,
+                40
+              ],
+              "visible": true,
+              "style": "plain"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-wk-cauldron-1",
+              "name": "Bubble the brew",
+              "rect": [
+                24,
+                104,
+                164,
+                24
+              ],
+              "visible": true,
+              "sentence": "Light the fire under the cauldron, play a crackling sound, and write \"The brew is bubbling.\" on the card.",
+              "script": "on mouseUp\n  put \"The brew is bubbling.\" into field \"brew\"\nend mouseUp",
+              "style": "roundrect",
+              "skipped": [
+                "light the fire under the cauldron",
+                "play a crackling sound"
+              ]
+            },
+            {
+              "id": "b-wk-cauldron-2",
+              "name": "Summon the witch",
+              "rect": [
+                24,
+                136,
+                172,
+                24
+              ],
+              "visible": true,
+              "sentence": "クリックしたら魔女を呼んで、「いらっしゃい、ひと口どう？」と聞いて",
+              "script": "on mouseUp\n  summon witch\n  ask \"いらっしゃい、ひと口どう？\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-wk-cauldron-3",
+              "name": "To the pantry",
+              "rect": [
+                24,
+                168,
+                148,
+                24
+              ],
+              "visible": true,
+              "sentence": "点一下就去食材柜看看",
+              "script": "on mouseUp\n  go to card \"Pantry\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-wk-cauldron-4",
+              "name": "Home",
+              "rect": [
+                24,
+                302,
+                132,
+                24
+              ],
+              "visible": true,
+              "sentence": "Go back to the Home stack.",
+              "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        },
+        {
+          "id": "wk-pantry",
+          "name": "Pantry",
+          "art": "pantry",
+          "script": "",
+          "fields": [
+            {
+              "id": "f-wk-pantry-head",
+              "name": "heading",
+              "text": "Pantry",
+              "rect": [
+                24,
+                18,
+                260,
+                30
+              ],
+              "visible": true,
+              "style": "heading"
+            },
+            {
+              "id": "f-wk-shelf",
+              "name": "shelf",
+              "text": "Empty jars.",
+              "rect": [
+                24,
+                56,
+                260,
+                40
+              ],
+              "visible": true,
+              "style": "plain"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-wk-pantry-1",
+              "name": "Add an ingredient",
+              "rect": [
+                24,
+                104,
+                180,
+                24
+              ],
+              "visible": true,
+              "sentence": "Ask which ingredient to add, then write the answer on the shelf.",
+              "script": "on mouseUp\n  ask \"Which ingredient should I add?\"\n  put it into field \"shelf\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-wk-pantry-2",
+              "name": "Drop a spider",
+              "rect": [
+                24,
+                136,
+                148,
+                24
+              ],
+              "visible": true,
+              "sentence": "クモを一匹落としてから、「クモの足は売り切れです」と言って",
+              "script": "on mouseUp\n  drop spider\n  answer \"クモの足は売り切れです\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-wk-pantry-3",
+              "name": "To the spell book",
+              "rect": [
+                24,
+                168,
+                180,
+                24
+              ],
+              "visible": true,
+              "sentence": "翻到咒语书，用从右往左擦过去的效果",
+              "script": "on mouseUp\n  visual effect wipe left\n  go to card \"Spell Book\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-wk-pantry-4",
+              "name": "Back to the cauldron",
+              "rect": [
+                24,
+                302,
+                204,
+                24
+              ],
+              "visible": true,
+              "sentence": "Back to the cauldron with a dissolve.",
+              "script": "on mouseUp\n  visual effect dissolve\n  go to card \"Cauldron\"\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        },
+        {
+          "id": "wk-spellbook",
+          "name": "Spell Book",
+          "art": "spellbook",
+          "script": "",
+          "fields": [
+            {
+              "id": "f-wk-spellbook-head",
+              "name": "heading",
+              "text": "Spell Book",
+              "rect": [
+                24,
+                18,
+                260,
+                30
+              ],
+              "visible": true,
+              "style": "heading"
+            },
+            {
+              "id": "f-wk-spell",
+              "name": "spell",
+              "text": "An old spell book lies open.",
+              "rect": [
+                24,
+                56,
+                260,
+                40
+              ],
+              "visible": true,
+              "style": "plain"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-wk-spellbook-1",
+              "name": "Cast a spell?",
+              "rect": [
+                24,
+                104,
+                148,
+                24
+              ],
+              "visible": true,
+              "sentence": "问访客要不要念咒，选「要」就让狼嚎叫，选「不要」就说「胆小鬼！」",
+              "script": "on mouseUp\n  answer \"要不要念咒？\" with \"要\" or \"不要\"\n  if it is \"要\" then\n    howl\n  else if it is \"不要\" then\n    answer \"胆小鬼！\"\n  end if\nend mouseUp",
               "style": "roundrect"
             }
           ]

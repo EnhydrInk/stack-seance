@@ -163,6 +163,25 @@ export const ICONS: Record<string, Sprite> = {
     '................',
     '................',
   ],
+  /** Help: Frankenstein's flask with a bolt of lightning over it. */
+  help: [
+    '........yy......',
+    '.......yy.......',
+    '......yyyy......',
+    '........yy......',
+    '.......yy.......',
+    '.....kkkkkk.....',
+    '......kwwk......',
+    '......kwwk......',
+    '.....kwwwwk.....',
+    '....kwwwwwwk....',
+    '...kppppppppk...',
+    '..kppwppppppppk.',
+    '..kpppppwpppppk.',
+    '..kpppppppppppk.',
+    '...kpppppppppk..',
+    '....kkkkkkkkk...',
+  ],
   /** A stack someone made: a pile of cards, the top one with a title bar and a button. */
   cards: [
     'kkkkkkkkkkkk....',

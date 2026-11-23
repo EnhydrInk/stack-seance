@@ -64,7 +64,7 @@ describe('older saves', () => {
     old.stacks = old.stacks.filter((s) => s.id !== 'help');
     old.stacks[0]!.cards[0]!.fields[1]!.text = 'mine';
     const upgraded = withMissingStacks(old, doc());
-    expect(upgraded.stacks.map((s) => s.id)).toEqual(['home', 'haunted', 'help']);
+    expect(upgraded.stacks.map((s) => s.id)).toEqual(['home', 'haunted', 'kitchen', 'help']);
     expect(upgraded.stacks[0]!.cards[0]!.fields[1]!.text).toBe('mine');
   });
 

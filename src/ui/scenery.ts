@@ -316,6 +316,36 @@ const FLASK: Sprite = [
   '..kkkk..',
 ];
 
+const SHELF: Sprite = [
+  '....................................',
+  '...kkkk........kkkk........kkkk.....',
+  '....kk..........kk..........kk......',
+  '...kwwk........kwwk........kwwk.....',
+  '..kwwwwk......kwwwwk......kwwwwk....',
+  '..kppppk......kooook......kggggk....',
+  '..kppppk......kooook......kggggk....',
+  '..kpwppk......kowook......kgwggk....',
+  '...kkkk........kkkk........kkkk.....',
+  'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk',
+  'g.gkg.g.g.g.g.g.g.g.g.g.g.g.g.g.k.g.',
+  '...k............................k...',
+];
+
+const BOOK: Sprite = [
+  '.kkkkkkkk..kkkkkkkk.',
+  'kwwwwwwwwkkwwwwwwwwk',
+  'kwkkkkkwwkkwwkkkkkwk',
+  'kwwwwwwwwkkwwwwwwwwk',
+  'kwkkkwwwwkkwwkkkkwwk',
+  'kwwwwwwwwkkwwwwwwwwk',
+  'kwkkkkwwwkkwwwpwwwwk',
+  'kwwwwwwwwkkwwpppwwwk',
+  'kwkkkkkwwkkwwwpwwwwk',
+  'kwwwwwwwwkkwwwwwwwwk',
+  'kkkkkkkkkkkkkkkkkkkk',
+  '.kkkkkkkkkkkkkkkkkk.',
+];
+
 const TUBE: Sprite = [
   '.y.',
   '...',
@@ -451,6 +481,33 @@ const ART: Record<string, { pieces: Piece[]; ground?: number }> = {
       { sprite: ICONS.grave!, x: 110, y: 252, px: 2 },
       { sprite: ICONS.grave!, x: 200, y: 236, px: 3 },
       { sprite: ICONS.patch!, x: 280, y: 270, px: 2 },
+    ],
+  },
+  // ---- the Witch's Kitchen: every button on these cards grew from a sentence
+  kitchen: {
+    ground: 40,
+    pieces: [
+      { sprite: WEB, x: 476, y: 0, px: 3 },
+      { sprite: WINDOW, x: 380, y: 40, px: 4, only: 'day' },
+      { sprite: WINDOW_LIT, x: 380, y: 40, px: 4, only: 'night' },
+      { sprite: ICONS.cauldron!, x: 300, y: 206, px: 6 },
+      { sprite: CANDLE, x: 250, y: 270, px: 4 },
+    ],
+  },
+  pantry: {
+    ground: 40,
+    pieces: [
+      { sprite: SHELF, x: 300, y: 70, px: 4 },
+      { sprite: SHELF, x: 300, y: 170, px: 4 },
+      { sprite: WEB, x: 476, y: 0, px: 3 },
+    ],
+  },
+  spellbook: {
+    ground: 40,
+    pieces: [
+      { sprite: BOOK, x: 300, y: 242, px: 5 },
+      { sprite: CANDLE, x: 430, y: 270, px: 4 },
+      { sprite: GHOST, x: 330, y: 90, px: 3, className: 'bob', only: 'night' },
     ],
   },
   // ---- the Help stack: Frankenstein's lab

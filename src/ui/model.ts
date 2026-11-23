@@ -235,17 +235,21 @@ export function copy<T>(x: T): T {
 
 /**
  * Brings a save made by an older version up to date: built-in stacks and cards it lacks are added
- * (so a new stack or help card never goes missing), the Home New Stack icon becomes the
- * built-in button it is now, and icons of stacks the reader made get the pile of cards.
+ * (so a new stack or help card never goes missing); when the save's own Home icons are not this
+ * version's set, they are replaced by this version's (the icons of stacks the reader made stay);
+ * and icons of stacks the reader made get the pile of cards.
  */
 export function upgrade(doc: StacksDoc, defaults: StacksDoc): StacksDoc {
   const next = withMissingCards(withMissingStacks(doc, defaults), defaults);
-  const icon = next.stacks.find((s) => s.id === 'home')?.cards[0]?.buttons.find((b) => b.id === 'b-home-new');
-  const fresh = defaults.stacks.find((s) => s.id === 'home')?.cards[0]?.buttons.find((b) => b.id === 'b-home-new');
-  if (icon && fresh && !icon.builtin) Object.assign(icon, { builtin: fresh.builtin, script: fresh.script, sentence: fresh.sentence });
-  // Icons of stacks the reader made used to share New Stack's sparkle; they are a pile of cards now.
-  for (const b of next.stacks.find((s) => s.id === 'home')?.cards[0]?.buttons ?? []) {
-    if (b.icon === 'sparkle' && b.id !== 'b-home-new') b.icon = 'cards';
+  const home = next.stacks.find((s) => s.id === 'home')?.cards[0];
+  const fresh = defaults.stacks.find((s) => s.id === 'home')?.cards[0];
+  if (home && fresh) {
+    const own = (b: ButtonDoc) => b.id.startsWith('b-home-');
+    const ids = (bs: ButtonDoc[]) => bs.filter(own).map((b) => b.id).sort().join(' ');
+    // Only an older set is replaced, so a Home icon the reader edited stays edited.
+    if (ids(home.buttons) !== ids(fresh.buttons)) home.buttons = [...copy(fresh.buttons), ...home.buttons.filter((b) => !own(b))];
+    // Icons of stacks the reader made used to share New Stack's sparkle; they are a pile of cards now.
+    for (const b of home.buttons) if (b.icon === 'sparkle' && !own(b)) b.icon = 'cards';
   }
   return next;
 }
