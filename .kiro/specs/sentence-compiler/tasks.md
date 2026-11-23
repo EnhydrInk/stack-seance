@@ -110,7 +110,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - Card name lists unique ignoring case, with one empty name sometimes. `newCardCandidateArb`, then `compile` with a fake `ask` that plays the candidate and then refuses. When the result is `ok: true`, the existing names followed by `result.newCards` are unique, checked with the test's own `toLowerCase` set.
     - **Validates: Requirements 3.4, 4.4, 13.4, 13.5**
 
-- [ ] 7. Checkpoint - Ensure all tests pass
+- [x] 7. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 8. The Worker
