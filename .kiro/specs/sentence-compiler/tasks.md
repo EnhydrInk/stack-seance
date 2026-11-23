@@ -35,8 +35,8 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - `readReplyObject`: valid objects of both kinds; `null` for text that is not JSON, an array, a missing field, an extra field and a wrong type.
     - _Requirements: 1.2, 2.2, 2.3, 2.4, 2.5, 2.6, 4.10, 14.6_
 
-- [ ] 3. The rule checker
-  - [ ] 3.1 Write `src/compiler/references.ts`
+- [-] 3. The rule checker
+  - [x] 3.1 Write `src/compiler/references.ts`
     - `collectReferences(script)` as "references.ts" describes. It visits every handler with a fresh state (first `go` line, first `go to stack` line). An `if` visits its condition with the incoming state, walks both branches from that state, and merges by taking the smaller line that is set. A `go` visits its target before the move. Field and button references come from `put … field`, `show`, `hide` and every `field` expression node.
     - Literal_Targets with `paren` removed: `str`, `num`, `bool`. Card targets become `cardNumber` (`num`, or `str` with `looksNumeric`, value `Number(value)`) or `cardName`. Stack text: the string, `String(n)`, or `true`/`false`.
     - Uses only the AST types and positions from the Public_API.
