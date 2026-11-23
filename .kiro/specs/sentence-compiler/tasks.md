@@ -87,8 +87,8 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
 - [x] 5. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 6. Correctness properties
-  - [ ] 6.1 Write `test/compiler/helpers/arbitraries.ts` and the generator cross-checks
+- [-] 6. Correctness properties
+  - [x] 6.1 Write `test/compiler/helpers/arbitraries.ts` and the generator cross-checks
     - `requestArb`, `validReplyArb(request)`, `brokenReplyArb(request)` with its rule tag, and `stepsArb(request)`, as "Helpers" describes. Valid scripts are trees without positions written with `print` from the Public_API: an optional part naming fields and buttons, then gos, then statements that name nothing, with at most one `go to stack` at the end of the go part. Fresh names are filtered to differ, ignoring case, from every name in the request and the reply.
     - Rule 10 breakers are only text that is not JSON, a JSON array, and a Nothing_Reply with a script or with no skipped phrase.
     - `newCardCandidateArb(cardNames)` for P3: a Button_Reply whose newCards draws from names in the list in other case, repeats in other case, `"3"`, and fresh names, each used by a `go to card` in its script.
