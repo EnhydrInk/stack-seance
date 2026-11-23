@@ -207,4 +207,8 @@
 ## sentence-compiler, task 2.2: Write `src/compiler/names.ts`
 - Done: `sameName`, `findSameName` (an empty entry never matches), `looksNumeric` (the R11.4 pattern, copied because the interpreter does not export it), `isAsciiText`, `englishNameProblems` with the 5 problems in the design's order and wording (an empty string gives only `is empty`), and `quote` (`JSON.stringify` after cutting to 80 code units plus `…`). Typecheck passes in all 4 projects.
 - Kiro: requirements 4.4, 4.7, 4.9 and 4.12; the glossary's English_name and Same_Name definitions turned into one function each.
-- Why it matters: every rule report quotes and compares names the same way, and the interpreter's own case rule.
+- Why it matters: every rule report quotes and compares names the same way, with the interpreter's own case rule.
+## sentence-compiler, task 2.3: Write `src/compiler/schema.ts`
+- Done: `REPLY_SCHEMA` as the design gives it: 5 required properties in the order `hasButton`, `script`, `newCards`, `label`, `skipped`, `additionalProperties: false`, and no length, pattern, item-count or union keyword and no reasoning field. `ReplyObject` and `readReplyObject(text)`, which gives `null` unless `JSON.parse` succeeds on a non-array object whose keys are exactly the 5 fields, each of its type. Typecheck passes in all 4 projects.
+- Kiro: requirements 4.10, 6.7 and 7.2; the design's decision to keep limits in code rather than in schema keywords that structured outputs reject.
+- Why it matters: the model is held to one flat shape, and anything else is one clear Rule 10 report.

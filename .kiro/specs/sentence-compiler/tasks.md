@@ -25,7 +25,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
   - [x] 2.2 Write `src/compiler/names.ts`
     - `sameName`, `findSameName` (an empty entry never matches), `looksNumeric` (the R11.4 pattern), `isAsciiText`, `englishNameProblems` with the exact wording and order of "names.ts", and `quote` (`JSON.stringify` after cutting to 80 code units plus `…`).
     - _Requirements: 4.4, 4.7, 4.9, 4.12_
-  - [ ] 2.3 Write `src/compiler/schema.ts`
+  - [x] 2.3 Write `src/compiler/schema.ts`
     - `REPLY_SCHEMA` exactly as "schema.ts" gives it: five required properties in that order, `additionalProperties: false`, no length, pattern or union keywords, and no reasoning field.
     - `ReplyObject` and `readReplyObject(text)`: `null` unless `JSON.parse` succeeds and gives a non-array object whose keys are exactly the five fields, each of its type.
     - _Requirements: 4.10, 6.7, 7.2_
