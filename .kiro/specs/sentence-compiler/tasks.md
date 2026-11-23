@@ -129,7 +129,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - `test/worker/helpers/accessKeys.ts`: an RSA key pair from `jose`'s `generateKeyPair('RS256')`, a `kid`, `createLocalJWKSet`, and `signToken(claims, options)` for tests. No `createRemoteJWKSet` in tests.
     - Tests: a valid token is accepted. Rejected: a missing header, another key's signature, a wrong `aud`, a wrong `iss`, an expired token, `nbf` in the future, no `exp`, an `alg: none` token, an empty `aud`, and a key set that throws. `accessRequired` is false only for `"false"`, and true for missing, `"true"`, `"False"` and `""`.
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 14.5_
-  - [ ] 8.3 Write `worker/src/ask.ts` and `test/worker/ask.test.ts`
+  - [x] 8.3 Write `worker/src/ask.ts` and `test/worker/ask.test.ts`
     - `MODEL`, `MAX_TOKENS = 8000`, `AskOptions` and `makeAsk(options)`, as "worker/src/ask.ts" describes.
       - A missing or empty `apiKey` makes every call reject with `Error('ANTHROPIC_API_KEY is not set')` before any SDK client exists.
       - Otherwise the client is made on the first call with `maxRetries: 0` and the timeout, and with `fetch` when given.
