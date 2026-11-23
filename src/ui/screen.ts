@@ -152,7 +152,7 @@ export class Screen implements Stage {
     });
   }
 
-  ask(message: string): Promise<string | null> {
+  ask(message: string, maxLength?: number): Promise<string | null> {
     return new Promise((resolve) => {
       const box = el('form', 'dialog');
       box.setAttribute('role', 'dialog');
@@ -160,6 +160,7 @@ export class Screen implements Stage {
       msg.textContent = message;
       const input = el('input', 'answer-input') as HTMLInputElement;
       input.type = 'text';
+      if (maxLength) input.maxLength = maxLength;
       input.setAttribute('aria-label', message);
       const row = el('div', 'buttons');
       const cancel = el('button', 'dbtn') as HTMLButtonElement;

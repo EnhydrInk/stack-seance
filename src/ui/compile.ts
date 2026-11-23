@@ -6,6 +6,9 @@ import type { Model } from './model';
 /** The longest sentence the compiler takes. */
 export const MAX_SENTENCE = 500;
 
+/** The longest stack, card, field or button name the compiler takes. */
+export const MAX_NAME = 100;
+
 export interface CompileRequest {
   sentence: string;
   stackName: string;

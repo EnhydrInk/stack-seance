@@ -2,7 +2,7 @@
 // what is there (drag, delete, edit text), recompile a button from its edited sentence, and
 // make a new stack.
 
-import { compileSentence, MAX_SENTENCE, requestFor, type CompileResponse } from './compile';
+import { compileSentence, MAX_NAME, MAX_SENTENCE, requestFor, type CompileResponse } from './compile';
 import type { Model } from './model';
 import type { Runner } from './runner';
 import { CARD_H, CARD_W, type Screen } from './screen';
@@ -151,6 +151,9 @@ export class Authoring {
       case 'unauthorized':
         this.screen.boo("The spirits don't know you. Reload the page and sign in again.");
         return;
+      case 'bad-request':
+        this.screen.boo('Boo… this stack has grown too big for the spirits to read.');
+        return;
       default:
         this.screen.boo('The séance failed. Try again.');
     }
@@ -262,7 +265,7 @@ export class Authoring {
 
   async newStack(): Promise<void> {
     if (this.runner.running) return;
-    const answer = await this.screen.ask('Name your new stack:');
+    const answer = await this.screen.ask('Name your new stack:', MAX_NAME);
     const name = answer?.trim();
     if (!name) return;
     if (name.includes('"')) {
