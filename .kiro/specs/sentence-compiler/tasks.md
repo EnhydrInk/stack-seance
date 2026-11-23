@@ -94,7 +94,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - `newCardCandidateArb(cardNames)` for P3: a Button_Reply whose newCards draws from names in the list in other case, repeats in other case, `"3"`, and fresh names, each used by a `go to card` in its script.
     - Cross-checks, two example tests over a fixed seed with 1,000 samples each and no coverage thresholds: every `validReplyArb` reply passes `checkReply`, and every `brokenReplyArb` reply fails it with a report for its tagged rule.
     - _Requirements: 13.1, 13.2, 13.4_
-  - [ ] 6.2 Write the P1 property in `test/compiler/safety.property.test.ts`
+  - [x] 6.2 Write the P1 property in `test/compiler/safety.property.test.ts`
     - **Property 1: Safety (P1 safety)**
     - Test name starts with "P1 safety", with the comment `Feature: sentence-compiler, Property 1: Safety`. 300 runs.
     - The expected outcome comes from the step tags as the design's Property 1 describes, never from `checkReply`. Also check the number of calls, that later steps are never played, the same `system` and `schema` on every call, the messages growing only by the same `turn` object plus a message holding `Rule <n>:` for the tagged rule.
