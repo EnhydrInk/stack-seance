@@ -186,7 +186,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
 
 - [ ] 6. Fix Bug 2: log a failed SDK call in `worker/src/ask.ts`
 
-  - [~] 6.1 Implement the failure entry
+  - [x] 6.1 Implement the failure entry
     - Line 3 becomes `import Anthropic, { APIError, type ClientOptions } from '@anthropic-ai/sdk';`
     - Add the exported `FAILURE_EVENT = 'model-call-failed'` with its doc comment from design
     - In `makeAsk`, keep the key check and the client construction outside any `try` (3.13). Compute `const body = requestBody(input);` on the line before the SDK call, and wrap only `client.beta.messages.create(body)`. On a rejection, call `options.log(failureEntry(error))`, then `throw error`, the same object (3.14). `usageEntry` and `toModelReply` stay after the `try` (3.12)

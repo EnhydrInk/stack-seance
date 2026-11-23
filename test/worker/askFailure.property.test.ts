@@ -114,8 +114,7 @@ function answer(c: Case): Response {
 describe('Property 3: A failed SDK call writes one failure entry and rejects with the same error', () => {
   // Feature: worker-body-limit-and-model-error-log-fix, Property 3: A failed SDK call writes one failure entry and rejects with the same error
   // **Validates: Requirements 2.3, 2.5, 3.14**
-  // fails until task 6.1 fixes bug 2
-  it.fails(
+  it(
     'P3 through the real SDK: any API error answer from 400 to 599 logs exactly the entry built from its status, type and class',
     async () => {
       await fc.assert(

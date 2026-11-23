@@ -65,8 +65,7 @@ async function failOnce(row: FailureRow) {
 }
 
 describe('Property 3, bugfix 2.3 to 2.5 a failed SDK call writes one failure entry and rejects with the same error', () => {
-  // fails until task 6.1 fixes bug 2
-  it.fails.each(FAILURE_ROWS)('$name: logs exactly the failure entry, and rejects with the SDK error unwrapped', async (row) => {
+  it.each(FAILURE_ROWS)('$name: logs exactly the failure entry, and rejects with the SDK error unwrapped', async (row) => {
     const { rejection, calls, logs } = await failOnce(row);
 
     expect(rejection).toBeInstanceOf(row.rejects);
@@ -100,8 +99,7 @@ function wired(fetch: FakeFetch, timeoutMs: number | undefined) {
 const REQUEST_LINE = { event: 'request', status: 502, error: 'model', calls: [{ call: 1, result: 'failed' }] };
 
 describe('Property 3, bugfix 2.3, 2.4 and 3.14 through handle, wired as worker/src/index.ts wires it', () => {
-  // fails until task 6.1 fixes bug 2
-  it.fails.each([AUTHENTICATION, CONNECTION, TIMEOUT])(
+  it.each([AUTHENTICATION, CONNECTION, TIMEOUT])(
     '$name: 502 model, counted once, one fetch, and the failure entry before the request line',
     async (row) => {
       const { fetch, calls } = apiFetch(row.respond);
