@@ -33,8 +33,8 @@ describe('making things', () => {
     const m = fresh();
     m.goToStack('haunted');
     const before = m.stack.cards.length;
-    m.addCards(['Lantern']);
-    m.addCards(['lantern', 'Lantern']);
+    expect(m.addCards(['Lantern'])).toEqual(['Lantern']);
+    expect(m.addCards(['lantern', 'Lantern'])).toEqual([]);
     expect(m.stack.cards.length).toBe(before + 1);
   });
 
@@ -54,9 +54,24 @@ describe('making things', () => {
     const card = m.card.id;
     const other = fresh();
     other.addStack('North Post');
-    m.adopt(copy(other.doc));
+    const told: string[] = [];
+    m.onChange((c) => told.push(c));
+    expect(m.adopt(copy(other.doc))).toBe(false);
+    expect(told).toEqual([]);
     expect(m.card.id).toBe(card);
     expect(m.doc.stacks.some((s) => s.name === 'North Post')).toBe(true);
+  });
+
+  it('redraws after another tab saved only when the card on screen changed there', () => {
+    const m = fresh();
+    m.goToStack('haunted');
+    const other = copy(m.doc);
+    other.stacks.find((s) => s.id === 'haunted')!.cards[0]!.fields[0]!.text = 'Changed elsewhere';
+    const told: string[] = [];
+    m.onChange((c) => told.push(c));
+    expect(m.adopt(other)).toBe(true);
+    expect(told).toEqual(['place']);
+    expect(m.card.fields[0]!.text).toBe('Changed elsewhere');
   });
 
   it('gives stacks the reader made a pile of cards on Home, old saves too', () => {

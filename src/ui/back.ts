@@ -132,7 +132,7 @@ export function renderBack(
     });
     // A new line starts where the one above it did; Tab indents by two spaces.
     textarea.addEventListener('keydown', (e) => {
-      if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.isComposing || e.keyCode === 229 || e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === 'Enter') {
         const start = textarea.value.lastIndexOf('\n', textarea.selectionStart - 1) + 1;
         const indent = /^[ \t]*/.exec(textarea.value.slice(start))![0];

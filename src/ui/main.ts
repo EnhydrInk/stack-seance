@@ -48,6 +48,8 @@ const runner = new Runner(
   },
 );
 document.addEventListener('keydown', (e) => {
+  // Escape while an input method is composing (in an ask dialog) cancels the composition only.
+  if (e.isComposing || e.keyCode === 229) return;
   if (e.key === 'Escape' || ((e.metaKey || e.ctrlKey) && e.key === '.')) runner.stop();
 });
 screen.onClick = (b) => {
@@ -64,8 +66,7 @@ model.onChange((change) => {
 // Another tab saved: this tab takes its stacks, so its own next save does not undo them.
 window.addEventListener('storage', (e) => {
   if (e.key !== AUTOSAVE || !e.newValue) return;
-  model.adopt(upgrade(JSON.parse(e.newValue) as StacksDoc, defaults as StacksDoc));
-  screen.refreshBack();
+  if (model.adopt(upgrade(JSON.parse(e.newValue) as StacksDoc, defaults as StacksDoc))) screen.refreshBack();
 });
 
 /** A move the reader asks for from the menu: change the card, then run its openCard. */

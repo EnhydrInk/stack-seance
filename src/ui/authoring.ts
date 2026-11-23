@@ -35,6 +35,12 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text 
   return e;
 }
 
+/** A script that names its button by the compiler's label, made to name it by the name it got. */
+function renamed(script: string, from: string, to: string): string {
+  const quoted = from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return script.replace(new RegExp(`(button\\s+)"${quoted}"`, 'gi'), (_, pre: string) => `${pre}"${to}"`);
+}
+
 /** What the ghost says about parts of a sentence the spirits could not do. */
 function couldNot(skipped: string[]): string {
   return skipped.length > 1 ? `${skipped.slice(0, -1).join(', ')} or ${skipped.at(-1)}` : (skipped[0] ?? 'that');
@@ -53,13 +59,16 @@ export class Authoring {
     /** Changes the card on screen and runs the new card's openCard. */
     private readonly navigate: (move: () => void) => Promise<void>,
   ) {
+    let shown = model.card.id;
     model.onChange((change) => {
       // A spot or a sentence not yet sent belongs to the card it was made on: moving on drops it.
-      if (change === 'place') this.cancelPlace?.();
+      if (change === 'place' && model.card.id !== shown) this.cancelPlace?.();
+      shown = model.card.id;
       if (change !== 'text') this.drawHandles();
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key !== 'Escape') return;
+      // Escape while an input method is composing cancels the composition, nothing more.
+      if (e.key !== 'Escape' || e.isComposing || e.keyCode === 229) return;
       if (this.cancelPlace) this.cancelPlace();
       else if (this.arranging && !(document.activeElement as HTMLElement | null)?.isContentEditable) this.setArranging(false);
     });
@@ -91,7 +100,7 @@ export class Authoring {
     );
     const done = () => {
       overlay.remove();
-      this.cancelPlace = undefined;
+      if (this.cancelPlace === done) this.cancelPlace = undefined;
     };
     const put = ([x, y]: [number, number]) => {
       done();
@@ -143,7 +152,7 @@ export class Authoring {
     const close = () => {
       box.remove();
       marker.remove();
-      this.cancelPlace = undefined;
+      if (this.cancelPlace === close) this.cancelPlace = undefined;
     };
     this.cancelPlace = close;
     cancel.addEventListener('click', close);
@@ -161,50 +170,55 @@ export class Authoring {
       if (!sentence) return;
       this.cancelPlace = undefined;
       // The button grows where it was placed, even if the reader moves on while the spirits write.
-      const { stack, card } = this.model;
+      const cardId = this.model.card.id;
       const writing = spiritsWriting();
       box.replaceChildren(writing.el);
       box.classList.add('waiting');
       const reply = await compileSentence(requestFor(this.model, sentence));
       writing.stop();
-      if (reply.ok) {
+      // Found again by id: another tab may have handed this one new stacks meanwhile.
+      const home = this.model.cardById(cardId);
+      if (reply.ok && home) {
         close();
-        this.model.addCards(reply.newCards, stack);
+        const grown = this.model.addCards(reply.newCards, home.stack);
         // Another grow on this card may have taken the label while the spirits wrote.
-        const name = this.model.freeButtonName(reply.label, card);
+        const name = this.model.freeButtonName(reply.label, home.card);
         this.model.addButton(
           {
             name,
             rect: fitLabel(rect, name),
             visible: true,
             sentence,
-            script: reply.script,
+            script: name === reply.label ? reply.script : renamed(reply.script, reply.label, name),
             ...(reply.skipped.length ? { skipped: reply.skipped } : {}),
             style: 'roundrect',
           },
-          card,
+          home.card,
         );
         // Grown while the reader looked at the back: the back shows it too.
         this.screen.refreshBack();
-      } else if (this.model.card !== card) {
-        // The reader moved on while the spirits wrote: the box does not follow them.
-        close();
-      } else {
+        this.tell(reply, grown);
+        return;
+      }
+      if (!reply.ok && this.model.card.id === cardId && !this.cancelPlace) {
         // The sentence stays, so the reader can change it and try again.
         box.classList.remove('waiting');
         box.replaceChildren(input, row);
         this.cancelPlace = close;
         input.focus();
+      } else {
+        // The reader moved on, or is placing something else: the box does not follow them.
+        close();
       }
       this.tell(reply);
     });
     input.focus();
   }
 
-  /** The ghost's news after a compile: new cards, skipped parts, nothing done, or a failure. */
-  private tell(reply: CompileResponse): void {
+  /** The ghost's news after a compile: new cards (`grown`), skipped parts, nothing done, or a failure. */
+  private tell(reply: CompileResponse, grown: string[] = []): void {
     if (reply.ok) {
-      const grew = reply.newCards.length ? ` A new card grew: ${reply.newCards.join(', ')}.` : '';
+      const grew = grown.length ? ` A new card grew: ${grown.join(', ')}.` : '';
       if (reply.skipped.length) this.screen.boo(`Boo… the spirits can't ${couldNot(reply.skipped)} yet. Everything else is done!${grew}`);
       else if (grew) this.screen.boo(grew.trim());
       return;
@@ -231,24 +245,27 @@ export class Authoring {
 
   /** True when the button was written again; on a failure the back keeps the edited sentence. */
   async recompile(buttonId: string, sentence: string): Promise<boolean> {
-    const { stack, card } = this.model;
-    const button = card.buttons.find((b) => b.id === buttonId);
-    if (!button) return false;
     const reply = await compileSentence(requestFor(this.model, sentence, buttonId));
-    if (reply.ok) {
-      // The new script may name the button by its new label (the compiler's Rule 6).
-      button.name = this.model.freeButtonName(reply.label, card, buttonId);
-      if (button.style === 'roundrect') button.rect = fitLabel(button.rect, button.name);
-      button.sentence = sentence;
-      button.script = reply.script;
-      if (reply.skipped.length) button.skipped = reply.skipped;
-      else delete button.skipped;
-      this.model.addCards(reply.newCards, stack);
-      this.model.changed('content');
-      this.screen.refreshBack();
+    // Found again by id: another tab may have handed this one new stacks meanwhile.
+    const owner = this.model.owner(buttonId);
+    if (!reply.ok || owner?.kind !== 'button') {
+      this.tell(reply);
+      return false;
     }
-    this.tell(reply);
-    return reply.ok;
+    const { stack, card, button } = owner;
+    // The new script may name the button by its new label (the compiler's Rule 6).
+    const name = this.model.freeButtonName(reply.label, card, buttonId);
+    button.name = name;
+    if (button.style === 'roundrect') button.rect = fitLabel(button.rect, name);
+    button.sentence = sentence;
+    button.script = name === reply.label ? reply.script : renamed(reply.script, reply.label, name);
+    if (reply.skipped.length) button.skipped = reply.skipped;
+    else delete button.skipped;
+    const grown = this.model.addCards(reply.newCards, stack);
+    this.model.changed('content');
+    this.screen.refreshBack();
+    this.tell(reply, grown);
+    return true;
   }
 
   // ---- text
