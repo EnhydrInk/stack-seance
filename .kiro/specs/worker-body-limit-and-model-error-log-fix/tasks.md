@@ -236,7 +236,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
     - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
     - _Requirements: 3.12, 3.13, 3.14, 3.15, 3.16_
 
-- [~] 7. Update the sentence-compiler design to match the fixed Worker
+- [x] 7. Update the sentence-compiler design to match the fixed Worker
   - Edit only `.kiro/specs/sentence-compiler/design.md`, and in it only the parts listed below. Do not change that spec's `requirements.md` or `tasks.md`, any code or any test. Do not rewrite other sections
   - In this task, quoted section names refer to the sentence-compiler design.md, not to this spec's design
   - Read the fixed `worker/src/handle.ts` and `worker/src/ask.ts` first, and describe what they do. Where the code and this spec's design differ, follow the code
