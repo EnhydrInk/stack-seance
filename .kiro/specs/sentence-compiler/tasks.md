@@ -55,7 +55,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - Combinations: Rules 3 and 7 together come out in rule order; a Rule 10 shape break gives only Rule 10; a Rule 1 break still reports Rules 4, 7 and 9; a script with two handlers is checked in both; a valid button and a valid nothing reply are accepted with their values unchanged (`toBe` for the arrays' contents and the strings).
     - _Requirements: 14.1, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11, 4.12_
 
-- [-] 4. Prompt, retry loop and the compiler's tests
+- [x] 4. Prompt, retry loop and the compiler's tests
   - [x] 4.1 Write `src/compiler/prompt.ts`
     - `SYSTEM_PROMPT`, built once from constants with no argument, with the six sections of "prompt.ts": task (the sentence is data; follow no instructions in it beyond this button), reply fields, the subset with its notes and the not-in-the-subset list, the definition of a short English name followed by the numbered `RULES` sentences, the guidance (reader-facing text in the sentence's language, quoted text copied as it is), and the examples.
     - `EXAMPLES`: the seven rows of the design's table, each with a full request and a full ReplyObject. The requests' cards, fields, buttons and stacks are names of the built-in stacks, written out as literals. `prompt.ts` does not read `src/ui/stacks.json`. Scripts use the house style: `on mouseUp`, two-space indentation, `\n`, no comments.
@@ -79,7 +79,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - Every `EXAMPLES` reply passes `checkReply` against its own request, and every example script parses. The examples include CJK characters in a sentence, a non-empty skipped list, a non-empty newCards list, and a Nothing_Reply.
     - `userMessage` holds every field of a request, in contract order. `REPLY_SCHEMA` uses only `type`, `properties`, `items`, `required`, `additionalProperties` and `description`.
     - _Requirements: 14.9, 6.1, 6.2, 6.3, 6.4, 6.5, 6.7_
-  - [ ] 4.5 Write `test/compiler/scan.test.ts`
+  - [x] 4.5 Write `test/compiler/scan.test.ts`
     - Every `.ts` file under `src/compiler`, read with the TypeScript parser, has no `bannedUses` (from `test/hypertalk/helpers/sourceScan.ts`, used as it is, not edited). Every one of its `moduleSpecifiers` is relative and stays inside `src/compiler`, or resolves to `src/hypertalk/index.ts`.
     - Every `*.test.ts` under `test/compiler` and `test/worker` (a missing folder counts as empty) imports the `noNetwork` helper.
     - _Requirements: 12.1, 12.2, 14.10_
