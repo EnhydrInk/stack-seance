@@ -17,8 +17,8 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
   - Done when the suite and the type check pass. The Worker config already checks `src/hypertalk` under the Workers types. If those types clash with anything there, stop and report.
   - _Requirements: 12.1, 12.6, 14.10_
 
-- [ ] 2. Contract, names and the reply schema
-  - [ ] 2.1 Write `src/compiler/contract.ts` and `src/compiler/model.ts`
+- [-] 2. Contract, names and the reply schema
+  - [x] 2.1 Write `src/compiler/contract.ts` and `src/compiler/model.ts`
     - `CompileRequest` and `CompileResponse` copied exactly from requirements.md. `CompileOutcome`, `REQUEST_LIMITS` and `readCompileRequest`, as "contract.ts" describes: a non-array object, field types, sentence 1 to 500 code units with a `/\S/` character, at most 100 names per list, at most 100 code units per name, empty strings allowed, new arrays, unknown fields dropped.
     - `Message`, `ModelInput`, `ModelReply`, `Ask` and `CallEvent`, as "model.ts" describes. `CallEvent` uses the `RuleNumber` type, which can live here, or in `rules.ts` with a type-only import.
     - _Requirements: 1.2, 2.2, 2.3, 2.4, 2.5, 2.6, 12.3_
