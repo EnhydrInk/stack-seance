@@ -184,7 +184,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
     - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions). Task 3's tests still fail inside their `it.fails` markers, which shows the Bug 1 fix left the Ask alone
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11_
 
-- [ ] 6. Fix Bug 2: log a failed SDK call in `worker/src/ask.ts`
+- [x] 6. Fix Bug 2: log a failed SDK call in `worker/src/ask.ts`
 
   - [x] 6.1 Implement the failure entry
     - Line 3 becomes `import Anthropic, { APIError, type ClientOptions } from '@anthropic-ai/sdk';`
@@ -229,7 +229,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
     - **EXPECTED OUTCOME**: The task 3 tests PASS (confirms Bug 2 is fixed)
     - _Requirements: 2.3, 2.4, 2.5_
 
-  - [~] 6.4 Verify the Bug 2 preservation tests still pass
+  - [x] 6.4 Verify the Bug 2 preservation tests still pass
     - **Property 4: Preservation** - Ask calls that do not fail send, log and return as before
     - **IMPORTANT**: Re-run the SAME tests from task 4. Do NOT write new tests
     - Run `npx vitest --run test/worker`. This covers task 4's tests, the unchanged `test/worker/ask.test.ts` (3.12, 3.13, 3.15), and the Bug 1 tests of tasks 1, 2 and 5.2
