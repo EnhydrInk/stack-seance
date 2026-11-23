@@ -3,5 +3,11 @@
   "compilerOptions": {
     "types": ["node"]
   },
-  "include": ["src/hypertalk/**/*.ts", "test/hypertalk/**/*.ts"]
+  "include": [
+    "src/hypertalk/**/*.ts",
+    "test/hypertalk/**/*.ts",
+    "src/compiler/**/*.ts",
+    "test/compiler/**/*.ts",
+    "test/worker/**/*.ts"
+  ]
 }

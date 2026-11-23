@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "isolatedModules": true
   },
-  "include": ["src/hypertalk/**/*.ts"]
+  "include": ["src/hypertalk/**/*.ts", "src/compiler/**/*.ts"]
 }
