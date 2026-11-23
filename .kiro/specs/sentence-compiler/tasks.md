@@ -84,7 +84,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - Every `*.test.ts` under `test/compiler` and `test/worker` (a missing folder counts as empty) imports the `noNetwork` helper.
     - _Requirements: 12.1, 12.2, 14.10_
 
-- [ ] 5. Checkpoint - Ensure all tests pass
+- [x] 5. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 6. Correctness properties
