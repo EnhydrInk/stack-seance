@@ -113,8 +113,8 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
 - [x] 7. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. The Worker
-  - [ ] 8.1 Write `worker/src/http.ts` and `worker/src/limits.ts`, with `test/worker/limits.test.ts`
+- [-] 8. The Worker
+  - [x] 8.1 Write `worker/src/http.ts` and `worker/src/limits.ts`, with `test/worker/limits.test.ts`
     - `http.ts`: `json(body)` with the status table and the two headers, and `notFound()` with `Not found` as `text/plain`. No CORS headers.
     - `limits.ts`: `Limits`, `TakeResult`, `CountStore`, `readLimits` (`/^\d+$/`, else 20 and 200), `clientKey` (missing header gives `unknown`; IPv4 as written; IPv6 expanded, first four groups lowercase without leading zeros, then `::/64`), and `take` with the four steps of "worker/src/limits.ts". On a new day it collects the old keys with `Array.from(store.list({ prefix: 'ip:' }), ([key]) => key)` before deleting any.
     - `test/worker/helpers/memoryStore.ts`: a `Map`-backed `CountStore` whose `list` returns sorted entries for a prefix.
