@@ -29,6 +29,36 @@ describe('making things', () => {
     expect(m.card.buttons.some((b) => b.name === 'To the cellar')).toBe(false);
   });
 
+  it('grows a card only once when two compiles ask for the same new card', () => {
+    const m = fresh();
+    m.goToStack('haunted');
+    const before = m.stack.cards.length;
+    m.addCards(['Lantern']);
+    m.addCards(['lantern', 'Lantern']);
+    expect(m.stack.cards.length).toBe(before + 1);
+  });
+
+  it('gives a grown button a name no other button on its card has', () => {
+    const m = fresh();
+    m.goToStack('haunted');
+    const taken = m.card.buttons[0]!;
+    expect(m.freeButtonName('Nobody here')).toBe('Nobody here');
+    expect(m.freeButtonName(taken.name.toUpperCase())).toBe(`${taken.name.toUpperCase()} 2`);
+    expect(m.freeButtonName(taken.name, m.card, taken.id)).toBe(taken.name);
+  });
+
+  it('takes the stacks another tab saved and stays on the same card', () => {
+    const m = fresh();
+    m.goToStack('haunted');
+    m.goToCard(1);
+    const card = m.card.id;
+    const other = fresh();
+    other.addStack('North Post');
+    m.adopt(copy(other.doc));
+    expect(m.card.id).toBe(card);
+    expect(m.doc.stacks.some((s) => s.name === 'North Post')).toBe(true);
+  });
+
   it('makes a new stack with one card and an icon on Home that goes to it', () => {
     const m = fresh();
     const s = m.addStack('Pumpkin Party');

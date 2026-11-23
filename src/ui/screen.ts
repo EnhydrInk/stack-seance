@@ -29,6 +29,8 @@ export class Screen implements Stage {
   private readonly notice: HTMLElement;
   private pending: Promise<void> = Promise.resolve();
   private backHandle: BackHandle | undefined;
+  /** Closes the answer or ask dialog on screen, when there is one. */
+  private closeDialog: (() => void) | undefined;
   flipped = false;
 
   /** Set by main: what a click on a button does. */
@@ -133,6 +135,11 @@ export class Screen implements Stage {
 
   // ---- dialogs
 
+  /** Closes the open answer or ask dialog, for a script the reader stopped. */
+  dismiss(): void {
+    this.closeDialog?.();
+  }
+
   answer(message: string, labels: string[]): Promise<string> {
     return new Promise((resolve) => {
       const box = el('div', 'dialog');
@@ -140,13 +147,16 @@ export class Screen implements Stage {
       const msg = el('p', 'message');
       msg.textContent = message;
       const row = el('div', 'buttons');
+      const done = (label: string) => {
+        box.remove();
+        this.closeDialog = undefined;
+        resolve(label);
+      };
+      this.closeDialog = () => done('');
       labels.forEach((label, i) => {
         const b = el('button', i === labels.length - 1 ? 'dbtn default' : 'dbtn');
         b.textContent = label;
-        b.addEventListener('click', () => {
-          box.remove();
-          resolve(label);
-        });
+        b.addEventListener('click', () => done(label));
         row.appendChild(b);
       });
       box.append(msg, row);
@@ -176,8 +186,10 @@ export class Screen implements Stage {
       box.append(msg, input, row);
       const done = (value: string | null) => {
         box.remove();
+        this.closeDialog = undefined;
         resolve(value);
       };
+      this.closeDialog = () => done(null);
       cancel.addEventListener('click', () => done(null));
       box.addEventListener('submit', (e) => {
         e.preventDefault();

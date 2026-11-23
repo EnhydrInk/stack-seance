@@ -23,6 +23,8 @@ export interface ButtonDoc {
   /** The plain-language sentence this script came from. */
   sentence: string;
   script: string;
+  /** Parts of the sentence the last compile could not do (the ghost's sign), shown on the back. */
+  skipped?: string[];
   /** 'roundrect' is the HyperCard button with a pumpkin; 'icon' is a Home stack icon. */
   style: 'roundrect' | 'icon';
   /** Pixel art drawn on an icon button. */

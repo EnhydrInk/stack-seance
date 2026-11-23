@@ -48,6 +48,8 @@ export class Authoring {
     private readonly navigate: (move: () => void) => Promise<void>,
   ) {
     model.onChange((change) => {
+      // A spot or a sentence not yet sent belongs to the card it was made on: moving on drops it.
+      if (change === 'place') this.cancelPlace?.();
       if (change !== 'text') this.drawHandles();
     });
     document.addEventListener('keydown', (e) => {
@@ -67,25 +69,39 @@ export class Authoring {
     if (!this.ready()) return;
     this.cancelPlace?.();
     const overlay = el('div', 'place-overlay');
+    overlay.tabIndex = 0;
+    overlay.setAttribute('aria-label', kind === 'button' ? 'Place the new button' : 'Place the new text');
     overlay.appendChild(
-      el('span', 'place-hint', kind === 'button' ? 'Click where the button should grow · Esc to cancel' : 'Click where the text goes · Esc to cancel'),
+      el(
+        'span',
+        'place-hint',
+        kind === 'button' ? 'Click where the button should grow · Enter for the middle · Esc to cancel' : 'Click where the text goes · Enter for the middle · Esc to cancel',
+      ),
     );
     const done = () => {
       overlay.remove();
       this.cancelPlace = undefined;
     };
-    overlay.addEventListener('click', (e) => {
+    const put = ([x, y]: [number, number]) => {
       done();
-      const [x, y] = this.screen.toCard(e);
       if (kind === 'text') {
         const f = this.model.addField(inside([x, y, ...TEXT_SIZE]));
         this.editText(f.id);
       } else {
         this.askSentence(inside([x, y, ...BUTTON_SIZE]));
       }
+    };
+    overlay.addEventListener('click', (e) => put(this.screen.toCard(e)));
+    // Without a pointer, Enter puts it in the middle of the card; Arrange can move it later.
+    overlay.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const [w, h] = kind === 'button' ? BUTTON_SIZE : TEXT_SIZE;
+      put([Math.round((CARD_W - w) / 2), Math.round((CARD_H - h) / 2)]);
     });
     this.cancelPlace = done;
     this.screen.layer.appendChild(overlay);
+    overlay.focus();
   }
 
   private askSentence(rect: Rect): void {
@@ -141,7 +157,23 @@ export class Authoring {
       if (reply.ok) {
         close();
         this.model.addCards(reply.newCards, stack);
-        this.model.addButton({ name: reply.label, rect: fitLabel(rect, reply.label), visible: true, sentence, script: reply.script, style: 'roundrect' }, card);
+        // Another grow on this card may have taken the label while the spirits wrote.
+        const name = this.model.freeButtonName(reply.label, card);
+        this.model.addButton(
+          {
+            name,
+            rect: fitLabel(rect, name),
+            visible: true,
+            sentence,
+            script: reply.script,
+            ...(reply.skipped.length ? { skipped: reply.skipped } : {}),
+            style: 'roundrect',
+          },
+          card,
+        );
+      } else if (this.model.card !== card) {
+        // The reader moved on while the spirits wrote: the box does not follow them.
+        close();
       } else {
         // The sentence stays, so the reader can change it and try again.
         box.classList.remove('waiting');
@@ -182,16 +214,18 @@ export class Authoring {
 
   /** True when the button was written again; on a failure the back keeps the edited sentence. */
   async recompile(buttonId: string, sentence: string): Promise<boolean> {
-    const { stack } = this.model;
-    const button = this.model.card.buttons.find((b) => b.id === buttonId);
+    const { stack, card } = this.model;
+    const button = card.buttons.find((b) => b.id === buttonId);
     if (!button) return false;
     const reply = await compileSentence(requestFor(this.model, sentence, buttonId));
     if (reply.ok) {
       // The new script may name the button by its new label (the compiler's Rule 6).
-      button.name = reply.label;
-      if (button.style === 'roundrect') button.rect = fitLabel(button.rect, reply.label);
+      button.name = this.model.freeButtonName(reply.label, card, buttonId);
+      if (button.style === 'roundrect') button.rect = fitLabel(button.rect, button.name);
       button.sentence = sentence;
       button.script = reply.script;
+      if (reply.skipped.length) button.skipped = reply.skipped;
+      else delete button.skipped;
       this.model.addCards(reply.newCards, stack);
       this.model.changed('content');
       this.screen.refreshBack();

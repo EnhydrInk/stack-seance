@@ -13,6 +13,8 @@ export interface Stage {
   settled(): Promise<void>;
   answer(message: string, labels: string[]): Promise<string>;
   ask(message: string): Promise<string | null>;
+  /** Closes the open answer or ask dialog. */
+  dismiss(): void;
   /** `from` is the button whose script is running, when there is one. */
   haunt(kind: HauntKind, from: ButtonDoc | undefined): Promise<void>;
 }
@@ -31,10 +33,14 @@ export class BrowserHost implements Host {
   stopped = false;
   private endWait: (() => void) | undefined;
 
-  /** Ends the running script: a wait ends at once, and the next wait, dialog, haunt or move throws. */
+  /**
+   * Ends the running script: a wait or an open dialog ends at once (the dialog's answer is not
+   * used), and the next wait, dialog, haunt or move throws.
+   */
   stop(): void {
     this.stopped = true;
     this.endWait?.();
+    this.stage.dismiss();
   }
 
   private guard(): void {
@@ -100,13 +106,17 @@ export class BrowserHost implements Host {
   async answer(message: string, labels: string[]): Promise<string> {
     await this.stage.settled();
     this.guard();
-    return this.stage.answer(message, labels);
+    const choice = await this.stage.answer(message, labels);
+    this.guard();
+    return choice;
   }
 
   async ask(message: string): Promise<string | null> {
     await this.stage.settled();
     this.guard();
-    return this.stage.ask(message);
+    const reply = await this.stage.ask(message);
+    this.guard();
+    return reply;
   }
 
   async wait(seconds: number): Promise<void> {

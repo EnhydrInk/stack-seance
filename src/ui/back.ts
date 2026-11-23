@@ -72,7 +72,7 @@ export function renderBack(
     return box;
   };
 
-  const add = (id: string, who: string, sentence: string | undefined, source: string, hidden: boolean) => {
+  const add = (id: string, who: string, sentence: string | undefined, source: string, hidden: boolean, skipped: string[] = []) => {
     const section = document.createElement('section');
     section.className = 'script';
     const title = document.createElement('div');
@@ -80,6 +80,13 @@ export function renderBack(
     title.textContent = who + (hidden ? ' (hidden)' : '');
     section.appendChild(title);
     if (sentence !== undefined) section.appendChild(sentenceBox(id, sentence));
+    if (skipped.length) {
+      // What the ghost's sign said when this script was written: the parts the script leaves out.
+      const left = document.createElement('p');
+      left.className = 'skipped';
+      left.textContent = `The spirits left out: ${skipped.join(' · ')}`;
+      section.appendChild(left);
+    }
     const editor = document.createElement('div');
     editor.className = 'editor';
     const gutter = document.createElement('pre');
@@ -137,7 +144,28 @@ export function renderBack(
       el.appendChild(section);
       continue;
     }
-    add(b.id, `Button “${b.name}”`, b.sentence, b.script, !b.visible);
+    add(b.id, `Button “${b.name}”`, b.sentence, b.script, !b.visible, b.skipped);
+  }
+
+  if (card.fields.length) {
+    // The names a script uses for the text on this card, next to what each one says now.
+    const section = document.createElement('section');
+    section.className = 'script';
+    const title = document.createElement('div');
+    title.className = 'who';
+    title.textContent = 'Fields on this card';
+    const list = document.createElement('dl');
+    list.className = 'fields';
+    for (const f of card.fields) {
+      const name = document.createElement('dt');
+      name.textContent = `field "${f.name}"`;
+      const text = document.createElement('dd');
+      const line = f.text.split('\n')[0] ?? '';
+      text.textContent = (line.length > 48 ? `${line.slice(0, 47)}…` : line || '(empty)') + (f.visible ? '' : ' (hidden)');
+      list.append(name, text);
+    }
+    section.append(title, list);
+    el.appendChild(section);
   }
 
   return {

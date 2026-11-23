@@ -128,10 +128,26 @@ export class Model {
     };
   }
 
-  /** Adds blank cards to the end of a stack, the current one unless another is given. */
+  /**
+   * Adds blank cards to the end of a stack, the current one unless another is given. A name the
+   * stack already has (another compile may have grown it meanwhile) is left alone.
+   */
   addCards(names: string[], stack = this.stack): void {
-    for (const name of names) stack.cards.push(this.blankCard(name));
-    if (names.length) this.changed('content');
+    let added = false;
+    for (const name of names) {
+      if (stack.cards.some((c) => c.name.toLowerCase() === name.toLowerCase())) continue;
+      stack.cards.push(this.blankCard(name));
+      added = true;
+    }
+    if (added) this.changed('content');
+  }
+
+  /** A button name no other button on the card has: the name itself, or the name with a number. */
+  freeButtonName(name: string, card = this.card, except?: string): string {
+    const taken = new Set(card.buttons.filter((b) => b.id !== except).map((b) => b.name.toLowerCase()));
+    let free = name;
+    for (let n = 2; taken.has(free.toLowerCase()); n++) free = `${name} ${n}`;
+    return free;
   }
 
   /** Adds a button to a card, the current one unless another is given. */
@@ -182,6 +198,17 @@ export class Model {
     }
     this.changed('content');
     return stack;
+  }
+
+  /** Takes stacks another tab saved, staying on the same card when it is still there. */
+  adopt(doc: StacksDoc): void {
+    const stackId = this.stack.id;
+    const cardId = this.card.id;
+    this.doc = doc;
+    const s = doc.stacks.findIndex((st) => st.id === stackId);
+    this.stackIndex = s >= 0 ? s : Math.max(0, doc.stacks.findIndex((st) => st.id === 'home'));
+    this.cardIndex = Math.max(0, s >= 0 ? this.stack.cards.findIndex((c) => c.id === cardId) : 0);
+    this.changed('place');
   }
 
   /** Replaces everything, for reset and loading a save. */

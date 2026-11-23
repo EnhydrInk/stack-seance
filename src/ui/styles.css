@@ -425,6 +425,37 @@ body.busy .viewport {
   font-size: calc(14px * var(--font-scale));
 }
 
+.fields {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 12px;
+  margin: 2px 0 0;
+  font-size: calc(14px * var(--font-scale));
+}
+
+.fields dt {
+  font-family: var(--code-font);
+  font-size: var(--code-size);
+  user-select: all;
+}
+
+.fields dd {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+.skipped {
+  margin: 0 0 4px;
+  padding-left: 6px;
+  border-left: 4px solid var(--ghost);
+  color: var(--ghost);
+  font-size: calc(13px * var(--font-scale));
+}
+
 .editor {
   display: grid;
   grid-template-columns: auto 1fr;

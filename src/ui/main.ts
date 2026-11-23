@@ -59,6 +59,12 @@ screen.isBusy = () => runner.running;
 model.onChange((change) => {
   if (change === 'content' || change === 'text') localStorage.setItem(AUTOSAVE, JSON.stringify(model.doc));
 });
+// Another tab saved: this tab takes its stacks, so its own next save does not undo them.
+window.addEventListener('storage', (e) => {
+  if (e.key !== AUTOSAVE || !e.newValue) return;
+  model.adopt(upgrade(JSON.parse(e.newValue) as StacksDoc, defaults as StacksDoc));
+  screen.refreshBack();
+});
 
 /** A move the reader asks for from the menu: change the card, then run its openCard. */
 async function navigate(move: () => void, effect?: Effect): Promise<void> {
@@ -97,17 +103,22 @@ const tool = (label: string, title: string, run: () => void) => {
   screen.tools.appendChild(b);
   return b;
 };
-tool('+ Button', 'Grow a button from one sentence', () => authoring.place('button'));
-tool('+ Text', 'Add text to this card', () => authoring.place('text'));
-const arrangeTool = tool('Arrange', 'Move, delete and edit what is on this card', () => toggleArrange());
-function toggleArrange(): void {
-  authoring.setArranging(!authoring.arranging);
-}
+/** Making things happens on the front: from the back, the card turns over first. */
+const onFront = (run: () => void) => async () => {
+  if (screen.flipped) await screen.flip(false);
+  run();
+};
+const placeButton = onFront(() => authoring.place('button'));
+const placeText = onFront(() => authoring.place('text'));
+const toggleArrange = onFront(() => authoring.setArranging(!authoring.arranging));
+tool('+ Button', 'Grow a button from one sentence', () => void placeButton());
+tool('+ Text', 'Add text to this card', () => void placeText());
+const arrangeTool = tool('Arrange', 'Move, delete and edit what is on this card', () => void toggleArrange());
 // The tool lights up whenever arranging is on, however it was turned on or off (Escape too).
 authoring.onArranging = (on) => arrangeTool.classList.toggle('on', on);
 // Arranging is for the front: turning the card over stops it, so no handle is left on the back.
 screen.onFlip = (back) => {
-  if (back && authoring.arranging) toggleArrange();
+  if (back && authoring.arranging) authoring.setArranging(false);
 };
 
 const cards = () => model.stack.cards.length;
@@ -134,9 +145,9 @@ const menubar = renderMenubar([
   {
     title: 'Objects',
     items: [
-      { label: 'New Button…', run: () => authoring.place('button') },
-      { label: 'New Text', run: () => authoring.place('text') },
-      { label: () => (authoring.arranging ? 'Stop arranging' : 'Arrange'), run: () => toggleArrange() },
+      { label: 'New Button…', run: () => void placeButton() },
+      { label: 'New Text', run: () => void placeText() },
+      { label: () => (authoring.arranging ? 'Stop arranging' : 'Arrange'), run: () => void toggleArrange() },
     ],
   },
   {
