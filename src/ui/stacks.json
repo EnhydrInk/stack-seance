@@ -750,6 +750,98 @@
           ]
         },
         {
+          "id": "help-grow",
+          "name": "Grow a Button",
+          "art": "lab",
+          "script": "",
+          "fields": [
+            {
+              "id": "f-grow-head",
+              "name": "heading",
+              "text": "Grow a button",
+              "rect": [
+                24,
+                18,
+                410,
+                30
+              ],
+              "visible": true,
+              "style": "heading"
+            },
+            {
+              "id": "f-grow-body",
+              "name": "body",
+              "text": "Click + Button at the top right of the window, then click where the button should go. Write one sentence about what it should do, in any language, and click Grow.\n\nThe spirits turn your sentence into a script. A card it goes to that isn't there yet grows too. Whatever they can't do, a little ghost will tell you.\n\nThe button below grew from one sentence. Flip the card to read it.",
+              "rect": [
+                24,
+                56,
+                410,
+                196
+              ],
+              "visible": true,
+              "style": "plain"
+            }
+          ],
+          "buttons": [
+            {
+              "id": "b-grow-bat",
+              "name": "Grown from a sentence",
+              "rect": [
+                24,
+                262,
+                190,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this lets a bat out, waits a moment and goes to the next card.",
+              "script": "on mouseUp\n  release bat\n  wait 1 second\n  visual effect wipe left\n  go to next card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-grow-back",
+              "name": "Back",
+              "rect": [
+                24,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the previous help card.",
+              "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-grow-next",
+              "name": "Next",
+              "rect": [
+                112,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes to the next help card.",
+              "script": "on mouseUp\n  visual effect wipe left\n  go to next card\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-grow-home",
+              "name": "Home",
+              "rect": [
+                200,
+                306,
+                80,
+                24
+              ],
+              "visible": true,
+              "sentence": "Clicking this goes back to the Home stack.",
+              "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
+              "style": "roundrect"
+            }
+          ]
+        },
+        {
           "id": "help-broken",
           "name": "When Something Breaks",
           "art": "lab-broken",

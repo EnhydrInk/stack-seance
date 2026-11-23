@@ -67,4 +67,16 @@ describe('older saves', () => {
     expect(upgraded.stacks.map((s) => s.id)).toEqual(['home', 'haunted', 'help']);
     expect(upgraded.stacks[0]!.cards[0]!.fields[1]!.text).toBe('mine');
   });
+
+  it('get the built-in cards they were made without, in their place, and keep their own cards', async () => {
+    const { withMissingCards } = await import('../../src/ui/model');
+    const old = doc();
+    const help = old.stacks.find((s) => s.id === 'help')!;
+    help.cards = help.cards.filter((c) => c.id !== 'help-grow');
+    help.cards.push({ ...help.cards[0]!, id: 'grown-by-me', name: 'Mine' });
+    const upgraded = withMissingCards(old, doc());
+    const ids = upgraded.stacks.find((s) => s.id === 'help')!.cards.map((c) => c.id);
+    expect(ids.indexOf('help-grow')).toBe(ids.indexOf('help-flip') + 1);
+    expect(ids.at(-1)).toBe('grown-by-me');
+  });
 });

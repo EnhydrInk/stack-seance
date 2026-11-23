@@ -197,11 +197,12 @@ export function copy<T>(x: T): T {
 }
 
 /**
- * Brings a save made by an older version up to date: built-in stacks it lacks are added (so a
- * new stack never goes missing), and the Home New Stack icon becomes the built-in button it is now.
+ * Brings a save made by an older version up to date: built-in stacks and cards it lacks are added
+ * (so a new stack or help card never goes missing), and the Home New Stack icon becomes the
+ * built-in button it is now.
  */
 export function upgrade(doc: StacksDoc, defaults: StacksDoc): StacksDoc {
-  const next = withMissingStacks(doc, defaults);
+  const next = withMissingCards(withMissingStacks(doc, defaults), defaults);
   const icon = next.stacks.find((s) => s.id === 'home')?.cards[0]?.buttons.find((b) => b.id === 'b-home-new');
   const fresh = defaults.stacks.find((s) => s.id === 'home')?.cards[0]?.buttons.find((b) => b.id === 'b-home-new');
   if (icon && fresh && !icon.builtin) Object.assign(icon, { builtin: fresh.builtin, script: fresh.script, sentence: fresh.sentence });
@@ -212,4 +213,21 @@ export function upgrade(doc: StacksDoc, defaults: StacksDoc): StacksDoc {
 export function withMissingStacks(doc: StacksDoc, defaults: StacksDoc): StacksDoc {
   const have = new Set(doc.stacks.map((s) => s.id));
   return { ...doc, stacks: [...doc.stacks, ...defaults.stacks.filter((s) => !have.has(s.id)).map(copy)] };
+}
+
+/**
+ * A built-in card added after the save was made goes into its stack right after the card it
+ * follows in the defaults. Cards are never deleted, so a missing built-in card is always a new one.
+ */
+export function withMissingCards(doc: StacksDoc, defaults: StacksDoc): StacksDoc {
+  for (const fresh of defaults.stacks) {
+    const stack = doc.stacks.find((s) => s.id === fresh.id);
+    if (!stack) continue;
+    fresh.cards.forEach((card, i) => {
+      if (stack.cards.some((c) => c.id === card.id)) return;
+      const before = i === 0 ? -1 : stack.cards.findIndex((c) => c.id === fresh.cards[i - 1]!.id);
+      stack.cards.splice(before + 1, 0, copy(card));
+    });
+  }
+  return doc;
 }
