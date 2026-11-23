@@ -25,6 +25,16 @@ describe('built-in stacks', () => {
   it('opens at a stack named Home', () => {
     expect(doc.stacks.some((s) => s.id === 'home' && s.name === 'Home')).toBe(true);
   });
+
+  it('keeps every button clear of the folded corner, where a click flips the card', () => {
+    // The corner is 24×24 at the bottom right of the 512×342 card.
+    const under = doc.stacks.flatMap((s) =>
+      s.cards.flatMap((c) =>
+        c.buttons.filter(({ rect: [x, y, w, h] }) => x + w > 512 - 24 && y + h > 342 - 24).map((b) => `${c.name} / ${b.name}`),
+      ),
+    );
+    expect(under).toEqual([]);
+  });
 });
 
 describe('Tide Pool', () => {

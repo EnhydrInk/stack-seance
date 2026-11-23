@@ -149,7 +149,7 @@
               "id": "b-gate-bell",
               "name": "Ring the bell",
               "rect": [
-                360,
+                352,
                 200,
                 132,
                 24
@@ -163,7 +163,7 @@
               "id": "b-gate-enter",
               "name": "Enter",
               "rect": [
-                360,
+                352,
                 232,
                 132,
                 24
@@ -233,8 +233,8 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this asks your name and writes a welcome for you.",
-              "script": "on mouseUp\n  global visitor\n  ask \"What is your name, visitor?\"\n  put it into visitor\n  put \"Welcome,\" && visitor & \".\" into field \"greeting\"\n  if visitor contains \"Kiro\" then answer \"Oh! A friend of the house.\"\nend mouseUp",
+              "sentence": "Clicking this asks your name and writes a welcome for you; with no name, the candle waits.",
+              "script": "on mouseUp\n  global visitor\n  ask \"What is your name, visitor?\"\n  if it is \"\" then\n    put \"The candle waits for a name.\" into field \"greeting\"\n  else\n    put it into visitor\n    put \"Welcome,\" && visitor & \".\" into field \"greeting\"\n    if visitor contains \"Kiro\" then answer \"Oh! A friend of the house.\"\n  end if\nend mouseUp",
               "style": "roundrect"
             },
             {
@@ -269,7 +269,7 @@
               "id": "b-hall-deeper",
               "name": "Go deeper",
               "rect": [
-                360,
+                352,
                 270,
                 132,
                 24
@@ -283,7 +283,7 @@
               "id": "b-hall-back",
               "name": "Back",
               "rect": [
-                360,
+                352,
                 302,
                 132,
                 24
@@ -362,7 +362,7 @@
               "id": "b-attic-down",
               "name": "Down",
               "rect": [
-                360,
+                352,
                 270,
                 132,
                 24
@@ -376,14 +376,14 @@
               "id": "b-attic-garden",
               "name": "To the garden",
               "rect": [
-                360,
+                352,
                 302,
                 132,
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this dissolves to the last card.",
-              "script": "on mouseUp\n  visual effect dissolve\n  go to last card\nend mouseUp",
+              "sentence": "Clicking this dissolves to the card named Garden.",
+              "script": "on mouseUp\n  visual effect dissolve\n  go to card \"Garden\"\nend mouseUp",
               "style": "roundrect"
             }
           ]
@@ -441,7 +441,7 @@
               "id": "b-garden-back",
               "name": "Back",
               "rect": [
-                360,
+                352,
                 238,
                 132,
                 24
@@ -455,7 +455,7 @@
               "id": "b-garden-again",
               "name": "Start over",
               "rect": [
-                360,
+                352,
                 270,
                 132,
                 24
@@ -469,7 +469,7 @@
               "id": "b-garden-home",
               "name": "Home",
               "rect": [
-                360,
+                352,
                 302,
                 132,
                 24

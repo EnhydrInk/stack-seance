@@ -28,12 +28,26 @@ model.stackIndex = Math.max(0, model.doc.stacks.findIndex((s) => s.id === 'home'
 
 const screen = new Screen(model);
 const host = new BrowserHost(model, screen);
+// A script that runs for more than a few seconds shows how to stop it.
+const runningHint = document.createElement('div');
+runningHint.className = 'running-hint';
+runningHint.textContent = 'A script is running · Esc to stop';
+screen.viewport.appendChild(runningHint);
+let slowRun: number | undefined;
 const runner = new Runner(
   model,
   host,
   (error, owner) => screen.showError(error, owner),
-  (busy) => document.body.classList.toggle('busy', busy),
+  (busy) => {
+    document.body.classList.toggle('busy', busy);
+    window.clearTimeout(slowRun);
+    document.body.classList.remove('busy-long');
+    if (busy) slowRun = window.setTimeout(() => document.body.classList.add('busy-long'), 3000);
+  },
 );
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' || ((e.metaKey || e.ctrlKey) && e.key === '.')) runner.stop();
+});
 screen.onClick = (b) => {
   if (runner.running || authoring.arranging) return;
   screen.hideError();
@@ -88,8 +102,9 @@ tool('+ Text', 'Add text to this card', () => authoring.place('text'));
 const arrangeTool = tool('Arrange', 'Move, delete and edit what is on this card', () => toggleArrange());
 function toggleArrange(): void {
   authoring.setArranging(!authoring.arranging);
-  arrangeTool.classList.toggle('on', authoring.arranging);
 }
+// The tool lights up whenever arranging is on, however it was turned on or off (Escape too).
+authoring.onArranging = (on) => arrangeTool.classList.toggle('on', on);
 // Arranging is for the front: turning the card over stops it, so no handle is left on the back.
 screen.onFlip = (back) => {
   if (back && authoring.arranging) toggleArrange();
@@ -146,21 +161,32 @@ desk.appendChild(screen.win);
 const tide = mountTidePool();
 document.getElementById('app')!.append(menubar, desk, tide);
 
-/** Whole-number zoom so pixels stay crisp; below 1 only when the screen is too small. */
+/** The Tide Pool's size with its scene showing, measured once; its back is larger. */
+let tideSize: { width: number; height: number } | undefined;
+
+/**
+ * The largest zoom that fits, in steps that land on whole device pixels (1× on a plain
+ * screen, ½× on a Retina one) so the pixels stay crisp; below 1 only when the screen is too small.
+ */
 function fit(): void {
   const w = CARD_W + 8;
   const h = CARD_H + 32;
   const dw = desk.clientWidth;
   const dh = desk.clientHeight;
   const avail = Math.min((dw - 16) / w, (dh - 16) / h);
+  const step = 1 / Math.max(1, Math.round(window.devicePixelRatio || 1));
   // The Tide Pool sits in the bottom-right corner. The card may shrink to make room for it,
   // but not below 2×; when there is still no room, the Tide Pool hides.
-  tide.hidden = false;
-  tide.style.zoom = '1';
-  const t = tide.getBoundingClientRect();
+  if (!tideSize) {
+    tide.hidden = false;
+    tide.style.zoom = '1';
+    const r = tide.getBoundingClientRect();
+    tideSize = { width: r.width, height: r.height };
+  }
+  const t = tideSize;
   const roomFor = (z: number) => (dw - w * z) / 2 >= t.width + 20 || (dh - h * z) / 2 >= t.height + 20;
-  let zoom = avail >= 1 ? Math.floor(avail) : Math.max(avail, 0.4);
-  while (zoom > 2 && !roomFor(zoom)) zoom--;
+  let zoom = avail >= 1 ? Math.floor(avail / step) * step : Math.max(avail, 0.4);
+  while (zoom > 2 && !roomFor(zoom)) zoom -= step;
   tide.hidden = !roomFor(zoom);
   screen.win.style.zoom = String(zoom);
 }

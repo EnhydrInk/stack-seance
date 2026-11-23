@@ -22,6 +22,11 @@ export class Runner {
     return this.busy;
   }
 
+  /** Stops the running script (Esc or ⌘.), as HyperCard's ⌘-period did. */
+  stop(): void {
+    if (this.busy) this.host.stop();
+  }
+
   click(button: ButtonDoc): Promise<void> {
     return this.run(button.script, 'mouseUp', button.id, button);
   }
@@ -37,9 +42,11 @@ export class Runner {
     this.busy = true;
     this.onBusy(true);
     this.host.origin = origin;
+    this.host.stopped = false;
     try {
       const result = await runHandler(source, handler, { host: this.host, globals: this.globals, scriptId });
-      if (!result.ok) {
+      // A script the reader stopped ends quietly, without an error notice.
+      if (!result.ok && !this.host.stopped) {
         const owner = this.model.owner(result.error.scriptId ?? scriptId);
         if (owner) this.onError(result.error, owner);
       }

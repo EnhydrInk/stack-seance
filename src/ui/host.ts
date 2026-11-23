@@ -17,9 +17,29 @@ export interface Stage {
   haunt(kind: HauntKind, from: ButtonDoc | undefined): Promise<void>;
 }
 
+/** What a stopped script's next host call throws; the runner shows no error for it. */
+class StoppedError extends Error {
+  constructor() {
+    super('stopped');
+  }
+}
+
 export class BrowserHost implements Host {
   /** The button whose mouseUp is running; a bat flies out of it. */
   origin: ButtonDoc | undefined;
+  /** Set by stop(), cleared when a new run starts. */
+  stopped = false;
+  private endWait: (() => void) | undefined;
+
+  /** Ends the running script: a wait ends at once, and the next wait, dialog, haunt or move throws. */
+  stop(): void {
+    this.stopped = true;
+    this.endWait?.();
+  }
+
+  private guard(): void {
+    if (this.stopped) throw new StoppedError();
+  }
 
   constructor(
     private readonly model: Model,
@@ -44,6 +64,7 @@ export class BrowserHost implements Host {
   }
 
   goToCard(card: CardRef, effect?: Effect): void {
+    this.guard();
     this.stage.changeCard(() => this.model.goToCard(card.index - 1), effect);
   }
 
@@ -78,21 +99,33 @@ export class BrowserHost implements Host {
 
   async answer(message: string, labels: string[]): Promise<string> {
     await this.stage.settled();
+    this.guard();
     return this.stage.answer(message, labels);
   }
 
   async ask(message: string): Promise<string | null> {
     await this.stage.settled();
+    this.guard();
     return this.stage.ask(message);
   }
 
   async wait(seconds: number): Promise<void> {
     await this.stage.settled();
-    await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+    this.guard();
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(resolve, seconds * 1000);
+      this.endWait = () => {
+        clearTimeout(timer);
+        resolve();
+      };
+    });
+    this.endWait = undefined;
+    this.guard();
   }
 
   async haunt(kind: HauntKind): Promise<void> {
     await this.stage.settled();
+    this.guard();
     await this.stage.haunt(kind, this.origin);
   }
 

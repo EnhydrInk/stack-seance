@@ -176,8 +176,38 @@ input:focus-visible {
   font-size: 15px;
 }
 
+/* A long stack name ends in an ellipsis and leaves room for the stripes and the tools. */
+.window > .titlebar .title {
+  min-width: 0;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Shown when a script has been running for a while: how to stop it. */
+.running-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--paper);
+  font-size: 13px;
+  white-space: nowrap;
+  z-index: 6;
+  pointer-events: none;
+}
+
+body:not(.busy-long) .running-hint {
+  display: none;
+}
+
 .stripes {
   flex: 1;
+  min-width: 12px;
   height: 12px;
   background: repeating-linear-gradient(to bottom, var(--ghost) 0 2px, transparent 2px 4px);
 }
@@ -299,6 +329,15 @@ body.busy .viewport {
   border-radius: 9px;
   background: var(--paper);
   font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* A label longer than its button ends in an ellipsis instead of spilling out. */
+.btn-roundrect .label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .btn-roundrect:hover {
@@ -341,8 +380,15 @@ body.busy .viewport {
 }
 
 .btn-icon .label {
+  max-width: 100%;
   padding: 0 3px;
   background: var(--paper);
+  /* A long stack name keeps to two lines under its icon. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .btn-icon:active .label {

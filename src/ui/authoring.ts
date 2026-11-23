@@ -17,6 +17,11 @@ function inside([x, y, w, h]: Rect): Rect {
   return [Math.max(0, Math.min(x, CARD_W - w)), Math.max(0, Math.min(y, CARD_H - h)), w, h];
 }
 
+/** A button rect wide enough for its label (about 8 px a character, plus the pumpkin), inside the card. */
+function fitLabel([x, y, w, h]: Rect, label: string): Rect {
+  return inside([x, y, Math.min(CARD_W, Math.max(w, label.length * 8 + 44)), h]);
+}
+
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text = ''): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
   if (className) e.className = className;
@@ -31,6 +36,8 @@ function couldNot(skipped: string[]): string {
 
 export class Authoring {
   arranging = false;
+  /** Set by main: told whenever arranging turns on or off, so the title bar tool can follow. */
+  onArranging: (on: boolean) => void = () => {};
   private cancelPlace: (() => void) | undefined;
 
   constructor(
@@ -134,7 +141,7 @@ export class Authoring {
       if (reply.ok) {
         close();
         this.model.addCards(reply.newCards, stack);
-        this.model.addButton({ name: reply.label, rect, visible: true, sentence, script: reply.script, style: 'roundrect' }, card);
+        this.model.addButton({ name: reply.label, rect: fitLabel(rect, reply.label), visible: true, sentence, script: reply.script, style: 'roundrect' }, card);
       } else {
         // The sentence stays, so the reader can change it and try again.
         box.classList.remove('waiting');
@@ -182,6 +189,7 @@ export class Authoring {
     if (reply.ok) {
       // The new script may name the button by its new label (the compiler's Rule 6).
       button.name = reply.label;
+      if (button.style === 'roundrect') button.rect = fitLabel(button.rect, reply.label);
       button.sentence = sentence;
       button.script = reply.script;
       this.model.addCards(reply.newCards, stack);
@@ -209,7 +217,10 @@ export class Authoring {
     });
     div.addEventListener('blur', () => this.model.changed('content'), { once: true });
     div.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') div.blur();
+      if (e.key !== 'Escape') return;
+      // Escape leaves the text only; arranging, if it is on, stays on.
+      e.stopPropagation();
+      div.blur();
     });
   }
 
@@ -220,6 +231,7 @@ export class Authoring {
     this.arranging = on;
     this.screen.viewport.classList.toggle('arranging', on);
     this.drawHandles();
+    this.onArranging(on);
   }
 
   /** One handle over each button and field: drag to move, × to delete, click text to edit it. */
