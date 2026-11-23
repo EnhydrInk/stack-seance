@@ -128,7 +128,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
   - Mark the task complete when the tests are written, run, and passing on unfixed code
   - _Requirements: 3.12, 3.13, 3.14, 3.15, 3.16_
 
-- [ ] 5. Fix Bug 1: cap the body read in `worker/src/handle.ts`
+- [x] 5. Fix Bug 1: cap the body read in `worker/src/handle.ts`
 
   - [x] 5.1 Implement the capped read, and switch the one permitted test fake in the same change
     - In `readRequest`, keep the media type check first (3.7). After it, read `declaredLength(request.headers.get('Content-Length'))` and return null when it is above `MAX_BODY_BYTES`, with the comment from design. Take no reader and do not cancel the unread body
@@ -177,7 +177,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
     - **EXPECTED OUTCOME**: The task 1 tests PASS (confirms Bug 1 is fixed)
     - _Requirements: 2.1, 2.2_
 
-  - [~] 5.4 Verify the Bug 1 preservation tests still pass
+  - [x] 5.4 Verify the Bug 1 preservation tests still pass
     - **Property 2: Preservation** - Requests within the limit are read, decoded and answered as before
     - **IMPORTANT**: Re-run the SAME tests from task 2. Do NOT write new tests
     - Run `npx vitest --run test/worker`. This covers task 2's tests and the existing `handle.test.ts`, including the 256 KiB test (3.3) and the edited body-failure test (3.10)

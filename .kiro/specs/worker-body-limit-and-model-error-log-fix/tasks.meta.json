@@ -21,6 +21,10 @@
     "5.3 Verify the Bug 1 exploration tests now pass": {
       "status": "passed",
       "lastRunTimestamp": 1795411149727
+    },
+    "5.4 Verify the Bug 1 preservation tests still pass": {
+      "status": "passed",
+      "lastRunTimestamp": 1795411347029
     }
   },
   "executionHistory": {
@@ -148,6 +152,16 @@
         "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
         "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
         "timestamp": 1795408650985
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795411187077
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795411367457
       }
     ],
     "6.1 Implement the failure entry": [
@@ -190,6 +204,13 @@
         "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
         "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
         "timestamp": 1795408651103
+      }
+    ],
+    "5. Fix Bug 1: cap the body read in `worker/src/handle.ts`": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795411367482
       }
     ]
   }
