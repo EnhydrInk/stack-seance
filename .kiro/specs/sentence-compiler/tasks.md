@@ -174,7 +174,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
       - that `ANTHROPIC_API_KEY` does not appear as a key.
     - _Requirements: 7.9, 8.4, 10.8, 11.2, 12.4_
 
-- [ ] 9. Final checkpoint - Ensure all tests pass
+- [x] 9. Final checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
   - The post-task hook commits after every task. Check with `git diff --name-only <commit before task 1>..HEAD` plus `git status` that nothing under `src/hypertalk`, `test/hypertalk` or `src/ui` changed. The expected changes are code in `src/compiler`, `worker`, `test/compiler` and `test/worker`, the root `package.json`, `package-lock.json` and tsconfig files, the spec folder, and the hook's entries in `docs/kiro-log.md`.
   - _Requirements: 12.5, 12.6_
