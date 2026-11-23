@@ -143,7 +143,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
       - A missing and an empty key reject with the message and never call `fetch`.
       - The usage log holds no message text.
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 14.8_
-  - [ ] 8.4 Write `worker/src/handle.ts` and `test/worker/handle.test.ts`
+  - [x] 8.4 Write `worker/src/handle.ts` and `test/worker/handle.test.ts`
     - `WorkerVars`, `Deps`, `MAX_BODY_BYTES` and `handle(request, deps)` with the six steps of "worker/src/handle.ts".
       - Access, then the route, then everything else inside one `try`. A throw gives 502 `model`, and the log gets the error name only.
       - The Content-Type media type check, then `await request.arrayBuffer()` with a `byteLength` check, then fatal UTF-8 decoding, `JSON.parse` and `readCompileRequest`.
