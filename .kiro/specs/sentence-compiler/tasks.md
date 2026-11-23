@@ -87,7 +87,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
 - [x] 5. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
 
-- [-] 6. Correctness properties
+- [x] 6. Correctness properties
   - [x] 6.1 Write `test/compiler/helpers/arbitraries.ts` and the generator cross-checks
     - `requestArb`, `validReplyArb(request)`, `brokenReplyArb(request)` with its rule tag, and `stepsArb(request)`, as "Helpers" describes. Valid scripts are trees without positions written with `print` from the Public_API: an optional part naming fields and buttons, then gos, then statements that name nothing, with at most one `go to stack` at the end of the go part. Fresh names are filtered to differ, ignoring case, from every name in the request and the reply.
     - Rule 10 breakers are only text that is not JSON, a JSON array, and a Nothing_Reply with a script or with no skipped phrase.
@@ -104,7 +104,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - Test name starts with "P2 faithful", with the comment `Feature: sentence-compiler, Property 2: Faithful`. 200 runs.
     - The valid reply sits at call 1, 2 or 3 after broken replies. The result's four values are `toStrictEqual` to the fields of `JSON.parse(reply.text)`; for a Nothing_Reply, `skipped` is.
     - **Validates: Requirements 3.1, 3.6, 3.7, 5.2, 13.3, 13.5**
-  - [ ] 6.4 Write the P3 property in `test/compiler/uniquecards.property.test.ts`
+  - [x] 6.4 Write the P3 property in `test/compiler/uniquecards.property.test.ts`
     - **Property 3: Unique card names (P3 unique card names)**
     - Test name starts with "P3 unique card names", with the comment `Feature: sentence-compiler, Property 3: Unique card names`. 300 runs.
     - Card name lists unique ignoring case, with one empty name sometimes. `newCardCandidateArb`, then `compile` with a fake `ask` that plays the candidate and then refuses. When the result is `ok: true`, the existing names followed by `result.newCards` are unique, checked with the test's own `toLowerCase` set.
