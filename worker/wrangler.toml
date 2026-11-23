@@ -1,0 +1,27 @@
+name = "stack-seance-api"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+preview_urls = false
+routes = [{ pattern = "stack-seance.enhydrink.com/api/*", zone_name = "enhydrink.com" }]
+
+[vars]
+REQUIRE_ACCESS = "true"
+ACCESS_AUD = ""            # the Access application's AUD tag; while empty, every request gets 401
+LIMIT_PER_IP = "20"
+LIMIT_PER_SITE = "200"
+
+[[durable_objects.bindings]]
+name = "LIMITS"
+class_name = "DailyLimits"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DailyLimits"]
+
+[observability]
+enabled = true
+
+[observability.logs]
+invocation_logs = false    # invocation logs record request headers, CF-Connecting-IP among them (Requirement 11.2)
