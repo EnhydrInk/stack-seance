@@ -220,7 +220,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
     - Run `npx vitest --run test/worker` and `npm run typecheck`
     - _Requirements: 2.3, 2.4, 2.5, 3.12, 3.14, 3.15_
 
-  - [~] 6.3 Verify the Bug 2 exploration tests now pass
+  - [x] 6.3 Verify the Bug 2 exploration tests now pass
     - **Property 3: Expected Behavior** - A failed SDK call writes one failure entry and rejects with the same error
     - **IMPORTANT**: Re-run the SAME tests from task 3. Do NOT write new tests
     - The tests from task 3 encode the expected behavior. When they pass, the expected behavior is satisfied
