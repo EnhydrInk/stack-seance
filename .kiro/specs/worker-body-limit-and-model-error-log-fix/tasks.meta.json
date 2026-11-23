@@ -1,0 +1,119 @@
+{
+  "pbtResults": {
+    "1. Write bug condition exploration tests for Bug 1 (body limit)": {
+      "status": "passed",
+      "failingExample": "Both Property 1 tests failed on unfixed code (80c9e62), which confirms Bug 1. P1 at MAX (seed -1525700440, shrunk 3 times): [{\"total\":262145,\"offsets\":[],\"contentLength\":\"0\",\"errorAtEnd\":false}]. Expected 400 with taken 1 and cancels 1, got 400 with taken 1 and cancels 0 (no cancel; the whole body was read). Unshrunk probes: 6 chunks of 462,144 bytes, crossing at chunk 4, got taken 6 and cancels 0. A 300,000-byte body erroring after its last chunk got 502 {thrown: 'RangeError'}, not 400. P1 declared above MAX (seed -292617372, shrunk 8 times): [\"1000000\",{\"kind\":\"error\"}]. Expected 400, got 502 with thrown 'RangeError'. Probes: a valid 400-byte body got 200 with takes 1 and modelCalls 1. 1,440x65,536-byte chunks got taken 1440 and bodyUsed true. An empty body got bodyUsed true. Only the 'none' body kind matches the expectation on unfixed code. Unit tests: Repro 1 with a declared small body got 200, takes 1, modelCalls 1. The declared 90 MB body got taken 1440 (expected 0) and bodyUsed true. The streamed body and every header value (abc, -1, 1e3, 12.5, '', '12, 12', 3) got taken 1440 and cancels 0 (expected 5 and 1). errorAfter 5 got 502 with thrown RangeError. With Access on, it got taken 1440 and cancels 0.",
+      "lastRunTimestamp": 1795409053543
+    }
+  },
+  "executionHistory": {
+    "1. Write bug condition exploration tests for Bug 1 (body limit)": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650829
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408661595
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795409118208
+      }
+    ],
+    "2. Write preservation property tests for Bug 1 (BEFORE implementing the fix)": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650854
+      }
+    ],
+    "3. Write bug condition exploration tests for Bug 2 (model error log)": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650882
+      }
+    ],
+    "4. Write preservation property tests for Bug 2 (BEFORE implementing the fix)": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650902
+      }
+    ],
+    "5.1 Implement the capped read, and switch the one permitted test fake in the same change": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650922
+      }
+    ],
+    "5.2 Write the direct tests of `declaredLength` and `readLimitedBody`": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650941
+      }
+    ],
+    "5.3 Verify the Bug 1 exploration tests now pass": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650965
+      }
+    ],
+    "5.4 Verify the Bug 1 preservation tests still pass": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650985
+      }
+    ],
+    "6.1 Implement the failure entry": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408651003
+      }
+    ],
+    "6.2 Write the direct tests of `failureEntry` and the full mixed sequence": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408651021
+      }
+    ],
+    "6.3 Verify the Bug 2 exploration tests now pass": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408651039
+      }
+    ],
+    "6.4 Verify the Bug 2 preservation tests still pass": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408651058
+      }
+    ],
+    "7. Update the sentence-compiler design to match the fixed Worker": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408651084
+      }
+    ],
+    "8. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408651103
+      }
+    ]
+  }
+}
