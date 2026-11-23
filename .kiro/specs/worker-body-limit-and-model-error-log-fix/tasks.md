@@ -107,7 +107,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
   - Mark the task complete when the tests are written and run, the failures are documented, and the suite is green with the markers
   - _Requirements: 1.3, 1.4, 2.3, 2.4, 2.5, 3.14_
 
-- [~] 4. Write preservation property tests for Bug 2 (BEFORE implementing the fix)
+- [x] 4. Write preservation property tests for Bug 2 (BEFORE implementing the fix)
   - **Property 4: Preservation** - Ask calls that do not fail send, log and return as before
   - **IMPORTANT**: Follow observation-first methodology. Run the unfixed Ask on calls where `isFailureBug` is false, record what it does, and assert that
   - Non-bug condition: `NOT isFailureBug(A)`. Either the key is missing or empty, or the SDK call resolves, with any stop reason including `refusal`. For a call in the bug condition, everything except the new failure entry is preserved (3.14)

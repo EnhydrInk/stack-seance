@@ -13,9 +13,10 @@ import {
   PaymentRequiredError,
   PermissionDeniedError,
 } from '@anthropic-ai/sdk';
+import type { BetaContentBlock, BetaMessage } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import { EnforcedSpendLimitReachedError } from '@anthropic-ai/sdk/resources/shared';
 import { REPLY_SCHEMA, SYSTEM_PROMPT, userMessage, type CompileRequest, type ModelInput } from '../../../src/compiler/index';
-import type { AskOptions } from '../../../worker/src/ask';
+import { MODEL, requestBody, type AskOptions } from '../../../worker/src/ask';
 
 export type FakeFetch = NonNullable<AskOptions['fetch']>;
 
@@ -49,6 +50,8 @@ export const INPUT: ModelInput = {
 
 export interface RecordedCall {
   url: string;
+  /** The request headers, with lowercase names. */
+  headers: Record<string, string>;
   /** The request body, parsed when it is a JSON string. */
   body: unknown;
 }
@@ -57,10 +60,134 @@ export interface RecordedCall {
 export function apiFetch(make: (init: RequestInit | undefined) => Response | Promise<Response>): { fetch: FakeFetch; calls: RecordedCall[] } {
   const calls: RecordedCall[] = [];
   const fetch: FakeFetch = async (url, init) => {
-    calls.push({ url: String(url), body: typeof init?.body === 'string' ? JSON.parse(init.body) : init?.body });
+    calls.push({
+      url: String(url),
+      headers: Object.fromEntries(new Headers(init?.headers).entries()),
+      body: typeof init?.body === 'string' ? JSON.parse(init.body) : init?.body,
+    });
     return make(init);
   };
   return { fetch, calls };
+}
+
+/**
+ * What one call sends (bugfix 3.15): the body is `requestBody(input)` without `betas`, which the
+ * SDK moves into the `anthropic-beta` header, and that header names every beta.
+ */
+export function expectedRequest(input: ModelInput): { body: Record<string, unknown>; betas: string[] } {
+  const { betas = [], ...body } = requestBody(input);
+  return { body, betas: [...betas] };
+}
+
+/** The betas a recorded call names in its `anthropic-beta` header. */
+export function sentBetas(call: RecordedCall): string[] {
+  return (call.headers['anthropic-beta'] ?? '').split(',').map((beta) => beta.trim());
+}
+
+/** A successful call's answer, as the generators and the unit tests describe it (Property 4). */
+export interface Success {
+  model: string;
+  stopReason: 'end_turn' | 'max_tokens' | 'refusal';
+  content: BetaContentBlock[];
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationInputTokens: number | null;
+  cacheReadInputTokens: number | null;
+  /** No iterations, one `message` iteration, or a `message` and a `fallback_message` iteration. */
+  iterations: 'none' | 'message' | 'fallback';
+}
+
+/** A plain end_turn answer with a thinking block and a text block. */
+export const SUCCESS: Success = {
+  model: MODEL,
+  stopReason: 'end_turn',
+  content: [
+    { type: 'thinking', thinking: 'Plan the button.', signature: 'sig-abc123' },
+    { type: 'text', text: '{"hasButton":false}', citations: null },
+  ],
+  inputTokens: 3500,
+  outputTokens: 640,
+  cacheCreationInputTokens: 0,
+  cacheReadInputTokens: 3400,
+  iterations: 'none',
+};
+
+/** A refusal served after a fallback, with no content. */
+export const REFUSAL: Success = {
+  model: 'claude-sonnet-5-5',
+  stopReason: 'refusal',
+  content: [],
+  inputTokens: 3600,
+  outputTokens: 12,
+  cacheCreationInputTokens: null,
+  cacheReadInputTokens: null,
+  iterations: 'fallback',
+};
+
+/** The Messages API body of `s`, as the SDK resolves it. */
+export function messageOf(s: Success): BetaMessage {
+  const iteration = { cache_creation: null, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
+  const iterations: BetaMessage['usage']['iterations'] =
+    s.iterations === 'none'
+      ? null
+      : s.iterations === 'message'
+        ? [{ ...iteration, type: 'message', model: s.model, input_tokens: s.inputTokens, output_tokens: s.outputTokens }]
+        : [
+            { ...iteration, type: 'message', model: MODEL, input_tokens: s.inputTokens, output_tokens: 0 },
+            { ...iteration, type: 'fallback_message', model: s.model, input_tokens: 0, output_tokens: s.outputTokens },
+          ];
+  return {
+    id: 'msg_test',
+    type: 'message',
+    role: 'assistant',
+    model: s.model,
+    container: null,
+    context_management: null,
+    diagnostics: null,
+    stop_details:
+      s.stopReason === 'refusal'
+        ? { type: 'refusal', category: 'cyber', explanation: null, fallback_credit_token: null, fallback_has_prefill_claim: null, recommended_model: null }
+        : null,
+    stop_reason: s.stopReason,
+    stop_sequence: null,
+    content: s.content,
+    usage: {
+      cache_creation: null,
+      cache_creation_input_tokens: s.cacheCreationInputTokens,
+      cache_read_input_tokens: s.cacheReadInputTokens,
+      fallback_credit: null,
+      inference_geo: null,
+      input_tokens: s.inputTokens,
+      iterations,
+      output_tokens: s.outputTokens,
+      output_tokens_details: null,
+      server_tool_use: null,
+      service_tier: 'standard',
+      speed: null,
+    },
+  };
+}
+
+/** A 200 answer whose body is `messageOf(s)`, with a `request-id` header. */
+export function messageBody(s: Success): Response {
+  return new Response(JSON.stringify(messageOf(s)), {
+    status: 200,
+    headers: { 'content-type': 'application/json', 'request-id': REQUEST_ID },
+  });
+}
+
+/** The usage entry a successful call writes (bugfix 3.12), built here by hand from `s`: numbers and ids only. */
+export function usageEntryOf(s: Success): Record<string, unknown> {
+  return {
+    event: 'model-call',
+    model: s.model,
+    stop_reason: s.stopReason,
+    input_tokens: s.inputTokens,
+    output_tokens: s.outputTokens,
+    cache_creation_input_tokens: s.cacheCreationInputTokens,
+    cache_read_input_tokens: s.cacheReadInputTokens,
+    fallback: s.iterations === 'fallback',
+  };
 }
 
 /**

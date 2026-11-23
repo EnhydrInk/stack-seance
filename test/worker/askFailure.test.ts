@@ -6,7 +6,7 @@ import '../compiler/helpers/noNetwork';
 // `logs` check comes last, so the only thing the unfixed code can fail is the missing entry.
 import { describe, it, expect } from 'vitest';
 import { verifyAccess } from '../../worker/src/access';
-import { makeAsk } from '../../worker/src/ask';
+import { makeAsk, toModelReply } from '../../worker/src/ask';
 import { handle, type Deps } from '../../worker/src/handle';
 import { readLimits, take } from '../../worker/src/limits';
 import { keys, signToken } from './helpers/accessKeys';
@@ -18,11 +18,18 @@ import {
   INPUT,
   KEY,
   MARK,
+  REFUSAL,
   REQUEST,
   REQUEST_ID,
   REQUEST_TEXTS,
+  SUCCESS,
   TIMEOUT,
   apiFetch,
+  expectedRequest,
+  messageBody,
+  messageOf,
+  sentBetas,
+  usageEntryOf,
   type FailureRow,
   type FakeFetch,
 } from './helpers/fakeApi';
@@ -111,4 +118,90 @@ describe('Property 3, bugfix 2.3, 2.4 and 3.14 through handle, wired as worker/s
       expect(logs, 'logs').toStrictEqual([row.entry, REQUEST_LINE]);
     },
   );
+});
+
+// Property 4 (preservation): everything below holds on the unfixed code and must keep holding
+// after the fix. Where a call fails, only the entries whose event is model-call-failed are left
+// out of the comparison, because the fix adds exactly those (3.14).
+const FAILED = 'model-call-failed';
+
+/** The entries of `logs` other than failure entries. */
+function withoutFailures(logs: readonly Record<string, unknown>[]): Record<string, unknown>[] {
+  return logs.filter((entry) => entry.event !== FAILED);
+}
+
+describe('Property 4, bugfix 3.12 and 3.15 a call that succeeds sends, logs and returns as before', () => {
+  it.each([
+    { name: 'end_turn', success: SUCCESS, reply: { kind: 'reply', text: '{"hasButton":false}', turn: SUCCESS.content } },
+    { name: 'refusal after a fallback', success: REFUSAL, reply: { kind: 'refusal' } },
+  ])('$name: writes exactly the usage entry and nothing else, and returns the Model_Reply', async ({ success, reply }) => {
+    const { fetch, calls } = apiFetch(() => messageBody(success));
+    const logs: Record<string, unknown>[] = [];
+    const ask = makeAsk({ apiKey: KEY, fetch, log: (entry) => logs.push(entry) });
+
+    const result = await ask(INPUT);
+
+    expect(result).toStrictEqual(reply);
+    expect(result).toStrictEqual(toModelReply(messageOf(success)));
+    expect(logs).toStrictEqual([usageEntryOf(success)]);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.body).toStrictEqual(expectedRequest(INPUT).body);
+    expect(sentBetas(calls[0]!)).toEqual(expect.arrayContaining(expectedRequest(INPUT).betas));
+  });
+
+  it.each([AUTHENTICATION, CONNECTION, TIMEOUT])(
+    "after $name, the same Ask's next successful call writes exactly its usage entry",
+    async (row) => {
+      const answers = [row.respond, () => messageBody(SUCCESS)];
+      let next = 0;
+      const { fetch, calls } = apiFetch((init) => answers[next++]!(init));
+      const logs: Record<string, unknown>[] = [];
+      const ask = makeAsk({ apiKey: KEY, fetch, timeoutMs: row.timeoutMs, log: (entry) => logs.push(entry) });
+
+      const rejection = await rejectionOf(ask(INPUT));
+      expect(rejection).toBeInstanceOf(row.rejects);
+      expect(withoutFailures(logs)).toStrictEqual([]);
+
+      // Only the entries written during the second call are compared, so this holds before and after the fix.
+      const before = logs.length;
+      const result = await ask(INPUT);
+      expect(result).toStrictEqual(toModelReply(messageOf(SUCCESS)));
+      expect(logs.slice(before)).toStrictEqual([usageEntryOf(SUCCESS)]);
+      expect(calls).toHaveLength(2);
+      expect(calls.map((call) => call.body)).toStrictEqual([expectedRequest(INPUT).body, expectedRequest(INPUT).body]);
+    },
+  );
+});
+
+describe('Property 4, bugfix 3.13 a missing or empty key', () => {
+  it.each([
+    { name: 'missing', apiKey: undefined },
+    { name: 'empty', apiKey: '' },
+  ])('$name: rejects with Error ANTHROPIC_API_KEY is not set, with no fetch call and no entry', async ({ apiKey }) => {
+    const { fetch, calls } = apiFetch(() => messageBody(SUCCESS));
+    const logs: Record<string, unknown>[] = [];
+    const ask = makeAsk({ apiKey, fetch, log: (entry) => logs.push(entry) });
+
+    const rejection = await rejectionOf(ask(INPUT));
+
+    expect(rejection).toStrictEqual(new Error('ANTHROPIC_API_KEY is not set'));
+    expect(Object.getPrototypeOf(rejection)).toBe(Error.prototype);
+    expect(calls).toHaveLength(0);
+    expect(logs).toStrictEqual([]);
+  });
+});
+
+describe('Property 4, bugfix 3.14 through handle, a failed call answers, counts and logs the request as before', () => {
+  it('401 authentication_error: 502 model, counted once, one fetch, and the same request line', async () => {
+    const { fetch, calls } = apiFetch(AUTHENTICATION.respond);
+    const { deps, logs, store } = wired(fetch, undefined);
+
+    const response = await handle(jsonRequest({ body: JSON.stringify(REQUEST), token: TOKEN }), deps);
+
+    expect(response.status).toBe(502);
+    expect(await response.json()).toStrictEqual({ ok: false, error: 'model' });
+    expect(store.snapshot()).toEqual({ day: '2026-12-05', [`ip:${IP}`]: 1, site: 1 });
+    expect(calls).toHaveLength(1);
+    expect(withoutFailures(logs)).toStrictEqual([REQUEST_LINE]);
+  });
 });

@@ -4,8 +4,25 @@ import '../compiler/helpers/noNetwork';
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import { APIError } from '@anthropic-ai/sdk';
-import { makeAsk } from '../../worker/src/ask';
-import { INPUT, KEY, MARK, apiFetch, errorBody, textBody } from './helpers/fakeApi';
+import type { BetaContentBlock } from '@anthropic-ai/sdk/resources/beta/messages/messages';
+import type { ModelInput } from '../../src/compiler/index';
+import { MODEL, makeAsk, toModelReply } from '../../worker/src/ask';
+import {
+  FAILURE_ROWS,
+  INPUT,
+  KEY,
+  MARK,
+  apiFetch,
+  errorBody,
+  expectedRequest,
+  messageBody,
+  messageOf,
+  sentBetas,
+  textBody,
+  usageEntryOf,
+  type FailureRow,
+  type Success,
+} from './helpers/fakeApi';
 
 /** The Identifier_Rule of design.md: what an API error type looks like. */
 const IDENTIFIER = /^[a-z][a-z0-9_]{0,63}$/;
@@ -126,6 +143,93 @@ describe('Property 3: A failed SDK call writes one failure entry and rejects wit
           expect(logs, 'logs').toStrictEqual([{ event: 'model-call-failed', status: c.status, ...type, error_class: error.name }]);
         }),
         { numRuns: 200 },
+      );
+    },
+    30_000,
+  );
+});
+
+const textArb = fc.string({ unit: 'grapheme', maxLength: 40 });
+const blockArb: fc.Arbitrary<BetaContentBlock> = fc.oneof(
+  textArb.map((text): BetaContentBlock => ({ type: 'text', text, citations: null })),
+  fc.tuple(textArb, fc.stringMatching(/^sig-[A-Za-z0-9]{1,16}$/)).map(([thinking, signature]): BetaContentBlock => ({ type: 'thinking', thinking, signature })),
+);
+const contentArb = fc.array(blockArb, { maxLength: 3 });
+const tokensArb = fc.nat({ max: 1_000_000 });
+
+const successArb: fc.Arbitrary<Success> = fc.record({
+  model: fc.constantFrom(MODEL, 'claude-sonnet-5-5'),
+  stopReason: fc.constantFrom('end_turn' as const, 'max_tokens' as const, 'refusal' as const),
+  content: contentArb,
+  inputTokens: tokensArb,
+  outputTokens: tokensArb,
+  cacheCreationInputTokens: fc.option(tokensArb, { nil: null }),
+  cacheReadInputTokens: fc.option(tokensArb, { nil: null }),
+  iterations: fc.constantFrom('none' as const, 'message' as const, 'fallback' as const),
+});
+
+type Outcome = { kind: 'success'; success: Success } | { kind: 'failure'; row: FailureRow };
+
+const outcomeArb: fc.Arbitrary<Outcome> = fc.oneof(
+  successArb.map((success): Outcome => ({ kind: 'success', success })),
+  fc.constantFrom(...FAILURE_ROWS).map((row): Outcome => ({ kind: 'failure', row })),
+);
+
+/** The first request of a compile, or a later one that sends an Assistant_Turn back with a follow-up. */
+const inputArb: fc.Arbitrary<ModelInput> = fc.oneof(
+  fc.constant(INPUT),
+  fc.tuple(contentArb, textArb).map(([turn, text]): ModelInput => ({
+    ...INPUT,
+    messages: [...INPUT.messages, { role: 'assistant', turn }, { role: 'user', text }],
+  })),
+);
+
+describe('Property 4: Ask calls that do not fail send, log and return as before', () => {
+  // Feature: worker-body-limit-and-model-error-log-fix, Property 4: Ask calls that do not fail send, log and return as before
+  // **Validates: Requirements 3.12, 3.14, 3.15**
+  it(
+    'P4 mixed sequences: on one Ask, each success writes exactly its usage entry and returns its reply, and each failure rejects and writes no other entry',
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(fc.array(fc.tuple(outcomeArb, inputArb), { minLength: 1, maxLength: 6 }), async (steps) => {
+          let next = 0;
+          const { fetch, calls } = apiFetch((init) => {
+            const [outcome] = steps[next++]!;
+            return outcome.kind === 'success' ? messageBody(outcome.success) : outcome.row.respond(init);
+          });
+          // The timeout row needs the Ask's 20 ms timeout. Every other sequence keeps the default.
+          const timeoutMs = steps.flatMap(([o]) => (o.kind === 'failure' && o.row.timeoutMs !== undefined ? [o.row.timeoutMs] : []))[0];
+          const logs: Record<string, unknown>[] = [];
+          const ask = makeAsk({ apiKey: KEY, fetch, timeoutMs, log: (entry) => logs.push(entry) });
+
+          for (const [i, [outcome, input]] of steps.entries()) {
+            const before = logs.length;
+            const result = await ask(input).then(
+              (value) => ({ ok: true as const, value }),
+              (error: unknown) => ({ ok: false as const, error }),
+            );
+            const written = logs.slice(before);
+
+            // One fetch per call, sending the same request as before (3.14, 3.15).
+            expect(calls).toHaveLength(i + 1);
+            const sent = expectedRequest(input);
+            expect(calls[i]!.body).toStrictEqual(sent.body);
+            expect(sentBetas(calls[i]!)).toEqual(expect.arrayContaining(sent.betas));
+
+            if (outcome.kind === 'success') {
+              expect(result).toStrictEqual({ ok: true, value: toModelReply(messageOf(outcome.success)) });
+              expect(written).toStrictEqual([usageEntryOf(outcome.success)]);
+            } else {
+              expect(result.ok).toBe(false);
+              const { error } = result as { error: unknown };
+              expect(error).toBeInstanceOf(outcome.row.rejects);
+              expect((error as Error).name).toBe(outcome.row.className);
+              // The failure entries themselves belong to Property 3.
+              expect(written.filter((entry) => entry.event !== 'model-call-failed')).toStrictEqual([]);
+            }
+          }
+        }),
+        { numRuns: 100 },
       );
     },
     30_000,

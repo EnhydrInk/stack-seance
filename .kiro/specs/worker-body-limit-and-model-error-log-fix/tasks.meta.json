@@ -13,6 +13,10 @@
       "status": "passed",
       "failingExample": "Exploration test failed as expected on unfixed code (80c9e62), proving Bug 2. Property 3 counterexample (seed 314762468, shrunk 7 times): [{\"kind\":\"json\",\"status\":400,\"type\":[],\"code\":undefined,\"message\":\"Leak-Marker-0 \",\"requestId\":\"req_LEAK0\"}]. The rejection is an APIError with status 400 after one fetch, but \"logs: expected [] to strictly equal [{ event: 'model-call-failed', status: 400, error_class: 'BadRequestError' }]\". All 13 fake-response rows give logs [] while the rejection carries the expected class, status and requestID (e.g. 401 -> AuthenticationError, status 401, requestID req_LEAKCHECK). Through handle (401, network, timeout), the only log line is {\"event\":\"request\",\"status\":502,\"error\":\"model\",\"calls\":[{\"call\":1,\"result\":\"failed\"}]}.",
       "lastRunTimestamp": 1795410121563
+    },
+    "4. Write preservation property tests for Bug 2 (BEFORE implementing the fix)": {
+      "status": "passed",
+      "lastRunTimestamp": 1795410494232
     }
   },
   "executionHistory": {
@@ -72,6 +76,16 @@
         "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
         "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
         "timestamp": 1795408650902
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795410197262
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795410548627
       }
     ],
     "5.1 Implement the capped read, and switch the one permitted test fake in the same change": [
