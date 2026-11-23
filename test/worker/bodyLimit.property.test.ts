@@ -65,8 +65,7 @@ const anyBodyArb: fc.Arbitrary<AnyBody> = fc.oneof(
 describe('Property 1: Over-limit bodies are turned away without being held', () => {
   // Feature: worker-body-limit-and-model-error-log-fix, Property 1: Over-limit bodies are turned away without being held
   // **Validates: Requirements 2.2**
-  // fails until task 5.1 fixes bug 1
-  it.fails(
+  it(
     'P1 at MAX: when more than MAX bytes arrive and no declared length is above MAX, the chunk that passes MAX is the last one taken',
     async () => {
       const caseArb = fc.integer({ min: MAX + 1, max: MAX + EXTRA }).chain((total) =>
@@ -93,8 +92,7 @@ describe('Property 1: Over-limit bodies are turned away without being held', () 
 
   // Feature: worker-body-limit-and-model-error-log-fix, Property 1: Over-limit bodies are turned away without being held
   // **Validates: Requirements 2.1**
-  // fails until task 5.1 fixes bug 1
-  it.fails(
+  it(
     'P1 declared above MAX: any body, even none, an empty one or a valid one, gets 400 with no chunk taken',
     async () => {
       await fc.assert(

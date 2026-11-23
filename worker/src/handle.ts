@@ -65,13 +65,22 @@ async function accessGranted(request: Request, deps: Deps): Promise<boolean> {
   }
 }
 
-/** The CompileRequest of the body, or null for a bad request (Requirement 2.1 to 2.6). */
+/**
+ * The CompileRequest of the body, or null for a bad request (Requirement 2.1 to 2.6). A declared
+ * length above MAX_BODY_BYTES is turned away unread; otherwise reading stops once more than
+ * MAX_BODY_BYTES arrive.
+ */
 async function readRequest(request: Request): Promise<CompileRequest | null> {
   const mediaType = (request.headers.get('Content-Type') ?? '').split(';')[0]!.trim().toLowerCase();
   if (mediaType !== 'application/json') return null;
 
-  const bytes = await request.arrayBuffer();
-  if (bytes.byteLength > MAX_BODY_BYTES) return null;
+  // A body that declares more than the limit is turned away before any of it is read (bugfix 2.1).
+  const declared = declaredLength(request.headers.get('Content-Length'));
+  if (declared !== null && declared > MAX_BODY_BYTES) return null;
+
+  // Otherwise the received bytes decide, and reading stops as soon as they pass the limit (bugfix 2.2).
+  const bytes = await readLimitedBody(request.body, MAX_BODY_BYTES);
+  if (!bytes) return null;
 
   let value: unknown;
   try {
@@ -81,4 +90,39 @@ async function readRequest(request: Request): Promise<CompileRequest | null> {
     return null;
   }
   return readCompileRequest(value);
+}
+
+/** Content-Length as a whole number when it is one or more ASCII digits and nothing else; otherwise null. */
+export function declaredLength(value: string | null): number | null {
+  return value !== null && /^[0-9]+$/.test(value) ? Number(value) : null;
+}
+
+/**
+ * The bytes of `body`, or null once more than `limit` bytes have arrived. Chunks are taken one
+ * at a time. The chunk that passes the limit is the last one taken, and the reader is then
+ * cancelled. No body gives zero bytes. A stream that errors makes this reject with its error.
+ */
+export async function readLimitedBody(body: ReadableStream<Uint8Array> | null, limit: number): Promise<Uint8Array | null> {
+  if (body === null) return new Uint8Array(0);
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    received += value.byteLength;
+    if (received > limit) {
+      // The answer is 400 whatever cancel does, so it is not awaited and a failure is dropped.
+      reader.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
 }

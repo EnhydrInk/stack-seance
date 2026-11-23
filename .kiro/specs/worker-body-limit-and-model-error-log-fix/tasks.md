@@ -130,7 +130,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
 
 - [ ] 5. Fix Bug 1: cap the body read in `worker/src/handle.ts`
 
-  - [~] 5.1 Implement the capped read, and switch the one permitted test fake in the same change
+  - [x] 5.1 Implement the capped read, and switch the one permitted test fake in the same change
     - In `readRequest`, keep the media type check first (3.7). After it, read `declaredLength(request.headers.get('Content-Length'))` and return null when it is above `MAX_BODY_BYTES`, with the comment from design. Take no reader and do not cancel the unread body
     - Add the exported `declaredLength(value: string | null): number | null`: `Number(value)` when `value` matches `/^[0-9]+$/`, otherwise null
     - Replace `await request.arrayBuffer()` and its length check (lines 73 and 74) with `const bytes = await readLimitedBody(request.body, MAX_BODY_BYTES); if (!bytes) return null;`
