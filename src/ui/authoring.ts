@@ -12,9 +12,15 @@ import { spiritsWriting } from './writing';
 const BUTTON_SIZE: [number, number] = [132, 24];
 const TEXT_SIZE: [number, number] = [200, 40];
 
-/** Keeps a rect inside the card. */
+/** The flip corner at the bottom right of the card, in card pixels. */
+const CORNER = 26;
+
+/** Keeps a rect inside the card and off the flip corner. */
 function inside([x, y, w, h]: Rect): Rect {
-  return [Math.max(0, Math.min(x, CARD_W - w)), Math.max(0, Math.min(y, CARD_H - h)), w, h];
+  let nx = Math.max(0, Math.min(x, CARD_W - w));
+  const ny = Math.max(0, Math.min(y, CARD_H - h));
+  if (nx + w > CARD_W - CORNER && ny + h > CARD_H - CORNER) nx = Math.max(0, CARD_W - CORNER - w);
+  return [nx, ny, w, h];
 }
 
 /** A button rect wide enough for its label (about 8 px a character, plus the pumpkin), inside the card. */
@@ -57,6 +63,11 @@ export class Authoring {
       if (this.cancelPlace) this.cancelPlace();
       else if (this.arranging && !(document.activeElement as HTMLElement | null)?.isContentEditable) this.setArranging(false);
     });
+  }
+
+  /** Drops a spot being chosen or a sentence not yet sent. */
+  cancelPlacing(): void {
+    this.cancelPlace?.();
   }
 
   private ready(): boolean {
@@ -115,6 +126,8 @@ export class Authoring {
     input.placeholder = 'Describe the button in one sentence, in any language.';
     input.setAttribute('aria-label', 'Describe the button in one sentence');
     const row = el('div', 'buttons');
+    // Running from a clone: the dev server answers with a stand-in that knows a few words.
+    if (import.meta.env.DEV) row.appendChild(el('span', 'dev-note', 'dev stand-in compiler'));
     const cancel = el('button', 'dbtn', 'Cancel');
     cancel.type = 'button';
     const grow = el('button', 'dbtn default', 'Grow');
@@ -171,6 +184,8 @@ export class Authoring {
           },
           card,
         );
+        // Grown while the reader looked at the back: the back shows it too.
+        this.screen.refreshBack();
       } else if (this.model.card !== card) {
         // The reader moved on while the spirits wrote: the box does not follow them.
         close();
@@ -186,10 +201,12 @@ export class Authoring {
     input.focus();
   }
 
-  /** The ghost's news after a compile: skipped parts, nothing done, or a failure. */
+  /** The ghost's news after a compile: new cards, skipped parts, nothing done, or a failure. */
   private tell(reply: CompileResponse): void {
     if (reply.ok) {
-      if (reply.skipped.length) this.screen.boo(`Boo… the spirits can't ${couldNot(reply.skipped)} yet. Everything else is done!`);
+      const grew = reply.newCards.length ? ` A new card grew: ${reply.newCards.join(', ')}.` : '';
+      if (reply.skipped.length) this.screen.boo(`Boo… the spirits can't ${couldNot(reply.skipped)} yet. Everything else is done!${grew}`);
+      else if (grew) this.screen.boo(grew.trim());
       return;
     }
     switch (reply.error) {
@@ -249,7 +266,16 @@ export class Authoring {
       field.text = div.innerText.replace(/\n$/, '');
       this.model.changed('text');
     });
-    div.addEventListener('blur', () => this.model.changed('content'), { once: true });
+    div.addEventListener(
+      'blur',
+      () => {
+        // The box grows to fit what was written, as far as the bottom of the card.
+        const need = Math.min(div.scrollHeight, CARD_H - field.rect[1]);
+        if (need > field.rect[3]) field.rect[3] = need;
+        this.model.changed('content');
+      },
+      { once: true },
+    );
     div.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       // Escape leaves the text only; arranging, if it is on, stays on.

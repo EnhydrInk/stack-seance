@@ -201,7 +201,9 @@ input:focus-visible {
   pointer-events: none;
 }
 
-body:not(.busy-long) .running-hint {
+/* While a dialog waits for the reader, the script is waiting on them, not running away. */
+body:not(.busy-long) .running-hint,
+body:has(.dialogs .dialog) .running-hint {
   display: none;
 }
 
@@ -423,6 +425,12 @@ body.busy .viewport {
 .sentence {
   margin: 2px 0 4px;
   font-size: calc(14px * var(--font-scale));
+}
+
+/* A long sentence shows whole: the box grows with it. */
+textarea.sentence {
+  field-sizing: content;
+  min-height: 2lh;
 }
 
 .fields {
@@ -925,6 +933,14 @@ body.busy .viewport {
   inset: 0;
   cursor: crosshair;
   background: color-mix(in srgb, var(--ghost) 10%, transparent);
+}
+
+.dev-note {
+  margin-right: auto;
+  align-self: center;
+  white-space: nowrap;
+  font-size: 11px;
+  opacity: 0.6;
 }
 
 .place-hint {

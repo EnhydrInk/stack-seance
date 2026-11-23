@@ -1,5 +1,5 @@
 // The UI side of the compiler: POST /api/compile on the same host. The request and the reply
-// are the contract in the compiler spec (编译器起手.md); the Worker is built in Kiro.
+// are the contract in the compiler spec (.kiro/specs/sentence-compiler); the Worker is built in Kiro.
 
 import type { Model } from './model';
 

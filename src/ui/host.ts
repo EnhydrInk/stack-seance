@@ -35,7 +35,7 @@ export class BrowserHost implements Host {
 
   /**
    * Ends the running script: a wait or an open dialog ends at once (the dialog's answer is not
-   * used), and the next wait, dialog, haunt or move throws.
+   * used), and the next wait, dialog, haunt, move or change to a field or button throws.
    */
   stop(): void {
     this.stopped = true;
@@ -79,6 +79,7 @@ export class BrowserHost implements Host {
   }
 
   goToStack(stack: StackRef, effect?: Effect): CardRef {
+    this.guard();
     this.stage.changeCard(() => this.model.goToStack(stack.id), effect);
     return this.currentCard();
   }
@@ -88,6 +89,7 @@ export class BrowserHost implements Host {
   }
 
   setField(name: string, text: string): boolean {
+    this.guard();
     const field = this.model.field(name);
     if (!field) return false;
     field.text = text;
@@ -96,6 +98,7 @@ export class BrowserHost implements Host {
   }
 
   setVisible(kind: 'button' | 'field', name: string, visible: boolean): boolean {
+    this.guard();
     const item = kind === 'button' ? this.model.button(name) : this.model.field(name);
     if (!item) return false;
     item.visible = visible;

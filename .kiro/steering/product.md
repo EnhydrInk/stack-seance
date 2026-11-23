@@ -20,7 +20,7 @@ Every card can be flipped over. The back shows each plain-language sentence next
 
 - A sentence passes through the LLM once, when the card is written: it is compiled into a script in our HyperTalk subset and stored in the card.
 - At runtime our own small interpreter runs that script. Running a card never calls the AI.
-- Editing the sentence on the front recompiles it.
+- Editing the sentence on the back and pressing Recompile writes the script again.
 
 ## Why
 

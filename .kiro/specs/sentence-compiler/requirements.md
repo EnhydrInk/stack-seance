@@ -6,11 +6,11 @@ A person clicks a spot on a card and writes one sentence, in any language, for e
 
 The interpreter in `src/hypertalk` is finished. The compiler uses its public API (`parse`) and does not change it. The UI in `src/ui` is written separately against the contract below, so the contract's names and shapes are fixed.
 
-Out of scope: the UI, deployment and secrets (the API key is created separately and 克先生 deploys), changing the interpreter, and recompiling when a sentence is edited (the UI calls the same endpoint again).
+Out of scope: the UI, deployment and secrets (the API key is created separately and the maintainer deploys), changing the interpreter, and recompiling when a sentence is edited (the UI calls the same endpoint again).
 
 ## Contract with the UI (fixed)
 
-`POST /api/compile` on the same host as the site (`stack-seance.enhydrink.com/api/compile`), JSON in and out. The UI is written against these names and shapes now. Changing any of them needs 克先生's agreement first.
+`POST /api/compile` on the same host as the site (`stack-seance.enhydrink.com/api/compile`), JSON in and out. The UI is written against these names and shapes now. Changing any of them needs the maintainer's agreement first.
 
 ```ts
 interface CompileRequest {

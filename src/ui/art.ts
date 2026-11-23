@@ -163,6 +163,25 @@ export const ICONS: Record<string, Sprite> = {
     '................',
     '................',
   ],
+  /** A stack someone made: a pile of cards, the top one with a title bar and a button. */
+  cards: [
+    'kkkkkkkkkkkk....',
+    'kwwwwwwwwwwk....',
+    'kwppppppppwkkk..',
+    'kwwwwwwwwwwkwk..',
+    'kwkkkkkkkwwkwkkk',
+    'kwwwwwwwwwwkwkwk',
+    'kwkkkkkwwwwkwkwk',
+    'kwwwwwwwwwwkwkwk',
+    'kwwkoooookwkwkwk',
+    'kwwwwwwwwwwkwkwk',
+    'kkkkkkkkkkkkwkwk',
+    '..kwwwwwwwwwwkwk',
+    '..kkkkkkkkkkkkwk',
+    '....kwwwwwwwwwwk',
+    '....kkkkkkkkkkkk',
+    '................',
+  ],
 };
 
 // ---- haunts

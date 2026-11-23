@@ -59,12 +59,16 @@ export function renderBack(
       const writing = spiritsWriting();
       go.replaceWith(writing.el);
       input.readOnly = true;
+      // The script below is about to be written again: an edit made now would be lost.
+      const script = blocks.get(buttonId)?.textarea;
+      if (script) script.readOnly = true;
       const ok = await onRecompile(buttonId, input.value.trim());
       writing.stop();
       if (!ok) {
         // The edited sentence stays, and Recompile can be pressed again.
         writing.el.replaceWith(go);
         input.readOnly = false;
+        if (script) script.readOnly = false;
         input.focus();
       }
     });
@@ -125,6 +129,19 @@ export function renderBack(
     textarea.addEventListener('input', () => {
       refresh();
       onEdit(id, textarea.value);
+    });
+    // A new line starts where the one above it did; Tab indents by two spaces.
+    textarea.addEventListener('keydown', (e) => {
+      if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === 'Enter') {
+        const start = textarea.value.lastIndexOf('\n', textarea.selectionStart - 1) + 1;
+        const indent = /^[ \t]*/.exec(textarea.value.slice(start))![0];
+        e.preventDefault();
+        document.execCommand('insertText', false, `\n${indent}`);
+      } else if (e.key === 'Tab' && !e.shiftKey) {
+        e.preventDefault();
+        document.execCommand('insertText', false, '  ');
+      }
     });
     refresh();
   };

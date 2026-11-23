@@ -193,7 +193,7 @@ export class Model {
         sentence: `Clicking this opens the ${name} stack.`,
         script: `on mouseUp\n  go to stack "${name}"\nend mouseUp`,
         style: 'icon',
-        icon: 'sparkle',
+        icon: 'cards',
       });
     }
     this.changed('content');
@@ -227,14 +227,18 @@ export function copy<T>(x: T): T {
 
 /**
  * Brings a save made by an older version up to date: built-in stacks and cards it lacks are added
- * (so a new stack or help card never goes missing), and the Home New Stack icon becomes the
- * built-in button it is now.
+ * (so a new stack or help card never goes missing), the Home New Stack icon becomes the
+ * built-in button it is now, and icons of stacks the reader made get the pile of cards.
  */
 export function upgrade(doc: StacksDoc, defaults: StacksDoc): StacksDoc {
   const next = withMissingCards(withMissingStacks(doc, defaults), defaults);
   const icon = next.stacks.find((s) => s.id === 'home')?.cards[0]?.buttons.find((b) => b.id === 'b-home-new');
   const fresh = defaults.stacks.find((s) => s.id === 'home')?.cards[0]?.buttons.find((b) => b.id === 'b-home-new');
   if (icon && fresh && !icon.builtin) Object.assign(icon, { builtin: fresh.builtin, script: fresh.script, sentence: fresh.sentence });
+  // Icons of stacks the reader made used to share New Stack's sparkle; they are a pile of cards now.
+  for (const b of next.stacks.find((s) => s.id === 'home')?.cards[0]?.buttons ?? []) {
+    if (b.icon === 'sparkle' && b.id !== 'b-home-new') b.icon = 'cards';
+  }
   return next;
 }
 

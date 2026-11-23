@@ -182,7 +182,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
 ## Notes
 
 - No sub-task is optional. Requirements 13 and 14 make the properties and the example tests part of the feature.
-- `npm install` in task 1 is the only step that uses the network. No test does (Requirement 14.10). The Wrangler dry run is not a task: 克先生 runs it when deploying.
+- `npm install` in task 1 is the only step that uses the network. No test does (Requirement 14.10). The Wrangler dry run is not a task: the maintainer runs it when deploying.
 - The pre-task hook blocks every task while `vitest` is red, so each task leaves the suite green. Vitest does not type-check. Run `npm run typecheck` before finishing each sub-task too, not only at the checkpoints.
 - The Worker modules that tests import are type-checked twice: under `@types/node` through the tests (`tsconfig.test.json`), and under the Workers types (`tsconfig.worker.json`). They may use only Web APIs that both have. `worker/src/index.ts` is checked by `tsconfig.worker.json` alone.
 - `test/compiler/helpers/arbitraries.ts` is written in 6.1 only, so 6.2 to 6.4 can run side by side. `test/compiler/helpers/fixtures.ts` is written in 3.3.

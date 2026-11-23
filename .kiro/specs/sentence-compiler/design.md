@@ -463,7 +463,7 @@ enabled = true
 invocation_logs = false    # invocation logs record request headers, CF-Connecting-IP among them (Requirement 11.2)
 ```
 
-`ANTHROPIC_API_KEY` is a secret and is not in the file. Observability stays on for the Worker's own `console.log` lines, which hold no Client_Key. Invocation logs are off because they record the request headers, and `CF-Connecting-IP` is the Client_Key. `nodejs_compat` is on because the SDK's bundle names `node:` modules: it reaches them through dynamic imports for file-based credentials, which this Worker never uses, and a `browser` field maps them to stubs. With the flag on, the bundle builds whichever mapping the bundler applies. 克先生 confirms it with `npx wrangler@4 deploy --dry-run` when deploying, since that step needs the network. Wrangler is not a dependency of the repository.
+`ANTHROPIC_API_KEY` is a secret and is not in the file. Observability stays on for the Worker's own `console.log` lines, which hold no Client_Key. Invocation logs are off because they record the request headers, and `CF-Connecting-IP` is the Client_Key. `nodejs_compat` is on because the SDK's bundle names `node:` modules: it reaches them through dynamic imports for file-based credentials, which this Worker never uses, and a `browser` field maps them to stubs. With the flag on, the bundle builds whichever mapping the bundler applies. the maintainer confirms it with `npx wrangler@4 deploy --dry-run` when deploying, since that step needs the network. Wrangler is not a dependency of the repository.
 
 ### Type check and packages
 
@@ -497,7 +497,7 @@ invocation_logs = false    # invocation logs record request headers, CF-Connecti
 | Three broken replies, a Refusal, or a failed call (API error, network, timeout, missing key) | 502 `model` | yes | 1 to 3 |
 | Anything else thrown after the route check | 502 `model` | depends on where | 0 to 3 |
 
-The UI shows its "这次没请动" message for `model`. A request that was counted stays counted whatever it returns.
+The UI shows "The séance failed. Try again." for `model`. A request that was counted stays counted whatever it returns.
 
 ## Cost and limits of the platform
 

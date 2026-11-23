@@ -59,6 +59,17 @@ describe('making things', () => {
     expect(m.doc.stacks.some((s) => s.name === 'North Post')).toBe(true);
   });
 
+  it('gives stacks the reader made a pile of cards on Home, old saves too', () => {
+    const m = fresh();
+    m.addStack('Pumpkin Party');
+    const home = m.doc.stacks[0]!.cards[0]!;
+    expect(home.buttons.find((b) => b.name === 'Pumpkin Party')!.icon).toBe('cards');
+    home.buttons.find((b) => b.name === 'Pumpkin Party')!.icon = 'sparkle';
+    const up = upgrade(copy(m.doc), stacks as StacksDoc).stacks[0]!.cards[0]!.buttons;
+    expect(up.find((b) => b.name === 'Pumpkin Party')!.icon).toBe('cards');
+    expect(up.find((b) => b.id === 'b-home-new')!.icon).toBe('sparkle');
+  });
+
   it('makes a new stack with one card and an icon on Home that goes to it', () => {
     const m = fresh();
     const s = m.addStack('Pumpkin Party');

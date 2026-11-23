@@ -21,6 +21,8 @@ const AUTOSAVE = 'stack-seance:autosave';
 
 startTheme();
 applyFontSettings();
+// The back's code font, fetched now so a first flip does not wait for it.
+void document.fonts.load('16px VT323');
 
 const saved = localStorage.getItem(AUTOSAVE);
 const model = new Model(saved ? upgrade(JSON.parse(saved) as StacksDoc, defaults as StacksDoc) : copy(defaults as StacksDoc));
@@ -119,6 +121,8 @@ authoring.onArranging = (on) => arrangeTool.classList.toggle('on', on);
 // Arranging is for the front: turning the card over stops it, so no handle is left on the back.
 screen.onFlip = (back) => {
   if (back && authoring.arranging) authoring.setArranging(false);
+  // A spot or a sentence not yet sent stays with the front it was made on.
+  authoring.cancelPlacing();
 };
 
 const cards = () => model.stack.cards.length;
@@ -178,6 +182,7 @@ let tideSize: { width: number; height: number } | undefined;
 /**
  * The largest zoom that fits, in steps that land on whole device pixels (1× on a plain
  * screen, ½× on a Retina one) so the pixels stay crisp; below 1 only when the screen is too small.
+ * Where whole steps would leave the card small (a 125% laptop screen stops at 1×), quarter steps.
  */
 function fit(): void {
   const w = CARD_W + 8;
@@ -196,7 +201,8 @@ function fit(): void {
   }
   const t = tideSize;
   const roomFor = (z: number) => (dw - w * z) / 2 >= t.width + 20 || (dh - h * z) / 2 >= t.height + 20;
-  let zoom = avail >= 1 ? Math.floor(avail / step) * step : Math.max(avail, 0.4);
+  const aligned = Math.floor(avail / step) * step;
+  let zoom = avail < 1 ? Math.max(avail, 0.4) : aligned < 1.5 && avail / aligned >= 1.25 ? Math.floor(avail * 4) / 4 : aligned;
   while (zoom > 2 && !roomFor(zoom)) zoom -= step;
   tide.hidden = !roomFor(zoom);
   screen.win.style.zoom = String(zoom);
