@@ -17,7 +17,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
   - Done when the suite and the type check pass. The Worker config already checks `src/hypertalk` under the Workers types. If those types clash with anything there, stop and report.
   - _Requirements: 12.1, 12.6, 14.10_
 
-- [-] 2. Contract, names and the reply schema
+- [x] 2. Contract, names and the reply schema
   - [x] 2.1 Write `src/compiler/contract.ts` and `src/compiler/model.ts`
     - `CompileRequest` and `CompileResponse` copied exactly from requirements.md. `CompileOutcome`, `REQUEST_LIMITS` and `readCompileRequest`, as "contract.ts" describes: a non-array object, field types, sentence 1 to 500 code units with a `/\S/` character, at most 100 names per list, at most 100 code units per name, empty strings allowed, new arrays, unknown fields dropped.
     - `Message`, `ModelInput`, `ModelReply`, `Ask` and `CallEvent`, as "model.ts" describes. `CallEvent` uses the `RuleNumber` type, which can live here, or in `rules.ts` with a type-only import.
@@ -29,7 +29,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - `REPLY_SCHEMA` exactly as "schema.ts" gives it: five required properties in that order, `additionalProperties: false`, no length, pattern or union keywords, and no reasoning field.
     - `ReplyObject` and `readReplyObject(text)`: `null` unless `JSON.parse` succeeds and gives a non-array object whose keys are exactly the five fields, each of its type.
     - _Requirements: 4.10, 6.7, 7.2_
-  - [ ] 2.4 Write `test/compiler/contract.test.ts` and `test/compiler/names.test.ts`
+  - [x] 2.4 Write `test/compiler/contract.test.ts` and `test/compiler/names.test.ts`
     - Contract: `expectTypeOf` pins `CompileRequest`, `CompileResponse` and `CompileOutcome` to the contract. `readCompileRequest` cases: each wrong type and missing field, an array body, sentences of 0, 1, 500 and 501 code units, a sentence of spaces, one of tabs and newlines, and one of U+3000, lists of 100 and 101 names, names of 100 and 101 code units, empty strings accepted, and an unknown field dropped from the result.
     - Names: each part of `englishNameProblems`, alone and combined; `sameName` and `findSameName` with case and empty entries; `quote` at 80 and 81 code units. `looksNumeric` agrees with `looksNumeric` from `src/hypertalk/values.ts` on a fixed list (`"3"`, `" 007 "`, `"-5"`, `"2.5"`, `"- 5"`, `"+1"`, `".5"`, `"3."`, `"1e3"`, `""`) and on 1,000 strings from a fixed-seed fast-check sample.
     - `readReplyObject`: valid objects of both kinds; `null` for text that is not JSON, an array, a missing field, an extra field and a wrong type.
