@@ -11,7 +11,8 @@ const HOME_SLOTS: [number, number][] = [
   [306, 212],
 ];
 
-export type Change = 'content' | 'place';
+/** 'text' is a field's text changing while it is typed: it is saved, and nothing is redrawn. */
+export type Change = 'content' | 'place' | 'text';
 
 /** Who owns a script: a card, or a button on a card. */
 export type ScriptOwner =
@@ -127,15 +128,16 @@ export class Model {
     };
   }
 
-  /** Adds blank cards to the end of the current stack. */
-  addCards(names: string[]): void {
-    for (const name of names) this.stack.cards.push(this.blankCard(name));
+  /** Adds blank cards to the end of a stack, the current one unless another is given. */
+  addCards(names: string[], stack = this.stack): void {
+    for (const name of names) stack.cards.push(this.blankCard(name));
     if (names.length) this.changed('content');
   }
 
-  addButton(button: Omit<ButtonDoc, 'id'>): ButtonDoc {
+  /** Adds a button to a card, the current one unless another is given. */
+  addButton(button: Omit<ButtonDoc, 'id'>, card = this.card): ButtonDoc {
     const b: ButtonDoc = { id: this.newId('button'), ...button };
-    this.card.buttons.push(b);
+    card.buttons.push(b);
     this.changed('content');
     return b;
   }

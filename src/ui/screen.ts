@@ -35,8 +35,10 @@ export class Screen implements Stage {
   onClick: (b: ButtonDoc) => void = () => {};
   /** Set by main: whether a script is running (flips and clicks wait). */
   isBusy: () => boolean = () => false;
-  /** Set by main: recompiles a button from its edited sentence. */
-  onRecompile: (buttonId: string, sentence: string) => Promise<void> = async () => {};
+  /** Set by main: recompiles a button from its edited sentence; false when nothing changed. */
+  onRecompile: (buttonId: string, sentence: string) => Promise<boolean> = async () => false;
+  /** Set by main: told before the card shows its front or its back. */
+  onFlip: (back: boolean) => void = () => {};
 
   constructor(private readonly model: Model) {
     this.win = el('div', 'window');
@@ -61,6 +63,7 @@ export class Screen implements Stage {
     this.win.append(bar, this.viewport);
 
     model.onChange((change) => {
+      if (change === 'text') return;
       if (change === 'place' || !this.flipped) this.renderFront();
     });
   }
@@ -318,6 +321,7 @@ export class Screen implements Stage {
   }
 
   private showSide(back: boolean): void {
+    this.onFlip(back);
     this.flipped = back;
     this.back.hidden = !back;
     this.front.hidden = back;

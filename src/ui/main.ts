@@ -43,7 +43,7 @@ screen.onClick = (b) => {
 screen.isBusy = () => runner.running;
 
 model.onChange((change) => {
-  if (change === 'content') localStorage.setItem(AUTOSAVE, JSON.stringify(model.doc));
+  if (change === 'content' || change === 'text') localStorage.setItem(AUTOSAVE, JSON.stringify(model.doc));
 });
 
 /** A move the reader asks for from the menu: change the card, then run its openCard. */
@@ -90,6 +90,10 @@ function toggleArrange(): void {
   authoring.setArranging(!authoring.arranging);
   arrangeTool.classList.toggle('on', authoring.arranging);
 }
+// Arranging is for the front: turning the card over stops it, so no handle is left on the back.
+screen.onFlip = (back) => {
+  if (back && authoring.arranging) toggleArrange();
+};
 
 const cards = () => model.stack.cards.length;
 const menubar = renderMenubar([

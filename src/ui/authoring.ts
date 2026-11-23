@@ -40,7 +40,9 @@ export class Authoring {
     /** Changes the card on screen and runs the new card's openCard. */
     private readonly navigate: (move: () => void) => Promise<void>,
   ) {
-    model.onChange(() => this.drawHandles());
+    model.onChange((change) => {
+      if (change !== 'text') this.drawHandles();
+    });
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       if (this.cancelPlace) this.cancelPlace();
@@ -110,6 +112,8 @@ export class Authoring {
     this.cancelPlace = close;
     cancel.addEventListener('click', close);
     input.addEventListener('keydown', (e) => {
+      // Enter while an input method is composing picks a word; it does not grow the button.
+      if (e.isComposing || e.keyCode === 229) return;
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         box.requestSubmit();
@@ -120,15 +124,23 @@ export class Authoring {
       const sentence = input.value.trim();
       if (!sentence) return;
       this.cancelPlace = undefined;
+      // The button grows where it was placed, even if the reader moves on while the spirits write.
+      const { stack, card } = this.model;
       const writing = spiritsWriting();
       box.replaceChildren(writing.el);
       box.classList.add('waiting');
       const reply = await compileSentence(requestFor(this.model, sentence));
       writing.stop();
-      close();
       if (reply.ok) {
-        this.model.addCards(reply.newCards);
-        this.model.addButton({ name: reply.label, rect, visible: true, sentence, script: reply.script, style: 'roundrect' });
+        close();
+        this.model.addCards(reply.newCards, stack);
+        this.model.addButton({ name: reply.label, rect, visible: true, sentence, script: reply.script, style: 'roundrect' }, card);
+      } else {
+        // The sentence stays, so the reader can change it and try again.
+        box.classList.remove('waiting');
+        box.replaceChildren(input, row);
+        this.cancelPlace = close;
+        input.focus();
       }
       this.tell(reply);
     });
@@ -161,20 +173,23 @@ export class Authoring {
 
   // ---- recompiling a button from the back
 
-  async recompile(buttonId: string, sentence: string): Promise<void> {
+  /** True when the button was written again; on a failure the back keeps the edited sentence. */
+  async recompile(buttonId: string, sentence: string): Promise<boolean> {
+    const { stack } = this.model;
     const button = this.model.card.buttons.find((b) => b.id === buttonId);
-    if (!button) return;
+    if (!button) return false;
     const reply = await compileSentence(requestFor(this.model, sentence, buttonId));
     if (reply.ok) {
       // The new script may name the button by its new label (the compiler's Rule 6).
       button.name = reply.label;
       button.sentence = sentence;
       button.script = reply.script;
-      this.model.addCards(reply.newCards);
+      this.model.addCards(reply.newCards, stack);
       this.model.changed('content');
+      this.screen.refreshBack();
     }
-    this.screen.refreshBack();
     this.tell(reply);
+    return reply.ok;
   }
 
   // ---- text
@@ -187,9 +202,10 @@ export class Authoring {
     div.contentEditable = 'plaintext-only';
     div.classList.add('editing');
     div.focus();
-    // The text is kept as it is typed; leaving the field redraws the card and autosaves.
+    // The text is saved as it is typed; leaving the field redraws the card.
     div.addEventListener('input', () => {
       field.text = div.innerText.replace(/\n$/, '');
+      this.model.changed('text');
     });
     div.addEventListener('blur', () => this.model.changed('content'), { once: true });
     div.addEventListener('keydown', (e) => {

@@ -26,7 +26,8 @@ export function renderBack(
   stackName: string,
   el: HTMLElement,
   onEdit: (scriptId: string, source: string) => void,
-  onRecompile: (buttonId: string, sentence: string) => Promise<void>,
+  /** True when the button was written again (the back is then drawn anew). */
+  onRecompile: (buttonId: string, sentence: string) => Promise<boolean>,
 ): BackHandle {
   el.replaceChildren();
   const blocks = new Map<string, Block>();
@@ -58,8 +59,14 @@ export function renderBack(
       const writing = spiritsWriting();
       go.replaceWith(writing.el);
       input.readOnly = true;
-      await onRecompile(buttonId, input.value.trim());
+      const ok = await onRecompile(buttonId, input.value.trim());
       writing.stop();
+      if (!ok) {
+        // The edited sentence stays, and Recompile can be pressed again.
+        writing.el.replaceWith(go);
+        input.readOnly = false;
+        input.focus();
+      }
     });
     box.append(input, go);
     return box;

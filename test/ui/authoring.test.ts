@@ -16,6 +16,19 @@ describe('making things', () => {
     expect(m.stack.cards.at(-1)!.fields[0]!.text).toBe('Cellar');
   });
 
+  it('grows cards and a button where the sentence was written, after the reader moved on', () => {
+    const m = fresh();
+    m.goToStack('haunted');
+    const { stack, card } = m;
+    m.goToStack('help');
+    m.addCards(['Cellar'], stack);
+    m.addButton({ name: 'To the cellar', rect: [0, 0, 10, 10], visible: true, sentence: '', script: '', style: 'roundrect' }, card);
+    expect(stack.cards.at(-1)!.name).toBe('Cellar');
+    expect(card.buttons.at(-1)!.name).toBe('To the cellar');
+    expect(m.stack.cards.some((c) => c.name === 'Cellar')).toBe(false);
+    expect(m.card.buttons.some((b) => b.name === 'To the cellar')).toBe(false);
+  });
+
   it('makes a new stack with one card and an icon on Home that goes to it', () => {
     const m = fresh();
     const s = m.addStack('Pumpkin Party');
