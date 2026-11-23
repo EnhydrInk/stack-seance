@@ -99,7 +99,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - Test name starts with "P1 safety", with the comment `Feature: sentence-compiler, Property 1: Safety`. 300 runs.
     - The expected outcome comes from the step tags as the design's Property 1 describes, never from `checkReply`. Also check the number of calls, that later steps are never played, the same `system` and `schema` on every call, the messages growing only by the same `turn` object plus a message holding `Rule <n>:` for the tagged rule.
     - **Validates: Requirements 4.1 to 4.11, 5.1 to 5.8, 13.1, 13.2, 13.5**
-  - [ ] 6.3 Write the P2 property in `test/compiler/faithful.property.test.ts`
+  - [x] 6.3 Write the P2 property in `test/compiler/faithful.property.test.ts`
     - **Property 2: Faithful (P2 faithful)**
     - Test name starts with "P2 faithful", with the comment `Feature: sentence-compiler, Property 2: Faithful`. 200 runs.
     - The valid reply sits at call 1, 2 or 3 after broken replies. The result's four values are `toStrictEqual` to the fields of `JSON.parse(reply.text)`; for a Nothing_Reply, `skipped` is.
