@@ -61,7 +61,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - `EXAMPLES`: the seven rows of the design's table, each with a full request and a full ReplyObject. The requests' cards, fields, buttons and stacks are names of the built-in stacks, written out as literals. `prompt.ts` does not read `src/ui/stacks.json`. Scripts use the house style: `on mouseUp`, two-space indentation, `\n`, no comments.
     - `userMessage(request)`: `Compile this request:\n` followed by `JSON.stringify` of the seven fields in contract order. `retryMessage(reports)`: the grouped format of the design, ending with `Write the whole reply again as one JSON object that follows every rule.`
     - _Requirements: 5.9, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7_
-  - [ ] 4.2 Write `src/compiler/compile.ts` and `src/compiler/index.ts`
+  - [x] 4.2 Write `src/compiler/compile.ts` and `src/compiler/index.ts`
     - `MAX_MODEL_CALLS = 3` and `compile(request, ask, onCall?)` with the six steps of "compile.ts": a new messages array for every call, `model` on a rejection or a Refusal, `checkReply` on each reply, the Assistant_Turn and the Retry_Message appended after a broken reply on call 1 or 2, and `model` after a broken third reply. One `CallEvent` per call, with rule numbers only.
     - `index.ts` exports `compile`, `MAX_MODEL_CALLS`, the contract and model types, `REQUEST_LIMITS`, `readCompileRequest`, `REPLY_SCHEMA`, `ReplyObject`, `SYSTEM_PROMPT`, `EXAMPLES`, `userMessage`, `retryMessage`, `RULES`, `checkReply` and the rule types.
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 12.3_
