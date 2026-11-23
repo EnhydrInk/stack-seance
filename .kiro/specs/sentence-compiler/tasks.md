@@ -124,7 +124,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
       - `readLimits`: `"0"` and `"35"`, and the defaults for missing, `""`, `"abc"`, `"-1"`, `"2.5"`, `" 20"` and `"1e3"`.
       - `clientKey`: IPv4, full and compressed IPv6, two addresses in one /64, two /64s, and a missing header.
     - _Requirements: 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.9, 14.4, 1.3, 1.4_
-  - [ ] 8.2 Write `worker/src/access.ts` and `test/worker/access.test.ts`
+  - [x] 8.2 Write `worker/src/access.ts` and `test/worker/access.test.ts`
     - `TEAM_DOMAIN`, `CERTS_URL`, `accessRequired(vars)` (`REQUIRE_ACCESS !== 'false'`), and `verifyAccess(request, aud, keys)` with `jwtVerify(token, keys, { issuer: TEAM_DOMAIN, audience: aud, algorithms: ['RS256'], requiredClaims: ['exp'] })`. It returns false for an empty `aud`, a missing header, or any thrown error.
     - `test/worker/helpers/accessKeys.ts`: an RSA key pair from `jose`'s `generateKeyPair('RS256')`, a `kid`, `createLocalJWKSet`, and `signToken(claims, options)` for tests. No `createRemoteJWKSet` in tests.
     - Tests: a valid token is accepted. Rejected: a missing header, another key's signature, a wrong `aud`, a wrong `iss`, an expired token, `nbf` in the future, no `exp`, an `alg: none` token, an empty `aud`, and a key set that throws. `accessRequired` is false only for `"false"`, and true for missing, `"true"`, `"False"` and `""`.
