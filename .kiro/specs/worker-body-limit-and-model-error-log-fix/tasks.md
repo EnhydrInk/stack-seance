@@ -151,7 +151,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
     - _Preservation: Preservation Requirements from design (3.1 to 3.11): the order of checks, the strict decode, empty bodies, odd Content-Length values, bodies at exactly MAX, streams that error within the limit, and 401 or 404 before the body_
     - _Requirements: 2.1, 2.2, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11_
 
-  - [~] 5.2 Write the direct tests of `declaredLength` and `readLimitedBody`
+  - [x] 5.2 Write the direct tests of `declaredLength` and `readLimitedBody`
     - These tests call the new exports, so they could not be written before 5.1
     - `test/worker/bodyLimit.test.ts`, `declaredLength`: `'0'`, `'262144'` and `'000262145'` give numbers, and `'9'.repeat(400)` gives a number above MAX. `null`, `''`, `'abc'`, `'-1'`, `'+5'`, `'1e3'`, `'12.5'`, `'12, 12'`, `'0x10'` and `'１２'` (full-width) give null
     - `test/worker/bodyLimit.test.ts`, `readLimitedBody`, the cases in design "Unit Tests":

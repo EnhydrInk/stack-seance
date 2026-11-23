@@ -24,29 +24,55 @@ export interface CountingBody {
   cancels(): number;
 }
 
+export interface CountingOptions {
+  /** The number of chunks after which the stream errors instead of handing out the next one. */
+  errorAfter?: number;
+  /** What the stream errors with. A fresh `RangeError('stream broke')` when not given. */
+  error?: Error;
+  /** When given, the source's cancel throws this after counting the cancel. */
+  cancelError?: Error;
+}
+
 /**
- * A body stream that hands out `chunks` one per pull, then closes, or errors with
- * `RangeError('stream broke')` once `errorAfter` chunks have gone out. `highWaterMark: 0`
- * makes one read one pull: with the default of 1 the stream pulls once before anyone reads,
- * and the count would include a chunk the Worker never took.
+ * A body stream that hands out `chunks` one per pull, then closes, or errors with `error`
+ * (by default `RangeError('stream broke')`) once `errorAfter` chunks have gone out.
+ * `highWaterMark: 0` makes one read one pull: with the default of 1 the stream pulls once
+ * before anyone reads, and the count would include a chunk the Worker never took.
  */
-export function countingBody(chunks: readonly Uint8Array[], { errorAfter }: { errorAfter?: number } = {}): CountingBody {
+export function countingBody(chunks: readonly Uint8Array[], { errorAfter, error, cancelError }: CountingOptions = {}): CountingBody {
   let taken = 0;
   let cancels = 0;
   const stream = new ReadableStream<Uint8Array>(
     {
       pull(controller) {
-        if (errorAfter !== undefined && taken >= errorAfter) controller.error(new RangeError('stream broke'));
+        if (errorAfter !== undefined && taken >= errorAfter) controller.error(error ?? new RangeError('stream broke'));
         else if (taken < chunks.length) controller.enqueue(chunks[taken++]!);
         else controller.close();
       },
       cancel() {
         cancels++;
+        if (cancelError) throw cancelError;
       },
     },
     { highWaterMark: 0 },
   );
   return { stream, taken: () => taken, cancels: () => cancels };
+}
+
+/** Waits one macrotask, by which time every pending microtask has run and Node has reported any unhandled rejection. */
+export function macrotask(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+/** The bytes of `chunks` joined into one array. */
+export function concat(chunks: readonly Uint8Array[]): Uint8Array {
+  const bytes = new Uint8Array(chunks.reduce((total, chunk) => total + chunk.byteLength, 0));
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
 }
 
 /** `count` views of one shared buffer of `size` bytes, so a 90 MB body costs `size` bytes of test memory. */

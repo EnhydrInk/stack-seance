@@ -3,7 +3,7 @@ import '../compiler/helpers/noNetwork';
 // here refer to that spec's bugfix.md.
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { MAX_BODY_BYTES } from '../../worker/src/handle';
+import { MAX_BODY_BYTES, declaredLength, readLimitedBody } from '../../worker/src/handle';
 import { replyText } from '../compiler/helpers/fixtures';
 import { replyStep } from '../compiler/helpers/fakeModel';
 import {
@@ -11,10 +11,12 @@ import {
   BAD_REQUEST,
   MIN_COMPILE_BODY,
   compileBody,
+  concat,
   countingBody,
   crossingIndex,
   cut,
   jsonRequest,
+  macrotask,
   observe,
   referenceAnswer,
   repeated,
@@ -193,4 +195,83 @@ describe('Property 2: Requests within the limit are read, decoded and answered a
     },
     60_000,
   );
+});
+
+// Direct property tests of readLimitedBody and declaredLength, which exist only on the fixed code.
+// Small limits exercise many chunkings cheaply.
+
+const SMALL_LIMIT = 64;
+/** 0 to 12 chunks of 0 to 20 bytes. */
+const smallChunksArb = fc.array(fc.uint8Array({ maxLength: 20 }), { maxLength: 12 });
+const totalOf = (chunks: readonly Uint8Array[]) => chunks.reduce((total, chunk) => total + chunk.byteLength, 0);
+
+/** Chunks and a limit from 0 to 64 below their total, with the limit just below the total weighted up. */
+const overSmallLimitArb = smallChunksArb
+  .filter((chunks) => totalOf(chunks) > 0)
+  .chain((chunks) => {
+    const top = Math.min(SMALL_LIMIT, totalOf(chunks) - 1);
+    return fc.record({ chunks: fc.constant(chunks), limit: fc.oneof(fc.constant(top), fc.integer({ min: 0, max: top })) });
+  });
+
+/** Chunks whose total is at most 64, and a limit from that total to 64, with the limit equal to the total weighted up. */
+const withinSmallLimitArb = smallChunksArb
+  .filter((chunks) => totalOf(chunks) <= SMALL_LIMIT)
+  .chain((chunks) => {
+    const total = totalOf(chunks);
+    return fc.record({ chunks: fc.constant(chunks), limit: fc.oneof(fc.constant(total), fc.integer({ min: total, max: SMALL_LIMIT })) });
+  });
+
+describe('Property 1: Over-limit bodies are turned away without being held (readLimitedBody, small limits)', () => {
+  // Feature: worker-body-limit-and-model-error-log-fix, Property 1: Over-limit bodies are turned away without being held
+  // **Validates: Requirements 2.2**
+  it('P1 small limits: chunks whose total passes the limit give null, the crossing chunk is the last one taken, and the reader is cancelled once', async () => {
+    await fc.assert(
+      fc.asyncProperty(overSmallLimitArb, async ({ chunks, limit }) => {
+        const body = countingBody(chunks);
+        const result = await readLimitedBody(body.stream, limit);
+        const takenAtAnswer = body.taken();
+        // A macrotask runs every pending microtask first, so a pull that the cancel did not stop would show here.
+        await macrotask();
+        const k = crossingIndex(chunks, limit);
+        expect({ result, takenAtAnswer, taken: body.taken(), cancels: body.cancels() }).toStrictEqual({ result: null, takenAtAnswer: k, taken: k, cancels: 1 });
+      }),
+      { numRuns: 500 },
+    );
+  });
+});
+
+describe('Property 2: Requests within the limit are read, decoded and answered as before (readLimitedBody and declaredLength)', () => {
+  // Feature: worker-body-limit-and-model-error-log-fix, Property 2: Requests within the limit are read, decoded and answered as before
+  // **Validates: Requirements 3.6, 3.9**
+  it('P2 small limits: chunks whose total is at most the limit give exactly their concatenation, with every chunk taken and no cancel', async () => {
+    await fc.assert(
+      fc.asyncProperty(withinSmallLimitArb, async ({ chunks, limit }) => {
+        const body = countingBody(chunks);
+        const result = await readLimitedBody(body.stream, limit);
+        expect({ result, taken: body.taken(), cancels: body.cancels() }).toStrictEqual({ result: concat(chunks), taken: chunks.length, cancels: 0 });
+      }),
+      { numRuns: 500 },
+    );
+  });
+
+  const DIGITS = [...'0123456789'];
+  const FULL_WIDTH_DIGITS = [...'０１２３４５６７８９'];
+  const PRINTABLE_ASCII = Array.from({ length: 0x7f - 0x20 }, (_, i) => String.fromCharCode(0x20 + i));
+  /** Digit strings, printable ASCII, and mixes of ASCII digits, printable ASCII and full-width digits. */
+  const lengthTextArb = fc.oneof(
+    fc.stringMatching(/^[0-9]{1,30}$/),
+    fc.string({ unit: fc.constantFrom(...PRINTABLE_ASCII), maxLength: 12 }),
+    fc.string({ unit: fc.oneof(fc.constantFrom(...DIGITS), fc.constantFrom(...PRINTABLE_ASCII), fc.constantFrom(...FULL_WIDTH_DIGITS)), maxLength: 12 }),
+  );
+
+  // Feature: worker-body-limit-and-model-error-log-fix, Property 2: Requests within the limit are read, decoded and answered as before
+  // **Validates: Requirements 3.4, 3.5**
+  it('P2 declaredLength: a string is a declared length exactly when it is one or more ASCII digits', () => {
+    fc.assert(
+      fc.property(lengthTextArb, (value) => {
+        expect(declaredLength(value)).toBe(/^[0-9]+$/.test(value) ? Number(value) : null);
+      }),
+      { numRuns: 1000 },
+    );
+  });
 });

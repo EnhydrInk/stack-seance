@@ -2,12 +2,12 @@ import '../compiler/helpers/noNetwork';
 // Bug 1 of worker-body-limit-and-model-error-log-fix: the body limit is held while the body is
 // read, not after. Requirement numbers here refer to that spec's bugfix.md.
 import { describe, it, expect } from 'vitest';
-import { MAX_BODY_BYTES } from '../../worker/src/handle';
+import { MAX_BODY_BYTES, declaredLength, readLimitedBody } from '../../worker/src/handle';
 import { replyText } from '../compiler/helpers/fixtures';
 import { replyStep } from '../compiler/helpers/fakeModel';
 import { signToken } from './helpers/accessKeys';
 import { MemoryStore } from './helpers/memoryStore';
-import { ACCEPTED, ACCESS_ON, BAD_REQUEST, IP, compileBody, countingBody, cut, jsonRequest, observe, repeated, type JsonSend } from './helpers/bodies';
+import { ACCEPTED, ACCESS_ON, BAD_REQUEST, IP, compileBody, countingBody, cut, jsonRequest, macrotask, observe, repeated, type JsonSend } from './helpers/bodies';
 
 /** Repro 1: 90 MB in 1,440 chunks of 64 KiB, and a Content-Length that declares it. */
 const REPRO_LENGTH = '94371840';
@@ -160,5 +160,86 @@ describe('Property 2, bugfix 3.10 a body stream that errors within the limit is 
       taken: 3,
       cancels: 0,
     });
+  });
+});
+
+// Direct tests of declaredLength and readLimitedBody, which exist only on the fixed code.
+
+describe('declaredLength, bugfix 2.1, 3.4 and 3.5 a declared length is one or more ASCII digits and nothing else', () => {
+  it.each<[string, number]>([
+    ['0', 0],
+    ['262144', 262144],
+    ['000262145', 262145],
+  ])('%j gives %d', (value, length) => {
+    expect(declaredLength(value)).toBe(length);
+  });
+
+  it('400 nines give a number above MAX_BODY_BYTES', () => {
+    expect(declaredLength('9'.repeat(400))).toBeGreaterThan(MAX_BODY_BYTES);
+  });
+
+  it.each([null, '', 'abc', '-1', '+5', '1e3', '12.5', '12, 12', '0x10', '１２'])('%j gives null', (value) => {
+    expect(declaredLength(value)).toBeNull();
+  });
+});
+
+describe('readLimitedBody, bugfix 2.2, 3.6, 3.9 and 3.10 the bytes of a body, read chunk by chunk up to a limit', () => {
+  const LIMIT = 10;
+  /** A chunk of the given bytes. Distinct bytes show a wrong join. */
+  const chunk = (...values: number[]) => new Uint8Array(values);
+  const counts = (body: ReturnType<typeof countingBody>) => ({ taken: body.taken(), cancels: body.cancels() });
+
+  it('no body gives zero bytes', async () => {
+    expect(await readLimitedBody(null, LIMIT)).toStrictEqual(new Uint8Array(0));
+  });
+
+  it('an empty stream gives zero bytes after one pull that closes it', async () => {
+    const body = countingBody([]);
+    expect(await readLimitedBody(body.stream, LIMIT)).toStrictEqual(new Uint8Array(0));
+    expect(counts(body)).toStrictEqual({ taken: 0, cancels: 0 });
+  });
+
+  it('chunks totalling exactly the limit give their concatenation, with every chunk taken and no cancel', async () => {
+    const body = countingBody([chunk(1, 2, 3), chunk(), chunk(4, 5), chunk(6, 7, 8, 9, 10)]);
+    expect(await readLimitedBody(body.stream, LIMIT)).toStrictEqual(chunk(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+    expect(counts(body)).toStrictEqual({ taken: 4, cancels: 0 });
+  });
+
+  it('one byte more than the limit gives null: the chunk that brings it is the last one taken, and the reader is cancelled once', async () => {
+    const body = countingBody([chunk(1, 2, 3), chunk(4, 5, 6, 7, 8, 9, 10), chunk(11), chunk(), chunk(12)]);
+    expect(await readLimitedBody(body.stream, LIMIT)).toBeNull();
+    await macrotask();
+    expect(counts(body)).toStrictEqual({ taken: 3, cancels: 1 });
+  });
+
+  it('a single chunk larger than the limit gives null after one chunk', async () => {
+    const body = countingBody([new Uint8Array(LIMIT + 5), chunk(1)]);
+    expect(await readLimitedBody(body.stream, LIMIT)).toBeNull();
+    await macrotask();
+    expect(counts(body)).toStrictEqual({ taken: 1, cancels: 1 });
+  });
+
+  it('a stream that errors rejects with the same RangeError object', async () => {
+    const error = new RangeError('stream broke');
+    const body = countingBody([chunk(1, 2, 3)], { errorAfter: 1, error });
+    await expect(readLimitedBody(body.stream, LIMIT)).rejects.toBe(error);
+    expect(counts(body)).toStrictEqual({ taken: 1, cancels: 0 });
+  });
+
+  it('a source whose cancel throws still gives null and leaves no unhandled rejection', async () => {
+    const unhandled: unknown[] = [];
+    const listener = (reason: unknown) => {
+      unhandled.push(reason);
+    };
+    process.on('unhandledRejection', listener);
+    try {
+      const body = countingBody([new Uint8Array(LIMIT + 1), chunk(1)], { cancelError: new Error('cancel broke') });
+      expect(await readLimitedBody(body.stream, LIMIT)).toBeNull();
+      // Node reports an unhandled rejection once the microtasks of the tick have run, so it shows up before a macrotask.
+      await macrotask();
+      expect({ ...counts(body), unhandled }).toStrictEqual({ taken: 1, cancels: 1, unhandled: [] });
+    } finally {
+      process.off('unhandledRejection', listener);
+    }
   });
 });
