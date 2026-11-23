@@ -22,7 +22,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - `CompileRequest` and `CompileResponse` copied exactly from requirements.md. `CompileOutcome`, `REQUEST_LIMITS` and `readCompileRequest`, as "contract.ts" describes: a non-array object, field types, sentence 1 to 500 code units with a `/\S/` character, at most 100 names per list, at most 100 code units per name, empty strings allowed, new arrays, unknown fields dropped.
     - `Message`, `ModelInput`, `ModelReply`, `Ask` and `CallEvent`, as "model.ts" describes. `CallEvent` uses the `RuleNumber` type, which can live here, or in `rules.ts` with a type-only import.
     - _Requirements: 1.2, 2.2, 2.3, 2.4, 2.5, 2.6, 12.3_
-  - [ ] 2.2 Write `src/compiler/names.ts`
+  - [x] 2.2 Write `src/compiler/names.ts`
     - `sameName`, `findSameName` (an empty entry never matches), `looksNumeric` (the R11.4 pattern), `isAsciiText`, `englishNameProblems` with the exact wording and order of "names.ts", and `quote` (`JSON.stringify` after cutting to 80 code units plus `…`).
     - _Requirements: 4.4, 4.7, 4.9, 4.12_
   - [ ] 2.3 Write `src/compiler/schema.ts`

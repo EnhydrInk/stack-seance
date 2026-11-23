@@ -204,3 +204,7 @@
 - Done: `contract.ts` holds `CompileRequest` and `CompileResponse` copied from the contract section, `CompileOutcome` (the `ok: true`, `nothing` and `model` answers), `REQUEST_LIMITS` (500, 100, 100) and `readCompileRequest`, which accepts a non-array object with the 7 fields of the right types, a sentence of 1 to 500 code units with a `/\S/` character, at most 100 names per list and 100 code units per name, returns new arrays and drops unknown fields. `model.ts` holds `RuleNumber`, `Message`, `ModelInput`, `ModelReply`, `Ask` and `CallEvent`. Typecheck passes in all 4 projects.
 - Kiro: requirements 1.2, 2.2 to 2.6 and 12.3; the fixed UI contract in requirements.md, copied rather than redesigned.
 - Why it matters: the UI and the Worker now share one definition of a good request and of every answer.
+## sentence-compiler, task 2.2: Write `src/compiler/names.ts`
+- Done: `sameName`, `findSameName` (an empty entry never matches), `looksNumeric` (the R11.4 pattern, copied because the interpreter does not export it), `isAsciiText`, `englishNameProblems` with the 5 problems in the design's order and wording (an empty string gives only `is empty`), and `quote` (`JSON.stringify` after cutting to 80 code units plus `…`). Typecheck passes in all 4 projects.
+- Kiro: requirements 4.4, 4.7, 4.9 and 4.12; the glossary's English_name and Same_Name definitions turned into one function each.
+- Why it matters: every rule report quotes and compares names the same way, and the interpreter's own case rule.
