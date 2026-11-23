@@ -35,7 +35,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - `readReplyObject`: valid objects of both kinds; `null` for text that is not JSON, an array, a missing field, an extra field and a wrong type.
     - _Requirements: 1.2, 2.2, 2.3, 2.4, 2.5, 2.6, 4.10, 14.6_
 
-- [-] 3. The rule checker
+- [x] 3. The rule checker
   - [x] 3.1 Write `src/compiler/references.ts`
     - `collectReferences(script)` as "references.ts" describes. It visits every handler with a fresh state (first `go` line, first `go to stack` line). An `if` visits its condition with the incoming state, walks both branches from that state, and merges by taking the smaller line that is set. A `go` visits its target before the move. Field and button references come from `put … field`, `show`, `hide` and every `field` expression node.
     - Literal_Targets with `paren` removed: `str`, `num`, `bool`. Card targets become `cardNumber` (`num`, or `str` with `looksNumeric`, value `Number(value)`) or `cardName`. Stack text: the string, `String(n)`, or `true`/`false`.
@@ -47,7 +47,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - Report details exactly as the design's table gives them. Rule 1: `Line <l>, column <c>: <message>. The line is <quote(line text)>.`, with line `l` of the script read with `\r\n` as `\n`. Rule 3's maximum is `cardNames.length + newCards.length`. Rule 8 names the line of the first `go` (or `go to stack`) on some path before the reference.
     - Reports sorted by rule number, keeping their order within a rule. An accepted reply returns the reply's own values, unchanged.
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11, 4.12, 3.7_
-  - [ ] 3.3 Write `test/compiler/helpers/fixtures.ts` and `test/compiler/rules.test.ts`
+  - [x] 3.3 Write `test/compiler/helpers/fixtures.ts` and `test/compiler/rules.test.ts`
     - Fixtures: `hallRequest` as "Helpers" lists it, and `gateRequest` and `atticRequest` for the prompt examples, each with its names written out as literals. The file does not read `src/ui/stacks.json`. It also holds `replyText(fields)`, which writes a ReplyObject as JSON with defaults for a valid button.
     - One `describe` per rule on `hallRequest`. Each case gives a reply that breaks the rule and checks the exact `reports` list, its lines included. Cover every detail form of the design's table: for Rule 7 and Rule 4, each problem alone and two combined; for Rule 9, the count and each phrase problem; for Rule 10, text that is not JSON and each Nothing_Reply check.
     - Rule 3: `go to card ("Attic")` is checked, `go to card "3"` and `go to card 3` are numbers in range, `go to card 6` is past the end (4 cards, 1 new), `go to card 2.5` and `go to card "-1"` are rejected, `go to card it` is not checked, `go to card ""` is rejected, and a name in other case matches.
