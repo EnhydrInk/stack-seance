@@ -307,9 +307,10 @@ describe('Requirement 1.5 anything that throws after the route', () => {
   it('answers 502 model when reading the body fails', async () => {
     const { deps, logs } = setup();
     const req = http();
+    const broken = new ReadableStream<Uint8Array>({ start(controller) { controller.error(new RangeError('stream broke')); } });
     const failing = new Proxy(req, {
       get(target, prop) {
-        if (prop === 'arrayBuffer') return () => Promise.reject(new RangeError('stream broke'));
+        if (prop === 'body') return broken;
         const value = Reflect.get(target, prop, target);
         return typeof value === 'function' ? value.bind(target) : value;
       },

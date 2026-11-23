@@ -1,6 +1,6 @@
 // The real Ask: one Model_Call to Claude Opus 5.5 through the official SDK
 // (Requirement 7; design.md, "worker/src/ask.ts").
-import Anthropic, { type ClientOptions } from '@anthropic-ai/sdk';
+import Anthropic, { APIError, type ClientOptions } from '@anthropic-ai/sdk';
 import type {
   BetaMessage,
   BetaMessageContentParam,
@@ -26,10 +26,14 @@ export interface AskOptions {
   log(entry: Record<string, unknown>): void;
 }
 
+/** The event of the entry a failed SDK call writes. A call that succeeds writes 'model-call'. */
+export const FAILURE_EVENT = 'model-call-failed';
+
 /**
  * An Ask that calls the Model. Without a key, every call rejects before any SDK client exists:
  * the SDK is never left to find a key on its own, in the environment or on disk. Otherwise the
  * client is made on the first call. Any API error, network error or timeout rejects (7.10).
+ * A rejected SDK call first writes one failure entry, then rejects with the same error.
  */
 export function makeAsk(options: AskOptions): Ask {
   let client: Anthropic | undefined;
@@ -42,7 +46,14 @@ export function makeAsk(options: AskOptions): Ask {
       timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       ...(options.fetch ? { fetch: options.fetch } : {}),
     });
-    const response = await client.beta.messages.create(requestBody(input));
+    const body = requestBody(input);
+    let response: BetaMessage;
+    try {
+      response = await client.beta.messages.create(body);
+    } catch (error) {
+      options.log(failureEntry(error));
+      throw error;
+    }
     options.log(usageEntry(response));
     return toModelReply(response);
   };
@@ -74,6 +85,25 @@ export function toModelReply(response: BetaMessage): ModelReply {
   if (response.stop_reason === 'refusal') return { kind: 'refusal' };
   const text = response.content.flatMap((block) => (block.type === 'text' ? [block.text] : [])).join('');
   return { kind: 'reply', text, turn: response.content };
+}
+
+/** What an API error type looks like (authentication_error). Anything else stays out of the log. */
+const API_ERROR_TYPE = /^[a-z][a-z0-9_]{0,63}$/;
+
+/**
+ * The log entry of a failed SDK call: the HTTP status and the API error type when the SDK error
+ * has them, and the error's class name. Never the message, which holds the response body, and
+ * never the request id, the error code or anything from the request (11.2).
+ */
+export function failureEntry(error: unknown): Record<string, unknown> {
+  const entry: Record<string, unknown> = { event: FAILURE_EVENT };
+  if (error instanceof APIError) {
+    if (typeof error.status === 'number') entry.status = error.status;
+    if (typeof error.type === 'string' && API_ERROR_TYPE.test(error.type)) entry.error_type = error.type;
+  }
+  // The SDK sets name to each class's own name, which survives a bundler renaming classes.
+  entry.error_class = error instanceof Error ? error.name : typeof error;
+  return entry;
 }
 
 /** Numbers and ids only: never message text. */

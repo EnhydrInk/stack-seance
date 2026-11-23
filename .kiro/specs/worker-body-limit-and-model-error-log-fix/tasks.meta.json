@@ -1,0 +1,292 @@
+{
+  "pbtResults": {
+    "1. Write bug condition exploration tests for Bug 1 (body limit)": {
+      "status": "passed",
+      "failingExample": "Both Property 1 tests failed on unfixed code (80c9e62), which confirms Bug 1. P1 at MAX (seed -1525700440, shrunk 3 times): [{\"total\":262145,\"offsets\":[],\"contentLength\":\"0\",\"errorAtEnd\":false}]. Expected 400 with taken 1 and cancels 1, got 400 with taken 1 and cancels 0 (no cancel; the whole body was read). Unshrunk probes: 6 chunks of 462,144 bytes, crossing at chunk 4, got taken 6 and cancels 0. A 300,000-byte body erroring after its last chunk got 502 {thrown: 'RangeError'}, not 400. P1 declared above MAX (seed -292617372, shrunk 8 times): [\"1000000\",{\"kind\":\"error\"}]. Expected 400, got 502 with thrown 'RangeError'. Probes: a valid 400-byte body got 200 with takes 1 and modelCalls 1. 1,440x65,536-byte chunks got taken 1440 and bodyUsed true. An empty body got bodyUsed true. Only the 'none' body kind matches the expectation on unfixed code. Unit tests: Repro 1 with a declared small body got 200, takes 1, modelCalls 1. The declared 90 MB body got taken 1440 (expected 0) and bodyUsed true. The streamed body and every header value (abc, -1, 1e3, 12.5, '', '12, 12', 3) got taken 1440 and cancels 0 (expected 5 and 1). errorAfter 5 got 502 with thrown RangeError. With Access on, it got taken 1440 and cancels 0.",
+      "lastRunTimestamp": 1795409053543
+    },
+    "2. Write preservation property tests for Bug 1 (BEFORE implementing the fix)": {
+      "status": "passed",
+      "lastRunTimestamp": 1795409510364
+    },
+    "3. Write bug condition exploration tests for Bug 2 (model error log)": {
+      "status": "passed",
+      "failingExample": "Exploration test failed as expected on unfixed code (80c9e62), proving Bug 2. Property 3 counterexample (seed 314762468, shrunk 7 times): [{\"kind\":\"json\",\"status\":400,\"type\":[],\"code\":undefined,\"message\":\"Leak-Marker-0 \",\"requestId\":\"req_LEAK0\"}]. The rejection is an APIError with status 400 after one fetch, but \"logs: expected [] to strictly equal [{ event: 'model-call-failed', status: 400, error_class: 'BadRequestError' }]\". All 13 fake-response rows give logs [] while the rejection carries the expected class, status and requestID (e.g. 401 -> AuthenticationError, status 401, requestID req_LEAKCHECK). Through handle (401, network, timeout), the only log line is {\"event\":\"request\",\"status\":502,\"error\":\"model\",\"calls\":[{\"call\":1,\"result\":\"failed\"}]}.",
+      "lastRunTimestamp": 1795410121563
+    },
+    "4. Write preservation property tests for Bug 2 (BEFORE implementing the fix)": {
+      "status": "passed",
+      "lastRunTimestamp": 1795410494232
+    },
+    "5.3 Verify the Bug 1 exploration tests now pass": {
+      "status": "passed",
+      "lastRunTimestamp": 1795411149727
+    },
+    "5.4 Verify the Bug 1 preservation tests still pass": {
+      "status": "passed",
+      "lastRunTimestamp": 1795411347029
+    },
+    "6.3 Verify the Bug 2 exploration tests now pass": {
+      "status": "passed",
+      "lastRunTimestamp": 1795412005458
+    },
+    "6.4 Verify the Bug 2 preservation tests still pass": {
+      "status": "passed",
+      "lastRunTimestamp": 1795412150392
+    }
+  },
+  "executionHistory": {
+    "1. Write bug condition exploration tests for Bug 1 (body limit)": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650829
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408661595
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795409118208
+      }
+    ],
+    "2. Write preservation property tests for Bug 1 (BEFORE implementing the fix)": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650854
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795409165690
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795409550064
+      }
+    ],
+    "3. Write bug condition exploration tests for Bug 2 (model error log)": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650882
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795409564830
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795410180700
+      }
+    ],
+    "4. Write preservation property tests for Bug 2 (BEFORE implementing the fix)": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650902
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795410197262
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795410548627
+      }
+    ],
+    "5.1 Implement the capped read, and switch the one permitted test fake in the same change": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650922
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795410564980
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795410680821
+      }
+    ],
+    "5.2 Write the direct tests of `declaredLength` and `readLimitedBody`": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650941
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795410703434
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795410994660
+      }
+    ],
+    "5.3 Verify the Bug 1 exploration tests now pass": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650965
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795411011678
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795411172589
+      }
+    ],
+    "5.4 Verify the Bug 1 preservation tests still pass": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408650985
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795411187077
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795411367457
+      }
+    ],
+    "6.1 Implement the failure entry": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408651003
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795411387422
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795411491078
+      }
+    ],
+    "6.2 Write the direct tests of `failureEntry` and the full mixed sequence": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408651021
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795411507874
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795411858982
+      }
+    ],
+    "6.3 Verify the Bug 2 exploration tests now pass": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408651039
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795411877896
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795412028088
+      }
+    ],
+    "6.4 Verify the Bug 2 preservation tests still pass": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408651058
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795412043889
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795412169641
+      }
+    ],
+    "7. Update the sentence-compiler design to match the fixed Worker": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408651084
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795412185056
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795412591090
+      }
+    ],
+    "8. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795408651103
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795412608220
+      },
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795412709772
+      }
+    ],
+    "5. Fix Bug 1: cap the body read in `worker/src/handle.ts`": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795411367482
+      }
+    ],
+    "6. Fix Bug 2: log a failed SDK call in `worker/src/ask.ts`": [
+      {
+        "executionId": "3f456e60-d07c-4ae0-802d-041f46fce12c",
+        "chatSessionId": "sess_5a9666e4-f622-4ba3-a7de-c19690953f02",
+        "timestamp": 1795412169661
+      }
+    ]
+  }
+}
