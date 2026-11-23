@@ -65,7 +65,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
     - `MAX_MODEL_CALLS = 3` and `compile(request, ask, onCall?)` with the six steps of "compile.ts": a new messages array for every call, `model` on a rejection or a Refusal, `checkReply` on each reply, the Assistant_Turn and the Retry_Message appended after a broken reply on call 1 or 2, and `model` after a broken third reply. One `CallEvent` per call, with rule numbers only.
     - `index.ts` exports `compile`, `MAX_MODEL_CALLS`, the contract and model types, `REQUEST_LIMITS`, `readCompileRequest`, `REPLY_SCHEMA`, `ReplyObject`, `SYSTEM_PROMPT`, `EXAMPLES`, `userMessage`, `retryMessage`, `RULES`, `checkReply` and the rule types.
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 12.3_
-  - [ ] 4.3 Write `test/compiler/helpers/fakeModel.ts` and `test/compiler/retry.test.ts`
+  - [x] 4.3 Write `test/compiler/helpers/fakeModel.ts` and `test/compiler/retry.test.ts`
     - `scriptedAsk(steps)`, as "Helpers" describes: it keeps each `ModelInput` object it receives and fails the test when called past the last step.
     - Retry tests on `hallRequest`:
       - The success on the second reply (a Rule 3 break, then a valid reply), with the second call's `messages` equal to `[User_Message, { role: 'assistant', turn: <the same object> }, Retry_Message]` and the full `retryMessage` text written out.
