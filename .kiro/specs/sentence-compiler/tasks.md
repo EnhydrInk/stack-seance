@@ -113,7 +113,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
 - [x] 7. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
 
-- [-] 8. The Worker
+- [x] 8. The Worker
   - [x] 8.1 Write `worker/src/http.ts` and `worker/src/limits.ts`, with `test/worker/limits.test.ts`
     - `http.ts`: `json(body)` with the status table and the two headers, and `notFound()` with `Not found` as `text/plain`. No CORS headers.
     - `limits.ts`: `Limits`, `TakeResult`, `CountStore`, `readLimits` (`/^\d+$/`, else 20 and 200), `clientKey` (missing header gives `unknown`; IPv4 as written; IPv6 expanded, first four groups lowercase without leading zeros, then `::/64`), and `take` with the four steps of "worker/src/limits.ts". On a new day it collects the old keys with `Array.from(store.list({ prefix: 'ip:' }), ([key]) => key)` before deleting any.
@@ -158,7 +158,7 @@ Each top-level task ends with `npx vitest --run` and `npm run typecheck` passing
       - A limiter that throws gives 502 `model`.
       - No log line and no response body contains the sentence, a card name, the IP or the token.
     - _Requirements: 1.1, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.7, 3.1, 3.6, 8.1, 8.2, 8.3, 9.2, 10.1, 10.10, 11.1, 11.2, 14.4, 14.6, 14.7_
-  - [ ] 8.5 Write `worker/src/index.ts`, `worker/wrangler.toml` and `test/worker/config.test.ts`
+  - [x] 8.5 Write `worker/src/index.ts`, `worker/wrangler.toml` and `test/worker/config.test.ts`
     - `index.ts` as "worker/src/index.ts and wrangler.toml" gives it:
       - the `Env` interface, with the four vars, `ANTHROPIC_API_KEY` and `LIMITS: DurableObjectNamespace<DailyLimits>`;
       - `createRemoteJWKSet(new URL(CERTS_URL))` at module scope;
