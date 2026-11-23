@@ -168,7 +168,7 @@ Every test task ends with `npm run typecheck` as well as vitest, because vitest 
     - Run `npx vitest --run test/worker` and `npm run typecheck`
     - _Requirements: 2.1, 2.2, 3.4, 3.5, 3.6, 3.9_
 
-  - [~] 5.3 Verify the Bug 1 exploration tests now pass
+  - [x] 5.3 Verify the Bug 1 exploration tests now pass
     - **Property 1: Expected Behavior** - Over-limit bodies are turned away without being held
     - **IMPORTANT**: Re-run the SAME tests from task 1. Do NOT write new tests
     - The tests from task 1 encode the expected behavior. When they pass, the expected behavior is satisfied
