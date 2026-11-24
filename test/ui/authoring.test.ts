@@ -126,7 +126,7 @@ describe('the compile request', () => {
     const r = requestFor(m, 'go on', bell.id);
     expect(r).toMatchObject({ sentence: 'go on', stackName: 'Haunted House', cardName: 'Gate', fieldNames: ['sign'] });
     expect(r.cardNames).toEqual(['Gate', 'Hall', 'Attic', 'Garden']);
-    expect(r.buttonNames).toEqual(['Enter', 'Home']);
+    expect(r.buttonNames).toEqual(['Open the gate', 'Home']);
     expect(r.stackNames).toEqual(['Home', 'Haunted House', 'Help', "Witch's Kitchen"]);
   });
 });

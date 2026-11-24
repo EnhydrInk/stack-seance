@@ -134,27 +134,30 @@
               "id": "b-gate-bell",
               "name": "Ring the bell",
               "rect": [
-                352,
+                336,
                 200,
-                132,
+                148,
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this rings the bell and asks who is there. If it is a ghost, a werewolf howls back.",
-              "script": "on mouseUp\n  answer \"Ding dong! Who's there?\" with \"A ghost\" or \"Nobody\"\n  if it is \"A ghost\" then\n    howl\n    put \"Something howled back.\" into field \"sign\"\n  else\n    put \"Nobody answered.\" into field \"sign\"\n    put \" Or did they?\" after field \"sign\"\n  end if\nend mouseUp",
-              "style": "roundrect"
+              "sentence": "Ring the bell and ask \"Ding dong! Who's there?\" with the choices A ghost or Nobody. If it's a ghost, a werewolf howls and the sign says \"Something howled back.\"; otherwise the sign says \"Nobody answered. Or did they?\"",
+              "script": "on mouseUp\n  answer \"Ding dong! Who's there?\" with \"A ghost\" or \"Nobody\"\n  if it is \"A ghost\" then\n    howl\n    put \"Something howled back.\" into field \"sign\"\n  else\n    put \"Nobody answered. Or did they?\" into field \"sign\"\n  end if\nend mouseUp",
+              "style": "roundrect",
+              "skipped": [
+                "play a bell sound"
+              ]
             },
             {
               "id": "b-gate-enter",
-              "name": "Enter",
+              "name": "Open the gate",
               "rect": [
-                352,
+                336,
                 232,
-                132,
+                148,
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this opens the gate and goes to the next card.",
+              "sentence": "Open the gate with an iris and go to the next card.",
               "script": "on mouseUp\n  visual effect iris open\n  go to next card\nend mouseUp",
               "style": "roundrect"
             },
@@ -168,7 +171,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes back to the Home stack.",
+              "sentence": "Go back to the Home stack.",
               "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
               "style": "roundrect"
             }
@@ -218,8 +221,8 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this asks your name and writes a welcome for you; with no name, the candle waits.",
-              "script": "on mouseUp\n  global visitor\n  ask \"What is your name, visitor?\"\n  if it is \"\" then\n    put \"The candle waits for a name.\" into field \"greeting\"\n  else\n    put it into visitor\n    put \"Welcome,\" && visitor & \".\" into field \"greeting\"\n    if visitor contains \"Kiro\" then answer \"Oh! A friend of the house.\"\n  end if\nend mouseUp",
+              "sentence": "Ask the visitor's name. With no name, write \"The candle waits for a name.\" in greeting; otherwise write \"Welcome, \" and the name and a full stop there, and if the name contains Kiro, say \"Oh! A friend of the house.\"",
+              "script": "on mouseUp\n  ask \"What is your name?\"\n  if it is empty then\n    put \"The candle waits for a name.\" into field \"greeting\"\n  else\n    put \"Welcome, \" & it & \".\" into field \"greeting\"\n    if it contains \"Kiro\" then answer \"Oh! A friend of the house.\"\n  end if\nend mouseUp",
               "style": "roundrect"
             },
             {
@@ -232,7 +235,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this lets a bat out of the closet and shows a note for two seconds.",
+              "sentence": "Let a bat out of the closet and show the note for two seconds.",
               "script": "on mouseUp\n  release bat\n  show field \"note\"\n  wait 2 seconds\n  hide field \"note\"\nend mouseUp",
               "style": "roundrect"
             },
@@ -246,7 +249,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this wipes to the card named Attic.",
+              "sentence": "Go upstairs to the Attic with a wipe to the left.",
               "script": "on mouseUp\n  visual effect wipe left\n  go to card \"Attic\"\nend mouseUp",
               "style": "roundrect"
             },
@@ -274,7 +277,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this wipes back to the previous card.",
+              "sentence": "Wipe right, back to the previous card.",
               "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
               "style": "roundrect"
             }
@@ -317,7 +320,7 @@
           "buttons": [
             {
               "id": "b-attic-count",
-              "name": "Count a candle",
+              "name": "Add one",
               "rect": [
                 24,
                 130,
@@ -325,13 +328,13 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this counts one more candle. On the fourth and fifth, a witch flies by.",
-              "script": "on mouseUp\n  put field \"count\" + 1 into field \"count\"\n  if field \"count\" > 3 and field \"count\" < 6 then summon witch\nend mouseUp",
+              "sentence": "Add one to the count, and when it gets to 4 or 5, a witch flies by.",
+              "script": "on mouseUp\n  put field \"count\" + 1 into field \"count\"\n  if field \"count\" is 4 or field \"count\" is 5 then summon witch\nend mouseUp",
               "style": "roundrect"
             },
             {
               "id": "b-attic-look",
-              "name": "Look up",
+              "name": "Drop a spider",
               "rect": [
                 24,
                 162,
@@ -339,13 +342,13 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this drops a spider and makes the label shriek.",
+              "sentence": "Drop a spider and put \"Eek! \" in front of the label.",
               "script": "on mouseUp\n  drop spider\n  put \"Eek! \" before field \"label\"\nend mouseUp",
               "style": "roundrect"
             },
             {
               "id": "b-attic-down",
-              "name": "Down",
+              "name": "Back down",
               "rect": [
                 352,
                 270,
@@ -353,7 +356,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this wipes back to the previous card.",
+              "sentence": "Go back down to the previous card with a wipe to the right.",
               "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
               "style": "roundrect"
             },
@@ -367,7 +370,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this dissolves to the card named Garden.",
+              "sentence": "Dissolve to the Garden.",
               "script": "on mouseUp\n  visual effect dissolve\n  go to card \"Garden\"\nend mouseUp",
               "style": "roundrect"
             }
@@ -404,8 +407,8 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this makes something glint in the soil and shows the Dig button.",
-              "script": "on mouseUp\n  if not (field \"msg\" contains \"glint\") then\n    put \"Something glints in the soil.\" into field \"msg\"\n    show button \"Dig\"\n  end if\nend mouseUp",
+              "sentence": "Look at the moon: write \"Something glints in the soil.\" in msg and show the Dig button.",
+              "script": "on mouseUp\n  put \"Something glints in the soil.\" into field \"msg\"\n  show button \"Dig\"\nend mouseUp",
               "style": "roundrect"
             },
             {
@@ -418,21 +421,21 @@
                 24
               ],
               "visible": false,
-              "sentence": "Clicking this digs up a seed and asks what to do with it.",
+              "sentence": "A Dig button: say \"You found a pumpkin seed!\" with Keep it or Plant it, then write \"You chose: \" and the choice in msg.",
               "script": "on mouseUp\n  answer \"You found a pumpkin seed!\" with \"Keep it\" or \"Plant it\"\n  put \"You chose: \" & it into field \"msg\"\nend mouseUp",
               "style": "roundrect"
             },
             {
               "id": "b-garden-back",
-              "name": "Back",
+              "name": "Previous card",
               "rect": [
-                352,
+                336,
                 238,
-                132,
+                148,
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the previous card.",
+              "sentence": "Go to the previous card.",
               "script": "on mouseUp\n  go to prev card\nend mouseUp",
               "style": "roundrect"
             },
@@ -440,13 +443,13 @@
               "id": "b-garden-again",
               "name": "Start over",
               "rect": [
-                352,
+                336,
                 270,
-                132,
+                148,
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this closes with an iris and goes to the first card.",
+              "sentence": "Close with an iris and start over from the first card.",
               "script": "on mouseUp\n  visual effect iris close\n  go to first card\nend mouseUp",
               "style": "roundrect"
             },
@@ -454,13 +457,13 @@
               "id": "b-garden-home",
               "name": "Home",
               "rect": [
-                352,
+                336,
                 302,
-                132,
+                148,
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes back to the Home stack.",
+              "sentence": "Go back to the Home stack.",
               "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
               "style": "roundrect"
             }
@@ -494,12 +497,12 @@
             {
               "id": "f-alive-body",
               "name": "body",
-              "text": "Welcome to Stack Séance, HyperCard back from the dead.\n\nEvery button here was written from one plain sentence. Flip any card over and you see that sentence next to the script it became. The script is what really runs, and you can change it.",
+              "text": "Welcome to Stack Séance, HyperCard back from the dead.\n\nEvery button here grew from one plain sentence, apart from a couple broken on purpose for you to fix. Flip any card over and you see that sentence next to the script the spirits wrote for it. The script is what really runs, and you can change it.",
               "rect": [
                 24,
                 74,
                 340,
-                170
+                180
               ],
               "visible": true,
               "style": "plain"
@@ -508,7 +511,7 @@
           "buttons": [
             {
               "id": "b-alive-tour",
-              "name": "Show me around",
+              "name": "Start the tour",
               "rect": [
                 24,
                 266,
@@ -516,7 +519,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this starts the tour on the next card.",
+              "sentence": "Start the tour: open the next card with an iris.",
               "script": "on mouseUp\n  visual effect iris open\n  go to next card\nend mouseUp",
               "style": "roundrect"
             },
@@ -530,7 +533,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes back to the Home stack.",
+              "sentence": "Go back to the Home stack.",
               "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
               "style": "roundrect"
             }
@@ -580,7 +583,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the first card of this stack.",
+              "sentence": "Go to the first card of this stack.",
               "script": "on mouseUp\n  go to first card\nend mouseUp",
               "style": "roundrect"
             },
@@ -594,7 +597,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the last card of this stack.",
+              "sentence": "Go to the last card of this stack.",
               "script": "on mouseUp\n  go to last card\nend mouseUp",
               "style": "roundrect"
             },
@@ -608,7 +611,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the previous help card.",
+              "sentence": "A Back button that wipes right to the previous help card.",
               "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
               "style": "roundrect"
             },
@@ -622,7 +625,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the next help card.",
+              "sentence": "A Next button that wipes left to the next help card.",
               "script": "on mouseUp\n  visual effect wipe left\n  go to next card\nend mouseUp",
               "style": "roundrect"
             },
@@ -636,7 +639,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes back to the Home stack.",
+              "sentence": "Go back to the Home stack.",
               "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
               "style": "roundrect"
             }
@@ -686,7 +689,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this says hello.",
+              "sentence": "A Say hello button that says \"Hello!\"",
               "script": "on mouseUp\n  answer \"Hello!\"\nend mouseUp",
               "style": "roundrect"
             },
@@ -700,7 +703,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the previous help card.",
+              "sentence": "A Back button that wipes right to the previous help card.",
               "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
               "style": "roundrect"
             },
@@ -714,7 +717,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the next help card.",
+              "sentence": "A Next button that wipes left to the next help card.",
               "script": "on mouseUp\n  visual effect wipe left\n  go to next card\nend mouseUp",
               "style": "roundrect"
             },
@@ -728,7 +731,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes back to the Home stack.",
+              "sentence": "Go back to the Home stack.",
               "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
               "style": "roundrect"
             }
@@ -770,7 +773,7 @@
           "buttons": [
             {
               "id": "b-grow-bat",
-              "name": "Grown from a sentence",
+              "name": "Bat and onward",
               "rect": [
                 24,
                 262,
@@ -778,7 +781,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this lets a bat out, waits a moment and goes to the next card.",
+              "sentence": "Let a bat out, wait a second, then wipe left to the next card.",
               "script": "on mouseUp\n  release bat\n  wait 1 second\n  visual effect wipe left\n  go to next card\nend mouseUp",
               "style": "roundrect"
             },
@@ -792,7 +795,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the previous help card.",
+              "sentence": "A Back button that wipes right to the previous help card.",
               "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
               "style": "roundrect"
             },
@@ -806,7 +809,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the next help card.",
+              "sentence": "A Next button that wipes left to the next help card.",
               "script": "on mouseUp\n  visual effect wipe left\n  go to next card\nend mouseUp",
               "style": "roundrect"
             },
@@ -820,7 +823,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes back to the Home stack.",
+              "sentence": "Go back to the Home stack.",
               "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
               "style": "roundrect"
             }
@@ -870,7 +873,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to a card named Nowhere.",
+              "sentence": "Written by hand and broken on purpose: it goes to a card named Nowhere, which isn't there.",
               "script": "on mouseUp\n  go to card \"Nowhere\"\nend mouseUp",
               "style": "roundrect"
             },
@@ -884,7 +887,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the previous help card.",
+              "sentence": "A Back button that wipes right to the previous help card.",
               "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
               "style": "roundrect"
             },
@@ -898,7 +901,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the next help card.",
+              "sentence": "A Next button that wipes left to the next help card.",
               "script": "on mouseUp\n  visual effect wipe left\n  go to next card\nend mouseUp",
               "style": "roundrect"
             },
@@ -912,7 +915,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes back to the Home stack.",
+              "sentence": "Go back to the Home stack.",
               "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
               "style": "roundrect"
             }
@@ -975,7 +978,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this asks what to do with the monster and writes down the choice.",
+              "sentence": "A Try answer button: say \"It's alive!\" with the choices Run or Hug it, and write \"You chose: \" and the choice in out.",
               "script": "on mouseUp\n  answer \"It's alive!\" with \"Run\" or \"Hug it\"\n  put \"You chose: \" & it into field \"out\"\nend mouseUp",
               "style": "roundrect"
             },
@@ -989,8 +992,8 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this asks for a name for the monster.",
-              "script": "on mouseUp\n  ask \"What should we call the monster?\"\n  put \"Hello,\" && it & \"!\" into field \"out\"\nend mouseUp",
+              "sentence": "A Try ask button: ask \"What should we call the monster?\" and write \"Hello, \" and the name and \"!\" in out.",
+              "script": "on mouseUp\n  ask \"What should we call the monster?\"\n  put \"Hello, \" & it & \"!\" into field \"out\"\nend mouseUp",
               "style": "roundrect"
             },
             {
@@ -1003,7 +1006,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this writes Zap! in front of the result.",
+              "sentence": "A Try put button: put \"Zap! \" in front of out.",
               "script": "on mouseUp\n  put \"Zap! \" before field \"out\"\nend mouseUp",
               "style": "roundrect"
             },
@@ -1017,7 +1020,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this hides the result for a second.",
+              "sentence": "A Try hide and show button: hide out for a second, then show it again.",
               "script": "on mouseUp\n  hide field \"out\"\n  wait 1 second\n  show field \"out\"\nend mouseUp",
               "style": "roundrect"
             },
@@ -1031,7 +1034,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this opens this card again with an iris.",
+              "sentence": "A Try a visual effect button: open this card again with an iris.",
               "script": "on mouseUp\n  visual effect iris open\n  go to card \"HyperTalk 1\"\nend mouseUp",
               "style": "roundrect"
             },
@@ -1045,7 +1048,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the previous help card.",
+              "sentence": "A Back button that wipes right to the previous help card.",
               "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
               "style": "roundrect"
             },
@@ -1059,7 +1062,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the next help card.",
+              "sentence": "A Next button that wipes left to the next help card.",
               "script": "on mouseUp\n  visual effect wipe left\n  go to next card\nend mouseUp",
               "style": "roundrect"
             },
@@ -1073,7 +1076,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes back to the Home stack.",
+              "sentence": "Go back to the Home stack.",
               "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
               "style": "roundrect"
             }
@@ -1123,7 +1126,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this lets a bat out.",
+              "sentence": "Let a bat out.",
               "script": "on mouseUp\n  release bat\nend mouseUp",
               "style": "roundrect"
             },
@@ -1137,7 +1140,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this makes the werewolf howl.",
+              "sentence": "Make the werewolf howl.",
               "script": "on mouseUp\n  howl\nend mouseUp",
               "style": "roundrect"
             },
@@ -1151,7 +1154,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this summons the witch.",
+              "sentence": "Summon the witch.",
               "script": "on mouseUp\n  summon witch\nend mouseUp",
               "style": "roundrect"
             },
@@ -1165,13 +1168,13 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this drops a spider.",
+              "sentence": "Drop a spider.",
               "script": "on mouseUp\n  drop spider\nend mouseUp",
               "style": "roundrect"
             },
             {
               "id": "b-spells2-if",
-              "name": "Try if",
+              "name": "Is it alive?",
               "rect": [
                 260,
                 186,
@@ -1179,7 +1182,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this asks if it is alive and answers yes or no.",
+              "sentence": "Ask \"Is it alive?\" and if the answer has yes in it, say \"It's alive!\"; otherwise say \"Not yet. More lightning!\"",
               "script": "on mouseUp\n  ask \"Is it alive?\"\n  if it contains \"yes\" then\n    answer \"It's alive!\"\n  else\n    answer \"Not yet. More lightning!\"\n  end if\nend mouseUp",
               "style": "roundrect"
             },
@@ -1193,7 +1196,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the previous help card.",
+              "sentence": "A Back button that wipes right to the previous help card.",
               "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
               "style": "roundrect"
             },
@@ -1207,7 +1210,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the next help card.",
+              "sentence": "A Next button that wipes left to the next help card.",
               "script": "on mouseUp\n  visual effect wipe left\n  go to next card\nend mouseUp",
               "style": "roundrect"
             },
@@ -1221,7 +1224,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes back to the Home stack.",
+              "sentence": "Go back to the Home stack.",
               "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
               "style": "roundrect"
             }
@@ -1271,7 +1274,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this closes with an iris and goes to the first help card.",
+              "sentence": "Close with an iris and go back to the first help card.",
               "script": "on mouseUp\n  visual effect iris close\n  go to first card\nend mouseUp",
               "style": "roundrect"
             },
@@ -1285,7 +1288,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes to the previous help card.",
+              "sentence": "A Back button that wipes right to the previous help card.",
               "script": "on mouseUp\n  visual effect wipe right\n  go to prev card\nend mouseUp",
               "style": "roundrect"
             },
@@ -1299,7 +1302,7 @@
                 24
               ],
               "visible": true,
-              "sentence": "Clicking this goes back to the Home stack.",
+              "sentence": "Go back to the Home stack.",
               "script": "on mouseUp\n  go to stack \"Home\"\nend mouseUp",
               "style": "roundrect"
             }
