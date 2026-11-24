@@ -1546,6 +1546,34 @@
               "sentence": "问访客要不要念咒，选「要」就让狼嚎叫，选「不要」就说「胆小鬼！」",
               "script": "on mouseUp\n  answer \"要不要念咒？\" with \"要\" or \"不要\"\n  if it is \"要\" then\n    howl\n  else if it is \"不要\" then\n    answer \"胆小鬼！\"\n  end if\nend mouseUp",
               "style": "roundrect"
+            },
+            {
+              "id": "b-wk-spellbook-2",
+              "name": "Chant the spell",
+              "rect": [
+                24,
+                136,
+                164,
+                24
+              ],
+              "visible": true,
+              "sentence": "呪文を唱えるとコウモリが飛び出して、spell に「成功！」と書いて",
+              "script": "on mouseUp\n  release bat\n  put \"成功！\" into field \"spell\"\nend mouseUp",
+              "style": "roundrect"
+            },
+            {
+              "id": "b-wk-spellbook-3",
+              "name": "Close the book",
+              "rect": [
+                24,
+                302,
+                156,
+                24
+              ],
+              "visible": true,
+              "sentence": "Close the book and go back to the first card of the kitchen.",
+              "script": "on mouseUp\n  go to first card\nend mouseUp",
+              "style": "roundrect"
             }
           ]
         }
