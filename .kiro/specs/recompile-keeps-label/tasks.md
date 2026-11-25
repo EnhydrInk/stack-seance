@@ -48,7 +48,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
     - Nothing else in `checkReply` changes: Rule 6 still uses the reply's label, a Nothing_Reply never reaches `labelReports`, and stage 3 still runs before the parse.
     - In the same change, `RULE_7` in `retry.test.ts` becomes `Rule 7: ` plus the new sentence, so the suite stays green.
     - _Requirements: 4.4, 5.1, 5.2, 5.3, 5.4, 5.6, 5.7, 5.8, 5.9, 6.1, 6.2_
-  - [ ] 3.2 Add `digRequest` and test Rule 7 with a label in `test/compiler/rules.test.ts`
+  - [x] 3.2 Add `digRequest` and test Rule 7 with a label in `test/compiler/rules.test.ts`
     - `test/compiler/helpers/fixtures.ts`: `digRequest`, the Garden card recompiling Dig, with the names of the design's "Fixture" written out as literals and `label: 'Dig'` last. It does not read `src/ui/stacks.json`.
     - The `RULES` test pins the new Rule 7 sentence word for word.
     - New `describe('Rule 7 with a label in the request')` on `digRequest`, with the cases of the design's "Example tests": `Dig` accepted; `{ ...digRequest, label: '挖一挖' }` with the reply label `挖一挖` accepted; `Dig for seeds`, `dig`, `DIG` and `''` each giving exactly one report `The label "<label>" is not the label in the request, "Dig".`; `hide button "Dig"` and `show button "home"` accepted with label `Dig`; `nothingText()` accepted and `nothingText({ label: 'Dig' })` giving only the Rule 10 report; `summon cat` with label `Dig up` giving the Rule 1 report and then the Kept_Label_Report.
