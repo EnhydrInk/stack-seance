@@ -360,3 +360,7 @@
 - Done: a new `describe` with 7 tests of `readCompileRequest`: no label and `label: undefined` give the seven fields and no `label` key; `Dig` comes back unchanged as the last key; `挖一挖`, `It's Alive!` and ` Dig` are accepted (no English check); `''`, spaces, a tab and U+3000 are rejected; 24 code units pass and 25 fail, also as 12 and 13 emoji; `3`, `null`, `true`, an array and an object are rejected; `upstairs`, `BACK` and `Back` are rejected as buttons already on the card. Suite: 44 files, 860 passed; typecheck passes.
 - Kiro: requirements 2.1 to 2.6 and 8.1, one example per case of the design's "Error Handling" table.
 - Why it matters: each way a label can be turned away has its own test, so a regression names the case.
+## recompile-keeps-label, task 1.3: Follow the contract in `test/worker/handle.test.ts`
+- Done: "ignores fields that CompileRequest does not define" sends `name: 'Injected name'` where it sent `label`, which is now a contract field; new "rejects a bad label" sends `''`, `' \u3000'`, 25 characters, `3` and `QUOKKA BUTTON` (the Same_Name as the request's button), each checked by `expectBad` for the 400 body, no Model_Call, an unchanged store and one log line. No file under `worker/` changed. Suite: 44 files, 861 passed; typecheck passes.
+- Kiro: requirements 2.7, 8.5 and 8.6, and the sentence-compiler's SC14.6 (a bad-request test for each request check through the Worker).
+- Why it matters: a bad label costs no model call and no daily count, with the Worker's code untouched.

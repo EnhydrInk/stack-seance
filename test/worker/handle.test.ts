@@ -175,12 +175,21 @@ describe('Requirement 2 bad requests', () => {
     await expectBad({ body: body({ cardName: 'c'.repeat(101) }) }, 'a name of 101 characters');
   });
 
+  // recompile-keeps-label, Requirement 2.7: readCompileRequest turns a bad label away.
+  it('rejects a bad label', async () => {
+    await expectBad({ body: body({ label: '' }) }, 'empty label');
+    await expectBad({ body: body({ label: ' \u3000' }) }, 'blank label');
+    await expectBad({ body: body({ label: 'l'.repeat(25) }) }, 'a label of 25 characters');
+    await expectBad({ body: body({ label: 3 }) }, 'a number as label');
+    await expectBad({ body: body({ label: 'QUOKKA BUTTON' }) }, 'a label that is already a button');
+  });
+
   it('ignores fields that CompileRequest does not define', async () => {
     const { deps, inputs } = setup({ steps: [replyStep(replyText(VALID))] });
-    const response = await handle(http({ body: body({ label: 'Injected label', extra: 'x' }) }), deps);
+    const response = await handle(http({ body: body({ name: 'Injected name', extra: 'x' }) }), deps);
     expect(response.status).toBe(200);
     const first = inputs[0]!.messages[0]!;
-    expect(first.role === 'user' && first.text).not.toContain('Injected label');
+    expect(first.role === 'user' && first.text).not.toContain('Injected name');
   });
 });
 

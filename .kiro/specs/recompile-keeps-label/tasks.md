@@ -13,7 +13,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
 
 ## Tasks
 
-- [ ] 1. The label in the contract and the request check
+- [x] 1. The label in the contract and the request check
   - [x] 1.1 Read the label in `src/compiler/contract.ts`
     - `CompileRequest` gains `label?: string;                   // when recompiling: the button's current label, which the reply keeps` after `stackNames`, word for word as in the Contract change section. `CompileResponse` and `CompileOutcome` do not change.
     - `REQUEST_LIMITS` becomes `{ sentence: 500, names: 100, nameLength: 100, label: 24 }`.
@@ -24,7 +24,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
   - [x] 1.2 Test the label in `test/compiler/contract.test.ts`
     - New tests, one per case of the design's "Example tests": `label: undefined` gives the seven fields with no `label` key; `Dig` comes back with the keys in contract order then `label`; `挖一挖`, `It's Alive!` and ` Dig` are accepted unchanged; `''`, `'   '`, `'\t'` and `'\u3000\u3000'` give null; `'x'.repeat(24)` and `'👻'.repeat(12)` are accepted while `'x'.repeat(25)` and `'👻'.repeat(13)` give null; `3`, `null`, `true`, `['Dig']` and `{ name: 'Dig' }` give null; with `buttonNames` `['Upstairs', 'Back']`, `'upstairs'`, `'BACK'` and `'Back'` give null.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 8.1_
-  - [ ] 1.3 Follow the contract in `test/worker/handle.test.ts`
+  - [x] 1.3 Follow the contract in `test/worker/handle.test.ts`
     - "ignores fields that CompileRequest does not define" sends `name: 'Injected name'` where it sent `label: 'Injected label'`, and checks that the first User_Message does not hold `Injected name`.
     - New "rejects a bad label": `''`, `' \u3000'`, `'l'.repeat(25)`, `3` and `'QUOKKA BUTTON'`, each through the file's `expectBad`, which checks the 400 body, no Model_Call, an unchanged store and the one log line.
     - No file under `worker/` changes.
