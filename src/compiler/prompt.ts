@@ -109,10 +109,14 @@ export const EXAMPLES: readonly { request: CompileRequest; reply: ReplyObject }[
 
 // ---- messages -------------------------------------------------------------------------
 
-/** The User_Message: the Sentence and every Request_Name, as JSON in contract order (Requirement 6.5). */
+/**
+ * The User_Message: the Sentence and every Request_Name, as JSON in contract order (Requirement 6.5),
+ * then the label only when the request has one (recompile-keeps-label, Requirement 3).
+ */
 export function userMessage(req: CompileRequest): string {
-  const { sentence, stackName, cardNames, cardName, fieldNames, buttonNames, stackNames } = req;
-  return `Compile this request:\n${JSON.stringify({ sentence, stackName, cardNames, cardName, fieldNames, buttonNames, stackNames })}`;
+  const { sentence, stackName, cardNames, cardName, fieldNames, buttonNames, stackNames, label } = req;
+  const fields = { sentence, stackName, cardNames, cardName, fieldNames, buttonNames, stackNames };
+  return `Compile this request:\n${JSON.stringify(label === undefined ? fields : { ...fields, label })}`;
 }
 
 /** The Retry_Message: the broken rules with their reports, in rule order (Requirement 5.3, 5.9). */
@@ -208,10 +212,16 @@ const GUIDANCE = `# Guidance
 - Name fields and buttons before the first go: after it, they would be looked up on the new card.
 - Use two-space indentation, one statement per line, and no comments.`;
 
+// After the guidance, so it reads as the exception to "labels are English"
+// (recompile-keeps-label, Requirement 4). It names nothing from any request.
+const RECOMPILING = `# Recompiling
+
+A request can hold one more field, label. Then the button already exists, its sentence was edited, and it is being recompiled. The button keeps that label, because other scripts may name it: the reply's label is exactly the request's label, with the same characters and the same case, even when it is not a short English name. A script that names this button writes button "<the label>". When nothing in the sentence can be done, hasButton is false and label is empty, as for every request.`;
+
 const EXAMPLES_SECTION = `# Examples
 
 ${EXAMPLES.map(
   (example, i) => `Example ${i + 1}\n\n${userMessage(example.request)}\n\nReply:\n${JSON.stringify(example.reply)}`,
 ).join('\n\n')}`;
 
-export const SYSTEM_PROMPT: string = [TASK, REPLY, SUBSET, RULES_SECTION, GUIDANCE, EXAMPLES_SECTION].join('\n\n');
+export const SYSTEM_PROMPT: string = [TASK, REPLY, SUBSET, RULES_SECTION, GUIDANCE, RECOMPILING, EXAMPLES_SECTION].join('\n\n');

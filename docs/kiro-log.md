@@ -364,3 +364,7 @@
 - Done: "ignores fields that CompileRequest does not define" sends `name: 'Injected name'` where it sent `label`, which is now a contract field; new "rejects a bad label" sends `''`, `' \u3000'`, 25 characters, `3` and `QUOKKA BUTTON` (the Same_Name as the request's button), each checked by `expectBad` for the 400 body, no Model_Call, an unchanged store and one log line. No file under `worker/` changed. Suite: 44 files, 861 passed; typecheck passes.
 - Kiro: requirements 2.7, 8.5 and 8.6, and the sentence-compiler's SC14.6 (a bad-request test for each request check through the Worker).
 - Why it matters: a bad label costs no model call and no daily count, with the Worker's code untouched.
+## recompile-keeps-label, task 2.1: Change `src/compiler/prompt.ts`
+- Done: `userMessage` writes the seven fields in contract order as before and adds `label` last only when the request has one, so an Unlabelled_Request gives byte for byte the old text (the examples in the prompt and `HALL_USER_MESSAGE` pass unchanged). A new constant section `# Recompiling` goes between the guidance and the examples: a recompiled button keeps the request's label exactly, the script names it as `button "<the label>"`, and a reply that can do nothing still has an empty label. `EXAMPLES` is unchanged. Suite: 44 files, 861 passed; typecheck passes.
+- Kiro: requirements 3.1, 3.2, 4.1 to 4.3 and 4.5; the prompt stays one static text, so the prompt cache holds (SC6.4).
+- Why it matters: the model sees the label and is told once, in the cached prompt, to keep it.
