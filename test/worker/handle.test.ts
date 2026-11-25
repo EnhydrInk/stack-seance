@@ -113,6 +113,19 @@ describe('Requirement 1, 3.1, 3.6 answers from the compiler', () => {
   });
 });
 
+describe('recompile-keeps-label a recompile through the Worker', () => {
+  it('answers 200 with the kept label, which reaches the model and not the log', async () => {
+    const kept = { ...VALID, label: 'Quokka lamp' };
+    const { deps, inputs, logs } = setup({ steps: [replyStep(replyText(kept))] });
+    const response = await handle(http({ body: JSON.stringify({ ...request, label: 'Quokka lamp' }) }), deps);
+    await expectJson(response, 200, { ok: true, ...kept });
+    const first = inputs[0]!.messages[0]!;
+    expect(first.role === 'user' && first.text).toContain('"label":"Quokka lamp"');
+    expect(logs).toStrictEqual([{ event: 'request', status: 200, error: null, calls: [{ call: 1, result: 'accepted' }] }]);
+    expect(JSON.stringify(logs)).not.toContain('Quokka');
+  });
+});
+
 describe('Requirement 2 bad requests', () => {
   async function expectBad(send: Send, label: string): Promise<void> {
     const { deps, inputs, store, logs } = setup({ steps: [replyStep(replyText(VALID))] });

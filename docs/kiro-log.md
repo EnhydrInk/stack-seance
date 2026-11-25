@@ -384,3 +384,7 @@
 - Done: one new test. `compile(digRequest)` gets a first reply labelled `Dig for seeds` and a second labelled `Dig`, and returns `ok: true` with `Dig` after two calls. The second call's messages are the User_Message with `"label":"Dig"`, the first turn as the same object, and exactly the Retry_Message with the new Rule 7 sentence and `The label "Dig for seeds" is not the label in the request, "Dig".`; the CallEvents are broken `[7]`, then accepted. Suite: 44 files, 875 passed; typecheck passes.
 - Kiro: requirements 3.1, 5.4 and 5.5; the demo's story (Dig renamed, flipped back) as an example test.
 - Why it matters: a rename costs one retry inside the same three calls, and the model is told exactly which label to keep.
+## recompile-keeps-label, task 3.4: Test a labelled request through the Worker in `test/worker/handle.test.ts`
+- Done: one new test. The file's request with `label: 'Quokka lamp'` and a reply that keeps it gives 200 with `label: 'Quokka lamp'`; the first User_Message holds `"label":"Quokka lamp"`, and the one log line is status, error and CallEvents only, with no `Quokka` in it. No file under `worker/` changed. Suite: 44 files, 876 passed; typecheck passes.
+- Kiro: requirements 2.2, 3.1, 5.1 and 8.6, and the sentence-compiler's SC11.2 (no request names in the Worker's logs).
+- Why it matters: the Worker carries the label to the model and back without a code change and without logging it.

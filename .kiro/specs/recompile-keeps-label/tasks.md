@@ -41,7 +41,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
     - `userMessage`: `{ ...hallRequest, label: 'Dig' }` gives the contract keys then `label`, and today's Hall text with `,"label":"Dig"` before the closing brace; a shuffled object with `label` first still gets `label` last; `{ ...hallRequest, label: undefined }` gives today's Hall text exactly.
     - _Requirements: 3.1, 3.2, 4.1, 4.2, 4.3, 4.5, 8.2, 8.4_
 
-- [ ] 3. Rule 7 with a label
+- [x] 3. Rule 7 with a label
   - [x] 3.1 Change Rule 7 in `src/compiler/rules.ts`, with the sentence in `test/compiler/retry.test.ts`
     - `RULES[7]` becomes `When the request has a label, the label is exactly that label; otherwise it is a short English name of 1 to 24 characters that is not in buttonNames.` The other nine sentences do not change.
     - `labelReports` starts with the Labelled_Request branch of "rules.ts": no report when the reply's label is `===` the Request_Label, and otherwise the one report `The label <quote(label)> is not the label in the request, <quote(request.label)>.`. The Unlabelled_Request code stays as it is.
@@ -57,7 +57,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
   - [x] 3.3 Test the retry of a renamed reply in `test/compiler/retry.test.ts`
     - `compile(digRequest, ask)` with a first reply labelled `Dig for seeds` and a second labelled `Dig` gives `ok: true` with label `Dig` after two calls. The second call's messages are `userMessage(digRequest)`, the first reply's turn (the same object), and exactly the Retry_Message of the design's "Example tests".
     - _Requirements: 3.1, 5.4, 5.5_
-  - [ ] 3.4 Test a labelled request through the Worker in `test/worker/handle.test.ts`
+  - [x] 3.4 Test a labelled request through the Worker in `test/worker/handle.test.ts`
     - The file's `request` with `label: 'Quokka lamp'`, and a fake reply with that label and the file's `VALID` script and new cards, gives 200 with `label: 'Quokka lamp'`. The first User_Message holds `"label":"Quokka lamp"`, and no log line holds `Quokka`.
     - _Requirements: 2.2, 3.1, 5.1, 8.6_
 
