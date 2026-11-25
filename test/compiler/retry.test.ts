@@ -4,7 +4,7 @@ import { compile, MAX_MODEL_CALLS } from '../../src/compiler/compile';
 import type { CallEvent, ModelInput } from '../../src/compiler/model';
 import { SYSTEM_PROMPT, userMessage } from '../../src/compiler/prompt';
 import { REPLY_SCHEMA } from '../../src/compiler/schema';
-import { hallRequest, mouseUp, nothingText, replyText } from './helpers/fixtures';
+import { digRequest, hallRequest, mouseUp, nothingText, replyText } from './helpers/fixtures';
 import { refusalStep, rejectStep, replyStep, scriptedAsk, type Step } from './helpers/fakeModel';
 
 const HALL_USER_MESSAGE =
@@ -209,5 +209,40 @@ describe('Requirement 5 the retry loop', () => {
     await compile(request, ask);
     expect(inputs[0]!.messages).toStrictEqual([{ role: 'user', text: userMessage(request) }]);
     expect((inputs[0]!.messages[0] as { text: string }).text).toContain('点一下就问访客叫什么名字');
+  });
+});
+
+describe('recompile-keeps-label Requirement 5.5 a renamed reply goes back to the model', () => {
+  it('sends the kept-label report and accepts the second reply, which keeps the label', async () => {
+    const DIG = { script: mouseUp('answer "You found a pumpkin seed!" with "Keep it" or "Plant it"', 'put "You picked: " & it into field "msg"'), newCards: [], skipped: [] };
+    const first = replyStep(replyText({ ...DIG, label: 'Dig for seeds' }));
+    const { ask, inputs } = scriptedAsk([first, replyStep(replyText({ ...DIG, label: 'Dig' }))]);
+    const events: CallEvent[] = [];
+    const outcome = await compile(digRequest, ask, (e) => events.push(e));
+
+    expect(outcome).toStrictEqual({ ok: true, label: 'Dig', ...DIG });
+    expect(inputs).toHaveLength(2);
+    expect(inputs[1]!.messages).toStrictEqual([
+      { role: 'user', text: userMessage(digRequest) },
+      { role: 'assistant', turn: (first as { turn: unknown }).turn },
+      {
+        role: 'user',
+        text: [
+          'Your reply broke these rules.',
+          '',
+          'Rule 7: When the request has a label, the label is exactly that label; otherwise it is a short English name of 1 to 24 characters that is not in buttonNames.',
+          '- The label "Dig for seeds" is not the label in the request, "Dig".',
+          '',
+          'Write the whole reply again as one JSON object that follows every rule.',
+        ].join('\n'),
+      },
+    ]);
+    expect((inputs[1]!.messages[1] as { turn: unknown }).turn).toBe((first as { turn: unknown }).turn);
+    expect((inputs[0]!.messages[0] as { text: string }).text).toContain('"label":"Dig"');
+    expectAppendOnly(inputs);
+    expect(events).toStrictEqual([
+      { call: 1, result: 'broken', rules: [7] },
+      { call: 2, result: 'accepted' },
+    ]);
   });
 });

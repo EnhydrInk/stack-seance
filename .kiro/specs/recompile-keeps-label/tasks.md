@@ -54,7 +54,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
     - New `describe('Rule 7 with a label in the request')` on `digRequest`, with the cases of the design's "Example tests": `Dig` accepted; `{ ...digRequest, label: '挖一挖' }` with the reply label `挖一挖` accepted; `Dig for seeds`, `dig`, `DIG` and `''` each giving exactly one report `The label "<label>" is not the label in the request, "Dig".`; `hide button "Dig"` and `show button "home"` accepted with label `Dig`; `nothingText()` accepted and `nothingText({ label: 'Dig' })` giving only the Rule 10 report; `summon cat` with label `Dig up` giving the Rule 1 report and then the Kept_Label_Report.
     - The existing Rule 7 tests on `hallRequest` stay as they are.
     - _Requirements: 5.1, 5.3, 5.4, 5.6, 5.7, 5.8, 8.3_
-  - [ ] 3.3 Test the retry of a renamed reply in `test/compiler/retry.test.ts`
+  - [x] 3.3 Test the retry of a renamed reply in `test/compiler/retry.test.ts`
     - `compile(digRequest, ask)` with a first reply labelled `Dig for seeds` and a second labelled `Dig` gives `ok: true` with label `Dig` after two calls. The second call's messages are `userMessage(digRequest)`, the first reply's turn (the same object), and exactly the Retry_Message of the design's "Example tests".
     - _Requirements: 3.1, 5.4, 5.5_
   - [ ] 3.4 Test a labelled request through the Worker in `test/worker/handle.test.ts`
