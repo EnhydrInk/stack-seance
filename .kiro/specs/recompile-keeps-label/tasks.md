@@ -65,7 +65,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 5. Correctness properties
-  - [ ] 5.1 Extend `test/compiler/helpers/arbitraries.ts`, with two cross-checks in `test/compiler/arbitraries.test.ts`
+  - [x] 5.1 Extend `test/compiler/helpers/arbitraries.ts`, with two cross-checks in `test/compiler/arbitraries.test.ts`
     - `requestNames` adds the label when the request has one. `LABEL_WORDS`, `labelArb(request)` and `labelledRequestArb`, as the design's "Generators" gives them.
     - `buttonPlanArb`: for a Labelled_Request, the plan's label is `request.label` and only the new cards are drawn fresh. For an Unlabelled_Request the code path is today's, so it builds the same arbitraries and the seeded cross-checks sample the same values.
     - Rule 7 breakers for a Labelled_Request: today's six, each filtered so that its label differs from `request.label`, plus `a fresh English label` and, when `otherCase(request.label) !== request.label`, `the label in other case`. An Unlabelled_Request gets today's six only.

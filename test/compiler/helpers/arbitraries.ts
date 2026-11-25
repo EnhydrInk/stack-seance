@@ -99,9 +99,10 @@ export const requestArb: fc.Arbitrary<CompileRequest> = fc
     ),
   );
 
-/** Every name of a request. */
+/** Every name of a request, its label included when it has one. */
 export function requestNames(request: CompileRequest): string[] {
-  return [request.stackName, request.cardName, ...request.cardNames, ...request.fieldNames, ...request.buttonNames, ...request.stackNames];
+  const label = request.label === undefined ? [] : [request.label];
+  return [request.stackName, request.cardName, ...request.cardNames, ...request.fieldNames, ...request.buttonNames, ...request.stackNames, ...label];
 }
 
 // ---- names -----------------------------------------------------------------------------
@@ -121,6 +122,25 @@ function freshNamesArb(taken: readonly string[], count: number): fc.Arbitrary<st
 function freshArb(taken: readonly string[]): fc.Arbitrary<string> {
   return freshNameArb.filter((n) => !takenBy(taken, n));
 }
+
+// ---- labels of buttons being recompiled (recompile-keeps-label) --------------------------
+// Labels of built-in buttons, a label that is not an English_Name, and one of 24 code units.
+// None holds a double quote or a line break, so a valid script can name the button (R11.7),
+// and none is a constant of a Rule 7 breaker.
+
+const LABEL_WORDS = ['Dig', 'Look at the moon', 'Start over', "It's Alive!", '挖一挖', 'Open the creaky old door'];
+
+/** A Request_Label for `request`: a fresh English name, as an earlier reply gives, or one of LABEL_WORDS. Never a button of the card. */
+export function labelArb(request: CompileRequest): fc.Arbitrary<string> {
+  return fc
+    .oneof(freshArb(requestNames(request)), fc.constantFrom(...LABEL_WORDS))
+    .filter((label) => !takenBy(request.buttonNames, label));
+}
+
+/** A request from `requestArb` with a Request_Label, as the UI sends on Recompile. `label` is the last field. */
+export const labelledRequestArb: fc.Arbitrary<CompileRequest> = requestArb.chain((request) =>
+  labelArb(request).map((label): CompileRequest => ({ ...request, label })),
+);
 
 /** A name as written in some mix of upper and lower case. */
 function anyCase(name: string): fc.Arbitrary<string> {
@@ -269,9 +289,13 @@ const skippedArb = fc.array(fc.constantFrom(...SKIPPED_PHRASES), { maxLength: 3 
 
 export function buttonPlanArb(request: CompileRequest): fc.Arbitrary<ButtonPlan> {
   const stacks = usable(request.stackNames);
-  return fc
-    .integer({ min: 0, max: 2 })
-    .chain((cards) => freshNamesArb(requestNames(request), cards + 1))
+  const kept = request.label;
+  // Without a label this is the draw of before, so the seeded cross-checks sample the same values.
+  // A recompiled button keeps the request's label, and only the new cards are fresh (recompile-keeps-label).
+  const namesArb = kept === undefined
+    ? fc.integer({ min: 0, max: 2 }).chain((cards) => freshNamesArb(requestNames(request), cards + 1))
+    : fc.integer({ min: 0, max: 2 }).chain((cards) => freshNamesArb(requestNames(request), cards)).map((newCards) => [kept, ...newCards]);
+  return namesArb
     .chain(([label, ...newCards]) => {
       const label_ = label!;
       return fc.record({
@@ -422,16 +446,30 @@ function breakersFor(request: CompileRequest, rule: RuleNumber): Breaker[] {
         build: (plan) => freshArb(takenNames(request, plan)).chain((n) => withPlan({ ...plan, naming: [{ t: 'show', kind: 'button', name: n }, ...plan.naming] })),
       },
     ];
-    case 7: return [
-      { how: 'a label of 25 or more characters', build: (plan) => fc.constantFrom('Go to the kitchen and let a bat out', 'Open the very creaky door').chain((label) => withPlan({ ...plan, label })) },
-      { how: 'an empty label', build: (plan) => withPlan({ ...plan, label: '' }) },
-      { how: 'a CJK label', build: (plan) => fc.constantFrom('去厨房', 'お化け').chain((label) => withPlan({ ...plan, label })) },
-      { how: 'a label with a double quote', build: (plan) => withPlan({ ...plan, label: 'Say "boo"' }) },
-      { how: 'a label with a leading space', build: (plan) => withPlan({ ...plan, label: ` ${plan.label}` }) },
-      ...(buttons.length > 0
-        ? [{ how: 'a button of the card in other case', build: (plan: ButtonPlan) => oneNameArb(buttons).chain((label) => withPlan({ ...plan, label })) }]
-        : []),
-    ];
+    case 7: {
+      const breakers: Breaker[] = [
+        { how: 'a label of 25 or more characters', build: (plan) => fc.constantFrom('Go to the kitchen and let a bat out', 'Open the very creaky door').chain((label) => withPlan({ ...plan, label })) },
+        { how: 'an empty label', build: (plan) => withPlan({ ...plan, label: '' }) },
+        { how: 'a CJK label', build: (plan) => fc.constantFrom('去厨房', 'お化け').chain((label) => withPlan({ ...plan, label })) },
+        { how: 'a label with a double quote', build: (plan) => withPlan({ ...plan, label: 'Say "boo"' }) },
+        { how: 'a label with a leading space', build: (plan) => withPlan({ ...plan, label: ` ${plan.label}` }) },
+        ...(buttons.length > 0
+          ? [{ how: 'a button of the card in other case', build: (plan: ButtonPlan) => oneNameArb(buttons).chain((label) => withPlan({ ...plan, label })) }]
+          : []),
+      ];
+      const kept = request.label;
+      if (kept === undefined) return breakers;
+      // With a Request_Label, any other label breaks Rule 7 (recompile-keeps-label): the breakers
+      // above keep only labels that differ from it, and two more rename the button.
+      const differs = (value: ReplyObject | string) => typeof value === 'string' || value.label !== kept;
+      return [
+        ...breakers.map(({ how, build }): Breaker => ({ how, build: (plan) => build(plan).filter(differs) })),
+        { how: 'a fresh English label', build: (plan) => freshArb(takenNames(request, plan)).chain((label) => withPlan({ ...plan, label })) },
+        ...(otherCase(kept) !== kept
+          ? [{ how: 'the label in other case', build: (plan: ButtonPlan) => withPlan({ ...plan, label: otherCase(kept) }) }]
+          : []),
+      ];
+    }
     case 8: return [
       ...(fields.length > 0
         ? [{
