@@ -88,7 +88,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
     - "Correctness Properties", "Testing Strategy", "Decisions", "Notes for deployment" and the sentence-compiler tasks.md do not change.
     - _Requirements: 7.4, 7.5, 7.6_
 
-- [ ] 7. Final checkpoint - Ensure all tests pass
+- [x] 7. Final checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
   - Check with `git diff --name-only <commit before task 1>..HEAD` plus `git status` that the changes are only in `src/compiler`, `test/compiler`, `test/worker/handle.test.ts`, `.kiro/specs/sentence-compiler/requirements.md` and `design.md`, this spec's folder, and the hook's entries in `docs/kiro-log.md`. Nothing under `src/ui`, `src/hypertalk`, `test/hypertalk` or `worker/` may change.
   - _Requirements: 6.3, 10.1, 10.2, 10.3, 10.4_
