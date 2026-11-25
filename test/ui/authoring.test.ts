@@ -136,6 +136,26 @@ describe('the compile request', () => {
     m.goToStack('haunted');
     expect('label' in requestFor(m, 'go on')).toBe(false);
   });
+
+  it('describes the card of the button being recompiled, even after the reader went to another card', () => {
+    const m = fresh();
+    m.goToStack('haunted');
+    const bell = m.card.buttons.find((b) => b.name === 'Ring the bell')!;
+    m.goToStack('help');
+    const r = requestFor(m, 'go on', bell.id);
+    expect(r).toMatchObject({ stackName: 'Haunted House', cardName: 'Gate', fieldNames: ['sign'], buttonNames: ['Open the gate', 'Home'], label: 'Ring the bell' });
+  });
+
+  it('lets the compiler name afresh a button whose name is longer than a label, or taken twice on its card', () => {
+    const m = fresh();
+    m.addStack('My Haunted Halloween Party');
+    m.addStack('New Stack');
+    const home = m.doc.stacks.find((s) => s.id === 'home')!.cards[0]!;
+    const long = home.buttons.find((b) => b.name === 'My Haunted Halloween Party')!;
+    const twin = home.buttons.filter((b) => b.name === 'New Stack').find((b) => !b.builtin)!;
+    expect('label' in requestFor(m, 'go on', long.id)).toBe(false);
+    expect('label' in requestFor(m, 'go on', twin.id)).toBe(false);
+  });
 });
 
 describe('a script changed by hand', () => {

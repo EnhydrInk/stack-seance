@@ -29,19 +29,32 @@ export type CompileResponse =
   | { ok: false; error: 'unauthorized' }
   | { ok: false; error: 'model' };
 
-/** What the compiler needs to know about the place a button grows. `except` is a button being
- * recompiled: it is left out of the other buttons, and it keeps its label. */
+/** The longest label the compiler writes, and so the longest it keeps on a recompile. */
+export const MAX_LABEL = 24;
+
+/** What the compiler needs to know about the place a button grows: the current card, or, for
+ * `except`, a button being recompiled, its own card. That button is left out of the other
+ * buttons, and it keeps its label when the compiler could have written that label itself. */
 export function requestFor(model: Model, sentence: string, except?: string): CompileRequest {
-  const kept = except === undefined ? undefined : model.card.buttons.find((b) => b.id === except);
+  const owner = except === undefined ? undefined : model.owner(except);
+  const kept = owner?.kind === 'button' ? owner : undefined;
+  const stack = kept?.stack ?? model.stack;
+  const card = kept?.card ?? model.card;
+  const buttonNames = card.buttons.filter((b) => b.id !== except).map((b) => b.name);
+  // A stack's icon is named after the stack, and a second grow of a taken label gets a number:
+  // those names can be longer than a label, or taken twice. The compiler names those afresh.
+  const label = kept?.button.name;
+  const keeps = label !== undefined && label.length <= MAX_LABEL && /\S/.test(label)
+    && !buttonNames.some((n) => n.toLowerCase() === label.toLowerCase());
   return {
     sentence,
-    stackName: model.stack.name,
-    cardNames: model.stack.cards.map((c) => c.name),
-    cardName: model.card.name,
-    fieldNames: model.card.fields.map((f) => f.name),
-    buttonNames: model.card.buttons.filter((b) => b.id !== except).map((b) => b.name),
+    stackName: stack.name,
+    cardNames: stack.cards.map((c) => c.name),
+    cardName: card.name,
+    fieldNames: card.fields.map((f) => f.name),
+    buttonNames,
     stackNames: model.doc.stacks.map((s) => s.name),
-    ...(kept ? { label: kept.name } : {}),
+    ...(keeps ? { label } : {}),
   };
 }
 

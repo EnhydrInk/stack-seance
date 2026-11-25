@@ -60,7 +60,10 @@ export function renderBack(
     go.addEventListener('click', async () => {
       const script = blocks.get(buttonId)?.textarea;
       if (script && editedByHand({ script: script.value, compiled })) {
+        // One question at a time: the keyboard can still reach this button behind the dialog.
+        go.disabled = true;
         const choice = await answer('This script was changed by hand. Replace it with what the spirits write from the sentence?', ['Replace', 'Cancel']);
+        go.disabled = false;
         if (choice !== 'Replace') return;
       }
       const writing = spiritsWriting();
