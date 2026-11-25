@@ -30,12 +30,12 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
     - No file under `worker/` changes.
     - _Requirements: 2.7, 8.5, 8.6_
 
-- [ ] 2. The User_Message and the System_Prompt
+- [x] 2. The User_Message and the System_Prompt
   - [x] 2.1 Change `src/compiler/prompt.ts`
     - `userMessage` writes the seven fields in contract order as today, and then `label` only when `label !== undefined`, as "prompt.ts" gives it. Without a label the text is byte for byte today's.
     - Add the `RECOMPILING` constant with the paragraph of "prompt.ts", word for word, and put it in `SYSTEM_PROMPT` after `GUIDANCE` and before `EXAMPLES_SECTION`. `EXAMPLES` does not change.
     - _Requirements: 3.1, 3.2, 4.1, 4.2, 4.3, 4.5_
-  - [ ] 2.2 Test them in `test/compiler/prompt.test.ts`
+  - [x] 2.2 Test them in `test/compiler/prompt.test.ts`
     - The SC6.4 tests: with `{ ...crypt, label: 'Quokka lantern' }`, `SYSTEM_PROMPT` is the same string after `userMessage` runs for it and does not hold `Quokka lantern`.
     - The paragraph: `SYSTEM_PROMPT` holds `\n\n# Recompiling\n\n`, `the reply's label is exactly the request's label`, `button "<the label>"` and `hasButton is false and label is empty`, and `# Recompiling` comes before `# Examples`.
     - `userMessage`: `{ ...hallRequest, label: 'Dig' }` gives the contract keys then `label`, and today's Hall text with `,"label":"Dig"` before the closing brace; a shuffled object with `label` first still gets `label` last; `{ ...hallRequest, label: undefined }` gives today's Hall text exactly.
