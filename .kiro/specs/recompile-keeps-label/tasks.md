@@ -79,7 +79,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
     - **Validates: Requirements 2.2, 3.1, 5.1, 5.3, 5.4, 5.5, 5.6, 5.7, 9.1, 9.2, 9.3, 9.6**
 
 - [ ] 6. Amend the sentence-compiler documents
-  - [ ] 6.1 Amend `.kiro/specs/sentence-compiler/requirements.md`
+  - [x] 6.1 Amend `.kiro/specs/sentence-compiler/requirements.md`
     - The eight amendments of the design's "Amendments to the sentence-compiler spec", word for word: the out-of-scope line of the Introduction, the `label` line in the contract, Request_Names and Request_Label in the glossary, the new SC2.8, SC3.2, SC4.7, SC6.5 and the new SC6.8.
     - Each amended passage names `recompile-keeps-label`. No other passage changes, and existing criteria keep their numbers.
     - _Requirements: 7.1, 7.2, 7.3, 7.5, 7.6_

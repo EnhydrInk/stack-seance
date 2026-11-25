@@ -6,11 +6,11 @@ A person clicks a spot on a card and writes one sentence, in any language, for e
 
 The interpreter in `src/hypertalk` is finished. The compiler uses its public API (`parse`) and does not change it. The UI in `src/ui` is written separately against the contract below, so the contract's names and shapes are fixed.
 
-Out of scope: the UI, deployment and secrets (the API key is created separately and the maintainer deploys), changing the interpreter, and recompiling when a sentence is edited (the UI calls the same endpoint again).
+Out of scope: the UI, deployment and secrets (the API key is created separately and the maintainer deploys), and changing the interpreter. Recompiling when a sentence is edited calls the same endpoint again with the button's current label, which the reply keeps (spec `recompile-keeps-label`).
 
 ## Contract with the UI (fixed)
 
-`POST /api/compile` on the same host as the site (`stack-seance.enhydrink.com/api/compile`), JSON in and out. The UI is written against these names and shapes now. Changing any of them needs the maintainer's agreement first.
+`POST /api/compile` on the same host as the site (`stack-seance.enhydrink.com/api/compile`), JSON in and out. The UI is written against these names and shapes now. Changing any of them needs the maintainer's agreement first. The optional `label` of CompileRequest comes from spec `recompile-keeps-label`.
 
 ```ts
 interface CompileRequest {
@@ -21,6 +21,7 @@ interface CompileRequest {
   fieldNames: string[];             // fields on that card
   buttonNames: string[];            // other buttons on that card
   stackNames: string[];             // every stack, for go to stack
+  label?: string;                   // when recompiling: the button's current label, which the reply keeps
 }
 
 type CompileResponse =
@@ -40,7 +41,8 @@ type CompileResponse =
 - **Interpreter**: the HyperTalk parser and runtime in `src/hypertalk/`. Its **Public_API** is the exports of `src/hypertalk/index.ts`.
 - **Subset**: the HyperTalk subset defined in `.kiro/specs/hypertalk-interpreter/requirements.md` and `.kiro/specs/go-to-stack-command/requirements.md`. R-numbers such as R2.3 and R11.4 refer to the first of the two.
 - **Sentence**: the `sentence` of a CompileRequest.
-- **Request_Names**: the `stackName`, `cardNames`, `cardName`, `fieldNames`, `buttonNames` and `stackNames` of a CompileRequest.
+- **Request_Names**: the `stackName`, `cardNames`, `cardName`, `fieldNames`, `buttonNames` and `stackNames` of a CompileRequest, and the Request_Label, when the request has one (spec `recompile-keeps-label`).
+- **Request_Label**: the `label` of a CompileRequest that has one, the current label of a button being recompiled (spec `recompile-keeps-label`).
 - **Model**: Claude Opus 5.5, model id `claude-opus-5-5`. A reply that the server-side fallback serves from another model is handled like any other Model_Reply.
 - **Ask**: the function the Compiler is given. It takes one Model_Input and returns a promise of one Model_Reply. In the Worker it calls the Model; in tests it is a fake.
 - **Model_Call**: one call of Ask.
@@ -101,6 +103,7 @@ type CompileResponse =
 5. THE Worker SHALL accept the empty string as `stackName`, as `cardName` and in every name list, because a card can have no name.
 6. THE Worker SHALL ignore fields of the body that CompileRequest does not define.
 7. IF a request is a bad request, THEN THE Worker SHALL answer 400 `{ ok: false, error: 'bad-request' }` without counting it (Requirement 10) and without a Model_Call.
+8. THE Worker SHALL treat a request that has a `label` as a bad request unless the label is a string of 1 to 24 characters, counted as in 2.3, that holds a character that is not whitespace and is not the Same_Name as any name in `buttonNames`. The label is not checked for being English. A request without a `label` is checked as the criteria above say (spec `recompile-keeps-label`).
 
 ### Requirement 3: What a sentence becomes
 
@@ -109,7 +112,7 @@ type CompileResponse =
 #### Acceptance Criteria
 
 1. WHEN the Compiler accepts a Button_Reply, THE Worker SHALL answer 200 `{ ok: true, label, script, newCards, skipped }` with the four values of that reply.
-2. THE Compiler SHALL return a label that is a short English button label of at most 24 characters (Rule 7) in whatever language the Sentence is written, because the interface is English and the pixel font has no Chinese or Japanese glyphs.
+2. THE Compiler SHALL return a label that is a short English button label of at most 24 characters (Rule 7) in whatever language the Sentence is written, because the interface is English and the pixel font has no Chinese or Japanese glyphs. WHEN the request has a Request_Label, THE Compiler SHALL return that label, unchanged, whatever its language (Rule 7; spec `recompile-keeps-label`).
 3. THE Compiler SHALL return a script that is exactly one `on mouseUp … end mouseUp` handler in the Subset (Rules 1 and 2). A button script never holds an `openCard` handler.
 4. THE Compiler SHALL return as newCards the names of the cards that the script goes to by name and that do not exist yet in the current stack (Rule 4). The UI adds a blank card for each name, in this order, at the end of the current stack.
 5. THE Compiler SHALL return as skipped one short English phrase, for example "play a song", for each part of the Sentence that the Subset cannot do (Rule 9), and an empty list when nothing was skipped. The Compiler does what the Subset can and lists the rest.
@@ -130,7 +133,7 @@ The Rule_Checker checks these rules in code after every Model_Reply. Names are c
 4. Rule 4: THE Rule_Checker SHALL accept a Button_Reply only when every name in `newCards` is the Same_Name as the Literal_Text of a Card_Name_Literal of the script, is not the Same_Name as any name in `cardNames`, and is not the Same_Name as any other name in `newCards`; also, it is an English_Name and is not Looks_Numeric.
 5. Rule 5: THE Rule_Checker SHALL accept a Button_Reply only when the Literal_Text of every Literal_Target of a `go to stack` is the Same_Name as a name in `stackNames`.
 6. Rule 6: THE Rule_Checker SHALL accept a Button_Reply only when every field that the script names as `field "<name>"`, in `put`, `show`, `hide` or an expression, is the Same_Name as a name in `fieldNames`, and every button that it names as `button "<name>"` is the Same_Name as a name in `buttonNames` or as the label.
-7. Rule 7: THE Rule_Checker SHALL accept a Button_Reply only when the label is 1 to 24 characters long and is not the Same_Name as any name in `buttonNames`; also, the label is an English_Name, which is how the code checks "English".
+7. Rule 7: WHEN the request has no Request_Label, THE Rule_Checker SHALL accept a Button_Reply only when the label is 1 to 24 characters long and is not the Same_Name as any name in `buttonNames`; also, the label is an English_Name, which is how the code checks "English". WHEN the request has a Request_Label, THE Rule_Checker SHALL accept a Button_Reply only when the label is exactly the Request_Label, with the same characters in the same case (spec `recompile-keeps-label`).
 8. Rule 8: THE Rule_Checker SHALL accept a Button_Reply only when no `field "<name>"` or `button "<name>"` of the script is reachable after a `go`, and no Literal_Target of a `go to card` is reachable after a `go to stack`. After a `go`, names resolve on the new current card and stack (R2.6), and the request lists only this card's fields and buttons and this stack's cards.
 9. Rule 9: THE Rule_Checker SHALL accept a reply only when `skipped` holds at most 10 phrases and each phrase is ASCII_Text of 1 to 60 characters that does not start or end with a space.
 10. Rule 10: THE Rule_Checker SHALL accept a reply only when the reply text is one JSON object that matches the Reply_Schema, and, for a Nothing_Reply, `skipped` holds at least one phrase and the reply holds no label, no script and no new card.
@@ -163,9 +166,10 @@ The Rule_Checker checks these rules in code after every Model_Reply. Names are c
 2. THE System_Prompt SHALL hold a handful of examples, each an example request and the reply for it, including at least a Sentence in Chinese or Japanese, a Sentence with a skipped part, a Sentence that makes a new card, and a Sentence where nothing can be done.
 3. THE System_Prompt SHALL hold only example replies that follow the rules for their example requests and whose scripts parse with `parse`.
 4. THE System_Prompt SHALL be the same text for every CompileRequest and SHALL hold no Sentence and no Request_Names of the request being compiled.
-5. THE User_Message SHALL hold the Sentence and every one of the Request_Names.
+5. THE User_Message SHALL hold the Sentence and every one of the Request_Names. It SHALL hold the Request_Label only when the request has one, after the other fields (spec `recompile-keeps-label`).
 6. THE System_Prompt SHALL tell the Model to write the label, the new card names and the skipped phrases in English, to keep text that the card shows to the reader (in `answer`, `ask` and `put`) in the language of the Sentence, to do what the Subset can and list the rest in skipped, and to give a Nothing_Reply when nothing can be done.
 7. THE System_Prompt and the Reply_Schema SHALL NOT ask the Model to write out its reasoning in the reply, because the Model can refuse such a request (`reasoning_extraction`).
+8. THE System_Prompt SHALL hold a static paragraph saying that when the request has a label, the button is being recompiled and keeps that label, so the reply's label is exactly that label and the script names the button by it (spec `recompile-keeps-label`).
 
 ### Requirement 7: The model call
 
