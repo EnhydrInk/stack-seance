@@ -14,7 +14,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
 ## Tasks
 
 - [ ] 1. The label in the contract and the request check
-  - [ ] 1.1 Read the label in `src/compiler/contract.ts`
+  - [x] 1.1 Read the label in `src/compiler/contract.ts`
     - `CompileRequest` gains `label?: string;                   // when recompiling: the button's current label, which the reply keeps` after `stackNames`, word for word as in the Contract change section. `CompileResponse` and `CompileOutcome` do not change.
     - `REQUEST_LIMITS` becomes `{ sentence: 500, names: 100, nameLength: 100, label: 24 }`.
     - `readCompileRequest` keeps every check it has, in the same order. Then it returns the seven-field request when the body's `label` is `undefined`, the request with `label` last when `isRequestLabel(label, buttonNames)` holds, and null otherwise, as "contract.ts" gives it. `isRequestLabel` uses `findSameName` from `names.ts` and the `/\S/` blank test, and does not check English.

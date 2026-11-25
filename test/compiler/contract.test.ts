@@ -7,6 +7,7 @@ import {
   type CompileRequest,
   type CompileResponse,
 } from '../../src/compiler/contract';
+import { ENGLISH_NAME_MAX } from '../../src/compiler/names';
 import { readReplyObject, type ReplyObject } from '../../src/compiler/schema';
 
 describe('Requirement 1.2 the contract types', () => {
@@ -19,6 +20,7 @@ describe('Requirement 1.2 the contract types', () => {
       fieldNames: string[];
       buttonNames: string[];
       stackNames: string[];
+      label?: string;
     }>();
   });
 
@@ -42,8 +44,10 @@ describe('Requirement 1.2 the contract types', () => {
     expectTypeOf<CompileOutcome>().toMatchTypeOf<CompileResponse>();
   });
 
-  it('REQUEST_LIMITS holds the limits of Requirement 2.3 and 2.4', () => {
-    expect(REQUEST_LIMITS).toEqual({ sentence: 500, names: 100, nameLength: 100 });
+  it('REQUEST_LIMITS holds the limits of Requirement 2.3 and 2.4, and the longest Request_Label', () => {
+    expect(REQUEST_LIMITS).toEqual({ sentence: 500, names: 100, nameLength: 100, label: 24 });
+    // A label that an earlier reply gave is an English_Name, so it must fit (recompile-keeps-label).
+    expect(REQUEST_LIMITS.label).toBe(ENGLISH_NAME_MAX);
   });
 });
 
@@ -163,7 +167,7 @@ describe('Requirement 2.2 to 2.6 readCompileRequest', () => {
   });
 
   it('drops fields that CompileRequest does not define', () => {
-    const result = readCompileRequest(request({ extra: 'x', label: 'Hi', __proto__: { polluted: true } }));
+    const result = readCompileRequest(request({ extra: 'x', name: 'Hi', __proto__: { polluted: true } }));
     expect(result).toEqual(request());
     expect(Object.keys(result!)).toEqual([
       'sentence', 'stackName', 'cardNames', 'cardName', 'fieldNames', 'buttonNames', 'stackNames',

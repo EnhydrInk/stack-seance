@@ -1,7 +1,10 @@
 // The contract with the UI (requirements.md, "Contract with the UI"). The two contract
-// types are copied from there exactly; a type test pins them (Requirement 1.2).
+// types are copied from there exactly; a type test pins them (Requirement 1.2). The optional
+// `label` comes from the recompile-keeps-label spec, whose "Contract change" section gives it.
 // The request checks live here, not in the Worker, so the UI can import the same limits.
 // The Content-Type and body size checks are about HTTP and stay in worker/src/handle.ts.
+
+import { findSameName } from './names';
 
 export interface CompileRequest {
   sentence: string;                 // 1..500 characters
@@ -11,6 +14,7 @@ export interface CompileRequest {
   fieldNames: string[];             // fields on that card
   buttonNames: string[];            // other buttons on that card
   stackNames: string[];             // every stack, for go to stack
+  label?: string;                   // when recompiling: the button's current label, which the reply keeps
 }
 
 export type CompileResponse =
@@ -27,8 +31,11 @@ export type CompileOutcome =
   | { ok: false; error: 'nothing'; skipped: string[] }
   | { ok: false; error: 'model' };
 
-/** Lengths in UTF-16 code units (the JavaScript `length`), list sizes in entries (Requirement 2.3, 2.4). */
-export const REQUEST_LIMITS = { sentence: 500, names: 100, nameLength: 100 } as const;
+/**
+ * Lengths in UTF-16 code units (the JavaScript `length`), list sizes in entries (Requirement 2.3,
+ * 2.4). `label` is the longest Request_Label (recompile-keeps-label, Requirement 2.2).
+ */
+export const REQUEST_LIMITS = { sentence: 500, names: 100, nameLength: 100, label: 24 } as const;
 
 const NAME_LISTS = ['cardNames', 'fieldNames', 'buttonNames', 'stackNames'] as const;
 
@@ -54,7 +61,24 @@ export function readCompileRequest(value: unknown): CompileRequest | null {
     lists[key] = list;
   }
   const { cardNames, fieldNames, buttonNames, stackNames } = lists as Record<(typeof NAME_LISTS)[number], string[]>;
-  return { sentence, stackName, cardNames, cardName, fieldNames, buttonNames, stackNames };
+  const request: CompileRequest = { sentence, stackName, cardNames, cardName, fieldNames, buttonNames, stackNames };
+
+  // A request without a label is read exactly as before (recompile-keeps-label, Requirement 2.1).
+  const { label } = body;
+  if (label === undefined) return request;
+  return isRequestLabel(label, buttonNames) ? { ...request, label } : null;
+}
+
+/**
+ * A Request_Label: a string of 1 to 24 code units that is not blank and is not the Same_Name as
+ * another button on the card. It is not checked for English: it comes from an earlier reply or
+ * from a built-in button (recompile-keeps-label, Requirement 2).
+ */
+function isRequestLabel(value: unknown, buttonNames: readonly string[]): value is string {
+  return typeof value === 'string'
+    && value.length >= 1 && value.length <= REQUEST_LIMITS.label
+    && /\S/.test(value)
+    && findSameName(buttonNames, value) === undefined;
 }
 
 function fitsName(name: string): boolean {
