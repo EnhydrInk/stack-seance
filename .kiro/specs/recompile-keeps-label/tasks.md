@@ -64,7 +64,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
 - [x] 4. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Correctness properties
+- [x] 5. Correctness properties
   - [x] 5.1 Extend `test/compiler/helpers/arbitraries.ts`, with two cross-checks in `test/compiler/arbitraries.test.ts`
     - `requestNames` adds the label when the request has one. `LABEL_WORDS`, `labelArb(request)` and `labelledRequestArb`, as the design's "Generators" gives them.
     - `buttonPlanArb`: for a Labelled_Request, the plan's label is `request.label` and only the new cards are drawn fresh. For an Unlabelled_Request the code path is today's, so it builds the same arbitraries and the seeded cross-checks sample the same values.
@@ -72,7 +72,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
     - `requestArb`, `validReplyArb`, `brokenReplyArb`, `stepsArb` and `newCardCandidateArb` keep their signatures.
     - Cross-checks with `labelledRequestArb`, 1,000 samples each, seeds 23 and 24: every `validReplyArb` reply passes `checkReply` with its own values and every Button_Reply among them has `label === request.label`; every `brokenReplyArb` reply fails with a report for its tagged rule. The two existing cross-checks do not change.
     - _Requirements: 6.3, 9.2, 9.4, 9.5_
-  - [ ] 5.2 Write P1 with a label in `test/compiler/safety.property.test.ts`
+  - [x] 5.2 Write P1 with a label in `test/compiler/safety.property.test.ts`
     - **Property 1 with a label: Safety with a label (P1 safety with a label)**
     - A second `it` in the existing `describe`, next to P1, whose name starts with `P1 safety with a label`, with the comment `Feature: recompile-keeps-label, Property 1: Safety with a label`. 300 runs. The existing P1 `it` does not change.
     - Cases from `labelledRequestArb.chain((request) => stepsArb(request).map((steps) => ({ request, steps })))`. The same checks as P1, through its `expected` and `expectGrowth`: the outcome `toStrictEqual` to the step model, the number of calls, at most three, the same `system` and `schema`, and the messages growing by the same `turn` and a Retry_Message for the tagged rule. Also, when the outcome is `ok: true`, `expect(outcome.label).toBe(request.label)`.
