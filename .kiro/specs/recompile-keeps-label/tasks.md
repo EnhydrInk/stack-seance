@@ -61,7 +61,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
     - The file's `request` with `label: 'Quokka lamp'`, and a fake reply with that label and the file's `VALID` script and new cards, gives 200 with `label: 'Quokka lamp'`. The first User_Message holds `"label":"Quokka lamp"`, and no log line holds `Quokka`.
     - _Requirements: 2.2, 3.1, 5.1, 8.6_
 
-- [ ] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Run `npx vitest --run` and `npm run typecheck`. Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 5. Correctness properties

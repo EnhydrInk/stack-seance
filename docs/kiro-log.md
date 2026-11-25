@@ -388,3 +388,7 @@
 - Done: one new test. The file's request with `label: 'Quokka lamp'` and a reply that keeps it gives 200 with `label: 'Quokka lamp'`; the first User_Message holds `"label":"Quokka lamp"`, and the one log line is status, error and CallEvents only, with no `Quokka` in it. No file under `worker/` changed. Suite: 44 files, 876 passed; typecheck passes.
 - Kiro: requirements 2.2, 3.1, 5.1 and 8.6, and the sentence-compiler's SC11.2 (no request names in the Worker's logs).
 - Why it matters: the Worker carries the label to the model and back without a code change and without logging it.
+## recompile-keeps-label, task 4: Checkpoint - Ensure all tests pass
+- Done: no code or test changed. Full suite 44 files, 876 passed (853 before the spec, 23 new example tests); typecheck passes in all 4 projects. Since the spec commit `531c360` the changes are in `src/compiler` (contract, prompt, rules), `test/compiler`, `test/worker/handle.test.ts`, this spec's tasks.md and this log; nothing under `src/ui`, `src/hypertalk`, `test/hypertalk` or `worker/`.
+- Kiro: the spec's checkpoint, with the scope check of requirement 10 run early.
+- Why it matters: the example tests cover every label case before the properties start.
