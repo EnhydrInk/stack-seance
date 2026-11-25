@@ -16,7 +16,8 @@ const HALL_USER_MESSAGE =
 
 const RULE_3 =
   'Rule 3: Every go to card with a literal name names a card in cardNames or newCards, and every literal card number is a whole number from 1 to the number of cards in cardNames plus newCards.';
-const RULE_7 = 'Rule 7: The label is a short English name of 1 to 24 characters that is not in buttonNames.';
+const RULE_7 =
+  'Rule 7: When the request has a label, the label is exactly that label; otherwise it is a short English name of 1 to 24 characters that is not in buttonNames.';
 const RULE_10 =
   'Rule 10: The reply is one JSON object with hasButton, script, newCards, label and skipped; when hasButton is false, script and label are empty, newCards is empty, and skipped holds at least one phrase.';
 const ASK_AGAIN = 'Write the whole reply again as one JSON object that follows every rule.';

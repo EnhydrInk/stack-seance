@@ -42,7 +42,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
     - _Requirements: 3.1, 3.2, 4.1, 4.2, 4.3, 4.5, 8.2, 8.4_
 
 - [ ] 3. Rule 7 with a label
-  - [ ] 3.1 Change Rule 7 in `src/compiler/rules.ts`, with the sentence in `test/compiler/retry.test.ts`
+  - [x] 3.1 Change Rule 7 in `src/compiler/rules.ts`, with the sentence in `test/compiler/retry.test.ts`
     - `RULES[7]` becomes `When the request has a label, the label is exactly that label; otherwise it is a short English name of 1 to 24 characters that is not in buttonNames.` The other nine sentences do not change.
     - `labelReports` starts with the Labelled_Request branch of "rules.ts": no report when the reply's label is `===` the Request_Label, and otherwise the one report `The label <quote(label)> is not the label in the request, <quote(request.label)>.`. The Unlabelled_Request code stays as it is.
     - Nothing else in `checkReply` changes: Rule 6 still uses the reply's label, a Nothing_Reply never reaches `labelReports`, and stage 3 still runs before the parse.
