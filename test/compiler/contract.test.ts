@@ -184,6 +184,59 @@ describe('Requirement 2.2 to 2.6 readCompileRequest', () => {
   });
 });
 
+// recompile-keeps-label, Requirement 2: the label of a button being recompiled.
+describe('recompile-keeps-label Requirement 2 the label', () => {
+  const SEVEN = ['sentence', 'stackName', 'cardNames', 'cardName', 'fieldNames', 'buttonNames', 'stackNames'];
+  const withLabel = (label: unknown) => readCompileRequest(request({ label }));
+
+  it('reads a body with no label, or an undefined one, as the seven fields with no label key', () => {
+    for (const body of [request(), request({ label: undefined })]) {
+      const result = readCompileRequest(body);
+      expect(result).toStrictEqual(request());
+      expect(Object.keys(result!)).toEqual(SEVEN);
+    }
+  });
+
+  it('takes a good label unchanged, as the last field', () => {
+    const result = withLabel('Dig');
+    expect(result).toStrictEqual({ ...request(), label: 'Dig' });
+    expect(Object.keys(result!)).toEqual([...SEVEN, 'label']);
+  });
+
+  it('takes a label that is not English, unchanged', () => {
+    for (const label of ['挖一挖', "It's Alive!", ' Dig']) {
+      expect(withLabel(label)?.label, JSON.stringify(label)).toBe(label);
+    }
+  });
+
+  it('rejects an empty label and a blank one', () => {
+    for (const label of ['', '   ', '\t', '\u3000\u3000']) {
+      expect(withLabel(label), JSON.stringify(label)).toBeNull();
+    }
+  });
+
+  it('takes labels of up to 24 code units', () => {
+    expect(withLabel('x'.repeat(24))?.label).toBe('x'.repeat(24));
+    expect(withLabel('x'.repeat(25))).toBeNull();
+    // 12 characters outside the BMP are 24 code units, 13 are 26.
+    expect(withLabel('👻'.repeat(12))?.label).toBe('👻'.repeat(12));
+    expect(withLabel('👻'.repeat(13))).toBeNull();
+  });
+
+  it('rejects a label that is not a string', () => {
+    for (const label of [3, null, true, ['Dig'], { name: 'Dig' }]) {
+      expect(withLabel(label), JSON.stringify(label)).toBeNull();
+    }
+  });
+
+  it('rejects a label that is already a button on the card, in any case', () => {
+    // request() has the buttons Upstairs and Back.
+    for (const label of ['upstairs', 'BACK', 'Back']) {
+      expect(withLabel(label), label).toBeNull();
+    }
+  });
+});
+
 describe('Requirement 4.10 readReplyObject', () => {
   const button: ReplyObject = {
     hasButton: true,

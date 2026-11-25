@@ -21,7 +21,7 @@ Requirement numbers (2.4, 5.4) refer to this spec's requirements.md. SC-numbers 
     - Update the file's top comment, which says the contract types are copied from the sentence-compiler requirements, to name this spec as well.
     - In the same change, so that the suite and the type check stay green, three tests in `test/compiler/contract.test.ts` follow: the type test pins `CompileRequest` with `label?: string` last; the `REQUEST_LIMITS` test expects `label: 24` and checks that `REQUEST_LIMITS.label` equals `ENGLISH_NAME_MAX` from `names.ts`; and "drops fields that CompileRequest does not define" sends `name: 'Hi'` where it sent `label: 'Hi'`, keeping its seven expected keys.
     - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 8.5_
-  - [ ] 1.2 Test the label in `test/compiler/contract.test.ts`
+  - [x] 1.2 Test the label in `test/compiler/contract.test.ts`
     - New tests, one per case of the design's "Example tests": `label: undefined` gives the seven fields with no `label` key; `Dig` comes back with the keys in contract order then `label`; `挖一挖`, `It's Alive!` and ` Dig` are accepted unchanged; `''`, `'   '`, `'\t'` and `'\u3000\u3000'` give null; `'x'.repeat(24)` and `'👻'.repeat(12)` are accepted while `'x'.repeat(25)` and `'👻'.repeat(13)` give null; `3`, `null`, `true`, `['Dig']` and `{ name: 'Dig' }` give null; with `buttonNames` `['Upstairs', 'Back']`, `'upstairs'`, `'BACK'` and `'Back'` give null.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 8.1_
   - [ ] 1.3 Follow the contract in `test/worker/handle.test.ts`
