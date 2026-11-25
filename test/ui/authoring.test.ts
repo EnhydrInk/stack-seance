@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { requestFor } from '../../src/ui/compile';
+import { editedByHand, requestFor } from '../../src/ui/compile';
 import { Model, copy, upgrade } from '../../src/ui/model';
 import stacks from '../../src/ui/stacks.json';
 import type { StacksDoc } from '../../src/ui/types';
@@ -128,6 +128,21 @@ describe('the compile request', () => {
     expect(r.cardNames).toEqual(['Gate', 'Hall', 'Attic', 'Garden']);
     expect(r.buttonNames).toEqual(['Open the gate', 'Home']);
     expect(r.stackNames).toEqual(['Home', 'Haunted House', 'Help', "Witch's Kitchen"]);
+    expect(r.label).toBe('Ring the bell');
+  });
+
+  it('asks to keep no label when a button grows', () => {
+    const m = fresh();
+    m.goToStack('haunted');
+    expect('label' in requestFor(m, 'go on')).toBe(false);
+  });
+});
+
+describe('a script changed by hand', () => {
+  it('is one that differs from what the spirits last wrote; a button written by hand never is', () => {
+    expect(editedByHand({ script: 'on mouseUp\n  howl\nend mouseUp', compiled: 'on mouseUp\n  howl\nend mouseUp' })).toBe(false);
+    expect(editedByHand({ script: 'on mouseUp\n  howl\n  howl\nend mouseUp', compiled: 'on mouseUp\n  howl\nend mouseUp' })).toBe(true);
+    expect(editedByHand({ script: 'on mouseUp\n  go to card 1\nend mouseUp' })).toBe(false);
   });
 });
 

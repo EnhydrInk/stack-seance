@@ -183,13 +183,15 @@ export class Authoring {
         const grown = this.model.addCards(reply.newCards, home.stack);
         // Another grow on this card may have taken the label while the spirits wrote.
         const name = this.model.freeButtonName(reply.label, home.card);
+        const script = name === reply.label ? reply.script : renamed(reply.script, reply.label, name);
         this.model.addButton(
           {
             name,
             rect: fitLabel(rect, name),
             visible: true,
             sentence,
-            script: name === reply.label ? reply.script : renamed(reply.script, reply.label, name),
+            script,
+            compiled: script,
             ...(reply.skipped.length ? { skipped: reply.skipped } : {}),
             style: 'roundrect',
           },
@@ -259,6 +261,7 @@ export class Authoring {
     if (button.style === 'roundrect') button.rect = fitLabel(button.rect, name);
     button.sentence = sentence;
     button.script = name === reply.label ? reply.script : renamed(reply.script, reply.label, name);
+    button.compiled = button.script;
     if (reply.skipped.length) button.skipped = reply.skipped;
     else delete button.skipped;
     const grown = this.model.addCards(reply.newCards, stack);

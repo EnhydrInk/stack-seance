@@ -351,6 +351,7 @@ export class Screen implements Stage {
           this.model.changed('content');
         },
         (id, sentence) => this.onRecompile(id, sentence),
+        (message, labels) => this.answer(message, labels),
       );
       this.back.scrollTop = 0;
     } else {

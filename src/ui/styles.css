@@ -456,12 +456,18 @@ textarea.sentence {
   opacity: 0.75;
 }
 
-.skipped {
+.skipped,
+.by-hand {
   margin: 0 0 4px;
   padding-left: 6px;
   border-left: 4px solid var(--ghost);
   color: var(--ghost);
   font-size: calc(13px * var(--font-scale));
+}
+
+.by-hand {
+  border-left-color: var(--pumpkin);
+  color: var(--pumpkin);
 }
 
 .editor {

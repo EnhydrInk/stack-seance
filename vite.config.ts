@@ -38,6 +38,8 @@ interface FakeRequest {
   sentence: string;
   cardNames: string[];
   buttonNames: string[];
+  /** When recompiling: the label the reply keeps. */
+  label?: string;
 }
 
 function fakeCompile(r: FakeRequest) {
@@ -74,6 +76,7 @@ function fakeCompile(r: FakeRequest) {
     if (skipped.length) return { ok: false as const, error: 'nothing' as const, skipped };
     lines.push(`answer "${r.sentence.replace(/"/g, "'")}"`);
   }
+  if (r.label) label = r.label;
   if (!label) label = r.sentence.replace(/[^A-Za-z ]/g, '').split(/\s+/).filter(Boolean).slice(0, 3).join(' ') || 'Spell';
   label = label.slice(0, 24);
   let unique = label;

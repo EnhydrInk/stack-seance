@@ -22,6 +22,13 @@ describe('built-in stacks', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it('keeps, on every built-in button outside Home, the script the spirits wrote, except the two broken on purpose', () => {
+    const byHand = doc.stacks
+      .filter((s) => s.id !== 'home')
+      .flatMap((s) => s.cards.flatMap((c) => c.buttons.filter((b) => b.compiled !== b.script).map((b) => b.name)));
+    expect(byHand.sort()).toEqual(['Broken button', 'Go deeper']);
+  });
+
   it('opens at a stack named Home', () => {
     expect(doc.stacks.some((s) => s.id === 'home' && s.name === 'Home')).toBe(true);
   });

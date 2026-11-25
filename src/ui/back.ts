@@ -4,7 +4,7 @@
 // back always shows what runs.
 
 import { parse } from '../hypertalk/index';
-import { MAX_SENTENCE } from './compile';
+import { MAX_SENTENCE, editedByHand } from './compile';
 import type { CardDoc } from './types';
 import { spiritsWriting } from './writing';
 
@@ -28,6 +28,8 @@ export function renderBack(
   onEdit: (scriptId: string, source: string) => void,
   /** True when the button was written again (the back is then drawn anew). */
   onRecompile: (buttonId: string, sentence: string) => Promise<boolean>,
+  /** A dialog with these buttons; resolves to the one clicked, or '' when it was closed. */
+  answer: (message: string, labels: string[]) => Promise<string>,
 ): BackHandle {
   el.replaceChildren();
   const blocks = new Map<string, Block>();
@@ -38,7 +40,7 @@ export function renderBack(
   el.appendChild(head);
 
   /** A button's sentence: edit it and recompile, and the button's script is written again. */
-  const sentenceBox = (buttonId: string, sentence: string): HTMLElement => {
+  const sentenceBox = (buttonId: string, sentence: string, compiled: string | undefined): HTMLElement => {
     const box = document.createElement('div');
     box.className = 'sentence-edit';
     const input = document.createElement('textarea');
@@ -56,11 +58,15 @@ export function renderBack(
       go.disabled = input.value.trim() === '' || input.value === sentence;
     });
     go.addEventListener('click', async () => {
+      const script = blocks.get(buttonId)?.textarea;
+      if (script && editedByHand({ script: script.value, compiled })) {
+        const choice = await answer('This script was changed by hand. Replace it with what the spirits write from the sentence?', ['Replace', 'Cancel']);
+        if (choice !== 'Replace') return;
+      }
       const writing = spiritsWriting();
       go.replaceWith(writing.el);
       input.readOnly = true;
       // The script below is about to be written again: an edit made now would be lost.
-      const script = blocks.get(buttonId)?.textarea;
       if (script) script.readOnly = true;
       const ok = await onRecompile(buttonId, input.value.trim());
       writing.stop();
@@ -76,14 +82,14 @@ export function renderBack(
     return box;
   };
 
-  const add = (id: string, who: string, sentence: string | undefined, source: string, hidden: boolean, skipped: string[] = []) => {
+  const add = (id: string, who: string, sentence: string | undefined, source: string, hidden: boolean, skipped: string[] = [], compiled?: string) => {
     const section = document.createElement('section');
     section.className = 'script';
     const title = document.createElement('div');
     title.className = 'who';
     title.textContent = who + (hidden ? ' (hidden)' : '');
     section.appendChild(title);
-    if (sentence !== undefined) section.appendChild(sentenceBox(id, sentence));
+    if (sentence !== undefined) section.appendChild(sentenceBox(id, sentence, compiled));
     if (skipped.length) {
       // What the ghost's sign said when this script was written: the parts the script leaves out.
       const left = document.createElement('p');
@@ -91,6 +97,11 @@ export function renderBack(
       left.textContent = `The spirits left out: ${skipped.join(' · ')}`;
       section.appendChild(left);
     }
+    // Once the script is changed by hand, the sentence above is no longer all of where it came from.
+    const byHand = document.createElement('p');
+    byHand.className = 'by-hand';
+    byHand.textContent = 'Changed by hand since the spirits wrote it.';
+    section.appendChild(byHand);
     const editor = document.createElement('div');
     editor.className = 'editor';
     const gutter = document.createElement('pre');
@@ -125,6 +136,7 @@ export function renderBack(
       const parsed = parse(textarea.value);
       if (parsed.ok) show(block, undefined);
       else show(block, { line: parsed.error.line, message: parsed.error.message, kind: 'syntax' });
+      byHand.hidden = !editedByHand({ script: textarea.value, compiled });
     };
     textarea.addEventListener('input', () => {
       refresh();
@@ -161,7 +173,7 @@ export function renderBack(
       el.appendChild(section);
       continue;
     }
-    add(b.id, `Button “${b.name}”`, b.sentence, b.script, !b.visible, b.skipped);
+    add(b.id, `Button “${b.name}”`, b.sentence, b.script, !b.visible, b.skipped, b.compiled);
   }
 
   if (card.fields.length) {

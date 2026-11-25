@@ -17,6 +17,8 @@ export interface CompileRequest {
   fieldNames: string[];
   buttonNames: string[];
   stackNames: string[];
+  /** When recompiling: the button's label, which the reply keeps. */
+  label?: string;
 }
 
 export type CompileResponse =
@@ -27,8 +29,10 @@ export type CompileResponse =
   | { ok: false; error: 'unauthorized' }
   | { ok: false; error: 'model' };
 
-/** What the compiler needs to know about the place a button grows. `except` is a button being recompiled. */
+/** What the compiler needs to know about the place a button grows. `except` is a button being
+ * recompiled: it is left out of the other buttons, and it keeps its label. */
 export function requestFor(model: Model, sentence: string, except?: string): CompileRequest {
+  const kept = except === undefined ? undefined : model.card.buttons.find((b) => b.id === except);
   return {
     sentence,
     stackName: model.stack.name,
@@ -37,7 +41,13 @@ export function requestFor(model: Model, sentence: string, except?: string): Com
     fieldNames: model.card.fields.map((f) => f.name),
     buttonNames: model.card.buttons.filter((b) => b.id !== except).map((b) => b.name),
     stackNames: model.doc.stacks.map((s) => s.name),
+    ...(kept ? { label: kept.name } : {}),
   };
+}
+
+/** True when the reader changed the script by hand since the spirits last wrote it. */
+export function editedByHand(button: { script: string; compiled?: string }): boolean {
+  return button.compiled !== undefined && button.script !== button.compiled;
 }
 
 /** Anything that is not a reply in the contract (no Worker, a network error) counts as a failed séance. */
