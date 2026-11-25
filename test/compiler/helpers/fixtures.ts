@@ -41,6 +41,22 @@ export const atticRequest: CompileRequest = {
   stackNames: [...STACKS],
 };
 
+/**
+ * Recompiling Dig on the Garden card of the Haunted House, whose card script hides button "Dig"
+ * and whose Look at the moon button shows it: a Labelled_Request (recompile-keeps-label).
+ * buttonNames are the card's other buttons.
+ */
+export const digRequest: CompileRequest = {
+  sentence: 'A Dig button: say "You found a pumpkin seed!" with Keep it or Plant it, then write "You picked: " and the choice in msg.',
+  stackName: 'Haunted House',
+  cardNames: [...HAUNTED_HOUSE_CARDS],
+  cardName: 'Garden',
+  fieldNames: ['msg'],
+  buttonNames: ['Look at the moon', 'Previous card', 'Start over', 'Home'],
+  stackNames: [...STACKS],
+  label: 'Dig',
+};
+
 /** A `mouseUp` handler in the house style: two-space indentation, `\n` line breaks. */
 export function mouseUp(...body: string[]): string {
   return ['on mouseUp', ...body.map((line) => `  ${line}`), 'end mouseUp'].join('\n');

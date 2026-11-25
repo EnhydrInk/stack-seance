@@ -18,7 +18,7 @@ export const RULES: Readonly<Record<RuleNumber, string>> = {
   4: 'Every name in newCards is used by a go to card in the script, is not in cardNames, is in newCards once, is a short English name, and does not look like a number.',
   5: 'Every go to stack with a literal name names a stack in stackNames.',
   6: 'Every field "<name>" is in fieldNames, and every button "<name>" is in buttonNames or is the label.',
-  7: 'The label is a short English name of 1 to 24 characters that is not in buttonNames.',
+  7: 'When the request has a label, the label is exactly that label; otherwise it is a short English name of 1 to 24 characters that is not in buttonNames.',
   8: 'After a go, the script names no field and no button, and after a go to stack it names no card.',
   9: 'skipped holds at most 10 phrases, each 1 to 60 printable ASCII characters with no space at either end.',
   10: 'The reply is one JSON object with hasButton, script, newCards, label and skipped; when hasButton is false, script and label are empty, newCards is empty, and skipped holds at least one phrase.',
@@ -127,6 +127,12 @@ function phraseProblems(phrase: string): string[] {
 // ---- Rule 7: the label --------------------------------------------------------------
 
 function labelReports(request: CompileRequest, label: string): RuleReport[] {
+  // A recompiled button keeps its label: only the same code units pass. readCompileRequest has
+  // already checked the Request_Label (recompile-keeps-label, Requirement 5).
+  if (request.label !== undefined) {
+    if (label === request.label) return [];
+    return [{ rule: 7, detail: `The label ${quote(label)} is not the label in the request, ${quote(request.label)}.` }];
+  }
   const problems = englishNameProblems(label);
   const existing = findSameName(request.buttonNames, label);
   if (existing !== undefined) problems.push(`is already a button on this card, ${quote(existing)}`);

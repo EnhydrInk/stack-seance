@@ -49,6 +49,36 @@ describe('Requirement 6.4 one system prompt for every request', () => {
       for (const name of namesOf(request)) expect(SYSTEM_PROMPT, name).not.toContain(name);
     }
   });
+
+  it('is the same string after userMessage runs for a request with a label, and does not hold the label', () => {
+    // recompile-keeps-label, Requirement 4.3.
+    const recompile: CompileRequest = { ...crypt, label: 'Quokka lantern' };
+    const before = SYSTEM_PROMPT;
+    expect(userMessage(recompile)).toContain('"label":"Quokka lantern"');
+    expect(SYSTEM_PROMPT).toBe(before);
+    expect(SYSTEM_PROMPT).not.toContain('Quokka lantern');
+  });
+});
+
+describe('recompile-keeps-label Requirement 4 the recompiling paragraph', () => {
+  it('says that a recompiled button keeps the request\'s label, and how a script names it', () => {
+    for (const text of [
+      '\n\n# Recompiling\n\n',
+      'it is being recompiled',
+      "the reply's label is exactly the request's label, with the same characters and the same case",
+      'button "<the label>"',
+      'hasButton is false and label is empty',
+    ]) {
+      expect(SYSTEM_PROMPT, text).toContain(text);
+    }
+  });
+
+  it('comes after the guidance and before the examples', () => {
+    const recompiling = SYSTEM_PROMPT.indexOf('\n# Recompiling\n');
+    expect(SYSTEM_PROMPT.indexOf('\n# Guidance\n')).toBeGreaterThan(0);
+    expect(recompiling).toBeGreaterThan(SYSTEM_PROMPT.indexOf('\n# Guidance\n'));
+    expect(recompiling).toBeLessThan(SYSTEM_PROMPT.indexOf('\n# Examples\n'));
+  });
 });
 
 describe('Requirement 6.1 the subset and the rules', () => {
@@ -159,6 +189,33 @@ describe('Requirement 6.5 the User_Message', () => {
     expect(userMessage(lantern)).toContain('"sentence":"点一下灯笼就飞出一只蝙蝠然后去下一张卡片"');
     const odd = { ...crypt, cardNames: ['Say "boo"', 'Two\nlines'] };
     expect(userMessage(odd)).toContain('"cardNames":["Say \\"boo\\"","Two\\nlines"]');
+  });
+});
+
+describe('recompile-keeps-label Requirement 3 the label in the User_Message', () => {
+  it('holds the label after stackNames when the request has one', () => {
+    const text = userMessage({ ...hallRequest, label: 'Dig' });
+    const body = JSON.parse(text.slice('Compile this request:\n'.length));
+    expect(Object.keys(body)).toEqual([...CONTRACT_ORDER, 'label']);
+    expect(text).toBe(`${userMessage(hallRequest).slice(0, -1)},"label":"Dig"}`);
+  });
+
+  it('writes the label last whatever order the object has', () => {
+    const shuffled = { label: 'Dig', stackNames: ['Home'], buttonNames: [], fieldNames: [], cardName: 'Hall', cardNames: ['Hall'], stackName: 'Home', sentence: 'Go' };
+    expect(userMessage(shuffled)).toBe(
+      'Compile this request:\n{"sentence":"Go","stackName":"Home","cardNames":["Hall"],"cardName":"Hall","fieldNames":[],"buttonNames":[],"stackNames":["Home"],"label":"Dig"}',
+    );
+  });
+
+  it('holds no label when the request has none, even when label is undefined', () => {
+    const today =
+      'Compile this request:\n' +
+      '{"sentence":"Clicking this goes to the kitchen and lets a bat out","stackName":"Haunted House",' +
+      '"cardNames":["Gate","Hall","Attic","Garden"],"cardName":"Hall","fieldNames":["greeting","note"],' +
+      '"buttonNames":["Light a candle","Open the closet","Upstairs","Go deeper","Back"],' +
+      '"stackNames":["Home","Haunted House","Help"]}';
+    expect(userMessage(hallRequest)).toBe(today);
+    expect(userMessage({ ...hallRequest, label: undefined })).toBe(today);
   });
 });
 

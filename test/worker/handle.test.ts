@@ -113,6 +113,19 @@ describe('Requirement 1, 3.1, 3.6 answers from the compiler', () => {
   });
 });
 
+describe('recompile-keeps-label a recompile through the Worker', () => {
+  it('answers 200 with the kept label, which reaches the model and not the log', async () => {
+    const kept = { ...VALID, label: 'Quokka lamp' };
+    const { deps, inputs, logs } = setup({ steps: [replyStep(replyText(kept))] });
+    const response = await handle(http({ body: JSON.stringify({ ...request, label: 'Quokka lamp' }) }), deps);
+    await expectJson(response, 200, { ok: true, ...kept });
+    const first = inputs[0]!.messages[0]!;
+    expect(first.role === 'user' && first.text).toContain('"label":"Quokka lamp"');
+    expect(logs).toStrictEqual([{ event: 'request', status: 200, error: null, calls: [{ call: 1, result: 'accepted' }] }]);
+    expect(JSON.stringify(logs)).not.toContain('Quokka');
+  });
+});
+
 describe('Requirement 2 bad requests', () => {
   async function expectBad(send: Send, label: string): Promise<void> {
     const { deps, inputs, store, logs } = setup({ steps: [replyStep(replyText(VALID))] });
@@ -175,12 +188,21 @@ describe('Requirement 2 bad requests', () => {
     await expectBad({ body: body({ cardName: 'c'.repeat(101) }) }, 'a name of 101 characters');
   });
 
+  // recompile-keeps-label, Requirement 2.7: readCompileRequest turns a bad label away.
+  it('rejects a bad label', async () => {
+    await expectBad({ body: body({ label: '' }) }, 'empty label');
+    await expectBad({ body: body({ label: ' \u3000' }) }, 'blank label');
+    await expectBad({ body: body({ label: 'l'.repeat(25) }) }, 'a label of 25 characters');
+    await expectBad({ body: body({ label: 3 }) }, 'a number as label');
+    await expectBad({ body: body({ label: 'QUOKKA BUTTON' }) }, 'a label that is already a button');
+  });
+
   it('ignores fields that CompileRequest does not define', async () => {
     const { deps, inputs } = setup({ steps: [replyStep(replyText(VALID))] });
-    const response = await handle(http({ body: body({ label: 'Injected label', extra: 'x' }) }), deps);
+    const response = await handle(http({ body: body({ name: 'Injected name', extra: 'x' }) }), deps);
     expect(response.status).toBe(200);
     const first = inputs[0]!.messages[0]!;
-    expect(first.role === 'user' && first.text).not.toContain('Injected label');
+    expect(first.role === 'user' && first.text).not.toContain('Injected name');
   });
 });
 

@@ -2,7 +2,7 @@ import './helpers/noNetwork';
 import { describe, it, expect } from 'vitest';
 import { RULES, checkReply, type RuleReport } from '../../src/compiler/rules';
 import type { CompileRequest } from '../../src/compiler/contract';
-import { hallRequest, mouseUp, nothingText, replyText } from './helpers/fixtures';
+import { digRequest, hallRequest, mouseUp, nothingText, replyText } from './helpers/fixtures';
 
 /** The reports for a reply, or [] when it is accepted. */
 function reports(text: string, request: CompileRequest = hallRequest): RuleReport[] {
@@ -21,6 +21,13 @@ describe('RULES', () => {
     expect(Object.keys(RULES)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']);
     expect(RULES[1]).toBe('The script parses as HyperTalk of this subset.');
     expect(RULES[8]).toBe('After a go, the script names no field and no button, and after a go to stack it names no card.');
+  });
+
+  it('states Rule 7 for a request with a label and for one without', () => {
+    // recompile-keeps-label, Requirement 5.9.
+    expect(RULES[7]).toBe(
+      'When the request has a label, the label is exactly that label; otherwise it is a short English name of 1 to 24 characters that is not in buttonNames.',
+    );
   });
 });
 
@@ -276,6 +283,44 @@ describe('Rule 7: the label', () => {
 
   it('accepts 24 characters', () => {
     expectAccepted(replyText({ label: 'x'.repeat(24) }));
+  });
+});
+
+// recompile-keeps-label, Requirement 5: a recompiled button keeps the request's label.
+describe('Rule 7 with a label in the request', () => {
+  const kept = (label: string) => r(7, `The label ${JSON.stringify(label)} is not the label in the request, "Dig".`);
+
+  it('accepts exactly the label of the request', () => {
+    expectAccepted(replyText({ label: 'Dig' }), digRequest);
+  });
+
+  it('accepts a kept label that is not English, which Rule 7 rejects without a label', () => {
+    expectAccepted(replyText({ label: '挖一挖' }), { ...digRequest, label: '挖一挖' });
+    expect(reports(replyText({ label: '挖一挖' }), hallRequest)).toEqual([
+      r(7, 'The label "挖一挖" holds a character that is not printable ASCII and holds no letter.'),
+    ]);
+  });
+
+  it('reports a different label, the label in another case, and an empty label', () => {
+    for (const label of ['Dig for seeds', 'dig', 'DIG', '']) {
+      expect(reports(replyText({ label }), digRequest), label).toEqual([kept(label)]);
+    }
+  });
+
+  it('accepts a script that names the kept label as a button (Rule 6)', () => {
+    expectAccepted(replyText({ label: 'Dig', script: mouseUp('hide button "Dig"', 'show button "home"') }), digRequest);
+  });
+
+  it('checks a Nothing_Reply as without a label', () => {
+    expectAccepted(nothingText(), digRequest);
+    expect(reports(nothingText({ label: 'Dig' }), digRequest)).toEqual([r(10, 'hasButton is false, but label is not empty.')]);
+  });
+
+  it('still checks the label when the script does not parse', () => {
+    expect(reports(replyText({ label: 'Dig up', script: mouseUp('summon cat') }), digRequest)).toEqual([
+      r(1, 'Line 2, column 10: expected "witch" after "summon". The line is "  summon cat".'),
+      kept('Dig up'),
+    ]);
   });
 });
 

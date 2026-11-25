@@ -6,7 +6,7 @@ import type { CompileOutcome } from '../../src/compiler/contract';
 import type { ModelInput } from '../../src/compiler/model';
 import { SYSTEM_PROMPT, userMessage } from '../../src/compiler/prompt';
 import { REPLY_SCHEMA } from '../../src/compiler/schema';
-import { requestArb, stepsArb, toStep, type GenStep } from './helpers/arbitraries';
+import { labelledRequestArb, requestArb, stepsArb, toStep, type GenStep } from './helpers/arbitraries';
 import { scriptedAsk } from './helpers/fakeModel';
 
 /**
@@ -68,6 +68,31 @@ describe('Property 1: Safety', () => {
 
         expect(outcome).toStrictEqual(model.outcome);
         // The number of calls is the number of steps the walk used, so later steps are never played.
+        expect(inputs).toHaveLength(model.calls);
+        expect(inputs.length).toBeLessThanOrEqual(MAX_MODEL_CALLS);
+        for (const input of inputs) {
+          expect(input.system).toBe(SYSTEM_PROMPT);
+          expect(input.schema).toBe(REPLY_SCHEMA);
+        }
+        expectGrowth(inputs, steps, userMessage(request));
+      }),
+      { numRuns: 300 },
+    );
+  });
+
+  // Feature: recompile-keeps-label, Property 1: Safety with a label
+  it('P1 safety with a label: every ok result keeps the request\'s label, in at most three calls', async () => {
+    const caseArb = labelledRequestArb.chain((request) => stepsArb(request).map((steps) => ({ request, steps })));
+    await fc.assert(
+      fc.asyncProperty(caseArb, async ({ request, steps }) => {
+        const { ask, inputs } = scriptedAsk(steps.map(toStep));
+        const outcome = await compile(request, ask);
+        const model = expected(steps);
+
+        expect(outcome).toStrictEqual(model.outcome);
+        // Read from the request, not the steps, so a generator and a checker that agree on a
+        // wrong label still fail here.
+        if (outcome.ok) expect(outcome.label).toBe(request.label);
         expect(inputs).toHaveLength(model.calls);
         expect(inputs.length).toBeLessThanOrEqual(MAX_MODEL_CALLS);
         for (const input of inputs) {
